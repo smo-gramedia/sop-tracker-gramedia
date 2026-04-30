@@ -1,4 +1,4 @@
-import { getAttachments } from "@/actions/attachment";
+import { verifyAttachments } from "@/actions/attachment";
 import { formatTanggal } from "@/lib/utils";
 import AttachmentActions from "@/components/admin/AttachmentActions";
 

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Download, X } from "lucide-react";
-import { createGlossaryEntry, updateGlossaryEntry, deleteGlossaryEntry } from "@/actions/glossary";
+import { createGlossaryEntry, updateGlossaryEntry, deleteGlossaryEntry } from "@/actions/glossary-actions";
 import { formatTanggal } from "@/lib/utils";
 
 type Entry = { id: string; kata: string; deskripsi: string; updatedAt: Date };

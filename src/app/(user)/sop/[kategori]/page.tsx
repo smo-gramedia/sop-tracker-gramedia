@@ -54,6 +54,7 @@ export default async function SopKategoriPage({ params }: Props) {
           </Link>
           <Link href="/home" className="text-sm text-muted-foreground hover:text-foreground">Home</Link>
           <Link href="/sop/petunjuk" className="text-sm text-muted-foreground hover:text-foreground">Petunjuk Pelaksanaan</Link>
+          <Link href="/bantuan" className="text-sm text-muted-foreground hover:text-foreground">Bantuan</Link>
           <span className="text-sm font-medium border-b-2 border-foreground pb-0.5">{pageTitle}</span>
         </div>
       </nav>
@@ -156,7 +157,7 @@ function StatusPill({ status }: { status?: string }) {
   );
 }
 
-function groupDocuments(docs: typeof [] extends never ? never : any[], kategori: SopKategori) {
+function groupDocuments(docs: any[], kategori: SopKategori) {
   const groups: Record<string, typeof docs> = {};
   docs.forEach(doc => {
     const key = kategori === "sg"

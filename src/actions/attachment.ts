@@ -1,93 +1,98 @@
-"use server";
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-import { revalidatePath } from "next/cache";
+// src/actions/attachment.ts
+'use server'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { revalidatePath } from 'next/cache'
 
-export async function reviewAttachment(
+/**
+ * Verifikasi bukti sosialisasi user oleh admin.
+ * Jika disetujui → buka step 5 (post test) di learning_progress.
+ */
+export async function verifyAttachment(
   attachmentId: string,
-  decision: "disetujui" | "ditolak" | "pending",
-  alasanTolak?: string
+  decision: 'disetujui' | 'ditolak',
+  alasanTolak?: string,
 ) {
-  const session = await auth();
-  if (!session || session.user.role === "user") throw new Error("Unauthorized");
-
-  const attachment = await prisma.sosialisasiAttachment.update({
-    where: { id: attachmentId },
-    data: {
-      status:      decision,
-      alasanTolak: decision === "ditolak" ? alasanTolak : null,
-      reviewedById: session.user.id,
-      reviewedAt:   new Date(),
-    },
-    include: { user: true, sopDocument: true },
-  });
-
-  // Send notification to user
-  if (decision === "disetujui" || decision === "ditolak") {
-    await prisma.notification.create({
-      data: {
-        userId:        attachment.userId,
-        sopDocumentId: attachment.sopDocumentId,
-        tipe:          "attachment",
-        judul:         decision === "disetujui"
-          ? "Bukti sosialisasi disetujui"
-          : "Bukti sosialisasi ditolak",
-        pesan: decision === "disetujui"
-          ? `Bukti sosialisasi untuk SOP "${attachment.sopDocument.judul}" telah disetujui. Post Test sudah dapat dikerjakan.`
-          : `Bukti sosialisasi untuk SOP "${attachment.sopDocument.judul}" ditolak. Alasan: ${alasanTolak ?? "—"}. Silakan upload ulang.`,
-      },
-    });
-
-    // Log activity
-    await prisma.activityLog.create({
-      data: {
-        userId:        attachment.userId,
-        sopDocumentId: attachment.sopDocumentId,
-        action:        decision === "disetujui" ? "attachment_disetujui" : "attachment_ditolak",
-        deskripsi:     decision === "disetujui"
-          ? `Bukti sosialisasi disetujui oleh admin`
-          : `Bukti sosialisasi ditolak. Alasan: ${alasanTolak}`,
-      },
-    });
+  const session = await auth()
+  if (!session?.user) throw new Error('Unauthorized')
+  if (!['admin', 'superadmin'].includes(session.user.role)) {
+    throw new Error('Forbidden')
   }
 
-  revalidatePath("/attachment");
-  return { success: true };
+  if (decision === 'ditolak' && !alasanTolak?.trim()) {
+    throw new Error('Alasan tolak wajib diisi')
+  }
+
+  const att = await prisma.sosialisasi_attachments.update({
+    where: { id: attachmentId },
+    data: {
+      status: decision,
+      alasanTolak: decision === 'ditolak' ? alasanTolak ?? null : null,
+      reviewedById: session.user.id,
+      reviewedAt: new Date(),
+    },
+  })
+
+  // Jika disetujui → buka step 5 (post test)
+  if (decision === 'disetujui') {
+    await prisma.learning_progress.upsert({
+      where: {
+        userId_sopDocumentId: {
+          userId: att.userId,
+          sopDocumentId: att.sopDocumentId,
+        },
+      },
+      update: { stepCurrent: 5 },
+      create: {
+        userId: att.userId,
+        sopDocumentId: att.sopDocumentId,
+        stepCurrent: 5,
+        status: 'dipelajari',
+        startedAt: new Date(),
+      },
+    })
+  }
+
+  // Notifikasi ke user
+  await prisma.notifications.create({
+    data: {
+      userId: att.userId,
+      sopDocumentId: att.sopDocumentId,
+      tipe: 'attachment',
+      judul: decision === 'disetujui' ? 'Bukti Disetujui' : 'Bukti Ditolak',
+      pesan:
+        decision === 'disetujui'
+          ? 'Bukti sosialisasi Anda disetujui. Silakan lanjut ke Post Test.'
+          : `Bukti sosialisasi ditolak. Alasan: ${alasanTolak ?? '-'}`,
+    },
+  })
+
+  // Activity log
+  await prisma.activity_logs.create({
+    data: {
+      userId: session.user.id,
+      sopDocumentId: att.sopDocumentId,
+      action: `attachment_${decision}`,
+      deskripsi: `${decision === 'disetujui' ? 'Setujui' : 'Tolak'} bukti sosialisasi attachment ${attachmentId}`,
+    },
+  })
+
+  revalidatePath('/(admin)/attachment')
+  return { success: true }
 }
 
-export async function getAttachments(opts?: {
-  status?: string;
-  sopDocumentId?: string;
-  search?: string;
-  page?: number;
-}) {
-  const page = opts?.page ?? 1;
-  const take = 20;
-  const skip = (page - 1) * take;
+/** Hapus attachment (untuk cleanup admin). */
+export async function deleteAttachment(attachmentId: string) {
+  const session = await auth()
+  if (!session?.user) throw new Error('Unauthorized')
+  if (session.user.role !== 'superadmin') {
+    throw new Error('Hanya superadmin yang boleh menghapus attachment')
+  }
 
-  const where = {
-    ...(opts?.status        && { status: opts.status as never }),
-    ...(opts?.sopDocumentId && { sopDocumentId: opts.sopDocumentId }),
-    ...(opts?.search        && {
-      OR: [
-        { user: { nama: { contains: opts.search, mode: "insensitive" as const } } },
-        { sopDocument: { judul: { contains: opts.search, mode: "insensitive" as const } } },
-      ],
-    }),
-  };
+  await prisma.sosialisasi_attachments.delete({
+    where: { id: attachmentId },
+  })
 
-  const [data, total] = await Promise.all([
-    prisma.sosialisasiAttachment.findMany({
-      where, skip, take,
-      orderBy: { uploadedAt: "desc" },
-      include: {
-        user:        { select: { id: true, nama: true, kodeKaryawan: true, unit: true } },
-        sopDocument: { select: { id: true, kode: true, judul: true } },
-        reviewedBy:  { select: { id: true, nama: true } },
-      },
-    }),
-    prisma.sosialisasiAttachment.count({ where }),
-  ]);
-
-  return { data, total, page, pageSize: take, totalPages: Math.ceil(total / take) };
+  revalidatePath('/(admin)/attachment')
+  return { success: true }
 }

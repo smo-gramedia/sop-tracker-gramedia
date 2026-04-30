@@ -1,65 +1,174 @@
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
-import { UPLOAD_MAX_SIZE_KB } from "@/lib/constants";
+// src/app/api/upload/route.ts
+import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import {
+  BUCKETS,
+  uploadFile,
+  buildStoragePath,
+  validateFile,
+  type BucketName,
+} from '@/lib/storage'
 
-export async function POST(req: Request) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+const BUCKET_RULES: Record<
+  BucketName,
+  { maxSizeMb: number; allowedMime: string[]; requireRole?: string[] }
+> = {
+  'raw-documents': {
+    maxSizeMb: 50,
+    allowedMime: [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ],
+    requireRole: ['admin', 'superadmin'],
+  },
+  'sop-attachments': {
+    maxSizeMb: 50,
+    allowedMime: [
+      'application/zip',
+      'application/x-zip-compressed',
+      'application/pdf',
+    ],
+    requireRole: ['admin', 'superadmin'],
+  },
+  sosialisasi: {
+    maxSizeMb: 10,
+    allowedMime: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
+    // user biasa juga boleh
+  },
+}
 
-  const formData = await req.formData();
-  const file     = formData.get("file") as File | null;
-  const type     = formData.get("type") as string | null;  // "sosialisasi" | "sop" | "raw"
-  const sopId    = formData.get("sopDocumentId") as string | null;
-
-  if (!file || !type || !sopId) {
-    return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+export async function POST(req: NextRequest) {
+  const session = await auth()
+  if (!session?.user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const ukuranKb = Math.round(file.size / 1024);
-  if (ukuranKb > UPLOAD_MAX_SIZE_KB) {
-    return NextResponse.json({ error: `File terlalu besar. Maksimal ${UPLOAD_MAX_SIZE_KB} KB.` }, { status: 400 });
+  const formData = await req.formData()
+  const file = formData.get('file') as File | null
+  const bucket = formData.get('bucket') as BucketName | null
+  const sopDocumentId = formData.get('sopDocumentId') as string | null
+  const tipe = formData.get('tipe') as
+    | 'raw'
+    | 'attachment'
+    | 'sosialisasi'
+    | null
+
+  if (!file || !bucket || !tipe) {
+    return NextResponse.json(
+      { error: 'Missing fields: file, bucket, tipe' },
+      { status: 400 },
+    )
+  }
+  if (!Object.values(BUCKETS).includes(bucket)) {
+    return NextResponse.json({ error: 'Invalid bucket' }, { status: 400 })
+  }
+  if (!sopDocumentId) {
+    return NextResponse.json(
+      { error: 'sopDocumentId required' },
+      { status: 400 },
+    )
   }
 
-  // In production: upload to Supabase Storage, get URL
-  // For now we just record metadata
-  const filename = file.name;
-  const mimeType = file.type;
-
-  if (type === "sosialisasi") {
-    const prevCount = await prisma.sosialisasiAttachment.count({
-      where: { userId: session.user.id, sopDocumentId: sopId },
-    });
-    const attachment = await prisma.sosialisasiAttachment.create({
-      data: {
-        userId:        session.user.id,
-        sopDocumentId: sopId,
-        filename, mimeType, ukuranKb,
-        uploadKe:      prevCount + 1,
-        status:        "menunggu",
-      },
-    });
-    // Update learning progress to step 4 done
-    await prisma.learningProgress.updateMany({
-      where: { userId: session.user.id, sopDocumentId: sopId },
-      data:  { stepCurrent: 4, lastAccessedAt: new Date() },
-    });
-    // Notify admin (create notification for all admins)
-    const admins = await prisma.user.findMany({
-      where: { role: { in: ["admin","superadmin"] }, status: "aktif" },
-      select: { id: true },
-    });
-    await prisma.notification.createMany({
-      data: admins.map(a => ({
-        userId:        a.id,
-        sopDocumentId: sopId,
-        tipe:          "attachment" as const,
-        judul:         "Bukti sosialisasi baru",
-        pesan:         `${session.user.name} mengupload bukti sosialisasi. Perlu verifikasi.`,
-      })),
-    });
-    return NextResponse.json({ success: true, id: attachment.id });
+  const rules = BUCKET_RULES[bucket]
+  if (rules.requireRole && !rules.requireRole.includes(session.user.role)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  return NextResponse.json({ error: "Unknown upload type" }, { status: 400 });
+  const validation = validateFile(file, rules)
+  if (!validation.ok) {
+    return NextResponse.json({ error: validation.reason }, { status: 400 })
+  }
+
+  // Verifikasi SOP exists
+  const sop = await prisma.sop_documents.findUnique({
+    where: { id: sopDocumentId },
+    select: { id: true },
+  })
+  if (!sop) {
+    return NextResponse.json({ error: 'SOP not found' }, { status: 404 })
+  }
+
+  try {
+    const path = buildStoragePath({
+      prefix: sopDocumentId,
+      filename: file.name,
+    })
+    const buffer = Buffer.from(await file.arrayBuffer())
+    await uploadFile({ bucket, path, file: buffer, contentType: file.type })
+
+    const ukuranKb = Math.round(file.size / 1024)
+
+    // Insert metadata sesuai tipe
+    if (tipe === 'raw') {
+      const row = await prisma.raw_documents.create({
+        data: {
+          sopDocumentId,
+          filename: path, // simpan path lengkap di kolom filename
+          mimeType: file.type,
+          ukuranKb,
+          uploadedById: session.user.id,
+        },
+      })
+      return NextResponse.json({ id: row.id, path, bucket })
+    }
+
+    if (tipe === 'attachment') {
+      const row = await prisma.sop_attachments.create({
+        data: {
+          sopDocumentId,
+          filename: path,
+          mimeType: file.type,
+          ukuranKb,
+          uploadedById: session.user.id,
+        },
+      })
+      return NextResponse.json({ id: row.id, path, bucket })
+    }
+
+    if (tipe === 'sosialisasi') {
+      // Hitung uploadKe (berapa kali upload ulang)
+      const existing = await prisma.sosialisasi_attachments.count({
+        where: { userId: session.user.id, sopDocumentId },
+      })
+      const row = await prisma.sosialisasi_attachments.create({
+        data: {
+          userId: session.user.id,
+          sopDocumentId,
+          filename: path,
+          mimeType: file.type,
+          ukuranKb,
+          uploadKe: existing + 1,
+          status: 'menunggu',
+        },
+      })
+
+      // Notif ke admin (opsional, simple — bisa di-extend nanti)
+      const admins = await prisma.users.findMany({
+        where: { role: { in: ['admin', 'superadmin'] }, status: 'aktif' },
+        select: { id: true },
+      })
+      if (admins.length > 0) {
+        await prisma.notifications.createMany({
+          data: admins.map((a) => ({
+            userId: a.id,
+            sopDocumentId,
+            tipe: 'attachment' as const,
+            judul: 'Bukti Sosialisasi Baru',
+            pesan: `${session.user.name ?? 'User'} mengupload bukti sosialisasi (upload ke-${existing + 1}).`,
+          })),
+        })
+      }
+
+      return NextResponse.json({ id: row.id, path, bucket })
+    }
+
+    return NextResponse.json({ error: 'Invalid tipe' }, { status: 400 })
+  } catch (e) {
+    console.error('Upload error:', e)
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : 'Upload failed' },
+      { status: 500 },
+    )
+  }
 }

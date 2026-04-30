@@ -296,6 +296,29 @@ model FaqEntry {
   @@map("faqs")
 }
 
+await prisma.faqEntry.createMany({
+  data: [
+    {
+      pertanyaan: "Bagaimana cara mengakses SOP?",
+      jawaban: "Pilih kategori SOP di halaman Home, lalu klik dokumen yang ingin dipelajari.",
+      urutan: 0,
+      createdById: superadmin.id,
+    },
+    {
+      pertanyaan: "Berapa lama waktu untuk menyelesaikan satu SOP?",
+      jawaban: "Setiap SOP memiliki 7 step pembelajaran. Tahap baca dokumen minimal 20 menit, dilanjutkan upload bukti sosialisasi, dan post test (10 soal, 10 menit, passing 70).",
+      urutan: 1,
+      createdById: superadmin.id,
+    },
+    {
+      pertanyaan: "Apa yang terjadi jika bukti sosialisasi saya ditolak?",
+      jawaban: "Anda akan menerima notifikasi beserta alasan penolakan. Silakan upload ulang bukti yang sesuai. Tidak ada batasan jumlah upload ulang.",
+      urutan: 2,
+      createdById: superadmin.id,
+    },
+  ],
+});
+
 // ─────────────────────────────────────────────
 // 9. STORES
 // ─────────────────────────────────────────────

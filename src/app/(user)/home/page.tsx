@@ -48,6 +48,7 @@ export default async function HomePage() {
             </Link>
             <Link href="/home" className="text-sm font-medium">Home</Link>
             <Link href="/sop/petunjuk" className="text-sm text-muted-foreground hover:text-foreground">Petunjuk Pelaksanaan</Link>
+            <Link href="/bantuan" className="text-sm text-muted-foreground hover:text-foreground">Bantuan</Link>
             <div className="relative group">
               <button className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
                 SOP <ChevronRight size={14} className="rotate-90" />
