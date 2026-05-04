@@ -10,6 +10,7 @@ import {
   ClipboardList, HelpCircle, LogOut, ChevronDown,
 } from "lucide-react";
 import { useState } from "react";
+import Image from "next/image";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   LayoutDashboard, Upload, FileText, BookOpen, Tag,
@@ -43,9 +44,23 @@ export default function AdminSidebar({ role }: Props) {
   return (
     <aside className="w-64 min-h-screen bg-foreground text-background flex flex-col">
       {/* Header */}
-      <div className="p-5 border-b border-background/10">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-9 h-9 rounded-full bg-background text-foreground flex items-center justify-center font-bold text-sm">G</div>
+  <div className="p-5 border-b border-background/10">
+    <Link href="/dashboard" className="flex items-center gap-3 mb-4 hover:opacity-90 transition-opacity">
+       <div className="w-9 h-9 rounded-full bg-background flex items-center justify-center overflow-hidden flex-shrink-0">
+         <Image
+           src="/logo-g.png"
+           alt="Gramedia"
+           width={36}
+           height={36}
+           className="object-contain"
+           priority
+         />
+       </div>
+       <span className="font-display font-bold text-lg leading-tight">
+         Gramedia<br/>
+         <span className="text-xs font-normal text-background/60">SOP System</span>
+       </span>
+     </Link>
           <span className="font-display font-bold text-lg">Gramedia</span>
         </div>
         <div className="text-xs uppercase tracking-wider text-background/40 mb-1">Workspace</div>

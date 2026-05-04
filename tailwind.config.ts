@@ -39,6 +39,14 @@ const config: Config = {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
         },
+        // Gramedia brand colors
+        brand: {
+          DEFAULT: "hsl(var(--primary))",
+          dark: {
+            DEFAULT: "hsl(var(--brand-dark))",
+            foreground: "hsl(var(--brand-dark-foreground))",
+          },
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

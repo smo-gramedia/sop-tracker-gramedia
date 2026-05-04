@@ -4,23 +4,43 @@
 
 @layer base {
   :root {
+    /* Surface */
     --background: 0 0% 100%;
     --foreground: 0 0% 10%;
     --muted: 0 0% 96%;
     --muted-foreground: 0 0% 45%;
     --border: 0 0% 89%;
     --input: 0 0% 89%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
+
+    /*
+      Primary = Gramedia Blue (#2563EB / Tailwind blue-600)
+      Dipakai untuk button, link aktif, focus ring, accent kecil
+    */
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    /*
+      Brand Dark = biru gelap untuk hero card & section spotlight
+      ~#1E40AF (Tailwind blue-800)
+    */
+    --brand-dark: 224 76% 40%;
+    --brand-dark-foreground: 0 0% 100%;
+
+    /* Secondary tetap subtle gray */
     --secondary: 0 0% 96%;
     --secondary-foreground: 0 0% 9%;
+
     --accent: 0 0% 96%;
     --accent-foreground: 0 0% 9%;
+
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --ring: 0 0% 9%;
+
+    /* Focus ring jadi biru */
+    --ring: 217 91% 60%;
     --radius: 0.5rem;
   }
+
   .dark {
     --background: 0 0% 6%;
     --foreground: 0 0% 98%;
@@ -28,19 +48,47 @@
     --muted-foreground: 0 0% 60%;
     --border: 0 0% 18%;
     --input: 0 0% 18%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --brand-dark: 224 76% 40%;
+    --brand-dark-foreground: 0 0% 100%;
     --secondary: 0 0% 12%;
     --secondary-foreground: 0 0% 98%;
     --accent: 0 0% 12%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 98%;
-    --ring: 0 0% 83%;
+    --ring: 217 91% 60%;
   }
 }
 
 @layer base {
-  * { @apply border-border; }
-  body { @apply bg-background text-foreground; }
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Brand utility classes — biar bisa pakai bg-brand, text-brand di JSX */
+@layer utilities {
+  .bg-brand {
+    background-color: hsl(var(--brand-dark));
+    color: hsl(var(--brand-dark-foreground));
+  }
+  .text-brand {
+    color: hsl(var(--primary));
+  }
+  .text-brand-dark {
+    color: hsl(var(--brand-dark));
+  }
+  .border-brand {
+    border-color: hsl(var(--primary));
+  }
+  .bg-brand-light {
+    /* untuk subtle backgrounds, mis: badge, alert info */
+    background-color: hsl(var(--primary) / 0.1);
+    color: hsl(var(--brand-dark));
+  }
 }
