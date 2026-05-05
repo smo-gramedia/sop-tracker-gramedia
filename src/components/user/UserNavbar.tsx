@@ -21,10 +21,10 @@ type Props = {
 };
 
 const SOP_CATEGORIES = [
-  { href: "/sop/sr", label: "📦 SOP Operation" },
-  { href: "/sop/ss", label: "🏢 SOP Supporting Unit" },
-  { href: "/sop/sp", label: "📚 SOP Publishing & Education" },
-  { href: "/sop/sg", label: "🗂 SOP General" },
+  { href: "/sop/sr", label: "SOP Operation" },
+  { href: "/sop/ss", label: "SOP Supporting Unit" },
+  { href: "/sop/sp", label: "SOP Publishing & Education" },
+  { href: "/sop/sg", label: "SOP General" },
 ] as const;
 
 export default function UserNavbar({ userName, unreadCount = 0 }: Props) {

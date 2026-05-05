@@ -7,11 +7,11 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  Lock,
   FileText,
   Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import PostTestFlow from "./PostTestFlow";
 
 type Props = {
   doc: any;
@@ -50,7 +50,7 @@ export default function BelajarClient({
 
   return (
     <>
-      {/* Sub-navbar / breadcrumb (di bawah UserNavbar global dari layout) */}
+      {/* Sub-navbar / breadcrumb */}
       <div className="bg-background border-b sticky top-14 z-20">
         <div className="max-w-5xl mx-auto px-6 h-12 flex items-center gap-4">
           <Link
@@ -120,41 +120,49 @@ export default function BelajarClient({
             />
           )}
           {currentStep === 5 && (
-            <Step5
+            <PostTestFlow
               postTest={postTest}
-              myResults={myResults}
               attachmentOk={attachmentOk}
-              docId={doc.id}
-              userId={userId}
+              myResults={myResults.map((r) => ({
+                id: r.id,
+                attemptNumber: r.attemptNumber,
+                skor: r.skor,
+                status: r.status,
+                selesaiAt:
+                  typeof r.selesaiAt === "string"
+                    ? r.selesaiAt
+                    : r.selesaiAt?.toISOString() ?? new Date().toISOString(),
+              }))}
+              sopJudul={doc.judul}
+              onCompleted={() => goToStep(6)}
             />
           )}
           {currentStep === 6 && <Step6 doc={doc} />}
         </div>
 
-        {/* Navigation */}
-        <div className="flex justify-between">
-          <Button
-            variant="outline"
-            onClick={() => goToStep(currentStep - 1)}
-            disabled={currentStep === 0 || submittingStep}
-          >
-            <ChevronLeft size={16} /> Sebelumnya
-          </Button>
-          {currentStep < 6 && (
+        {/* Navigation — sembunyikan saat di step 5 (Post Test punya navigasi sendiri) */}
+        {currentStep !== 5 && (
+          <div className="flex justify-between">
             <Button
-              onClick={() => goToStep(currentStep + 1)}
-              disabled={
-                submittingStep ||
-                (currentStep === 4 && !attachmentOk) ||
-                (currentStep === 5 &&
-                  myResults.every((r) => r.status !== "lulus"))
-              }
+              variant="outline"
+              onClick={() => goToStep(currentStep - 1)}
+              disabled={currentStep === 0 || submittingStep}
             >
-              {currentStep === 5 ? "Selesai" : "Selanjutnya"}{" "}
-              <ChevronRight size={16} />
+              <ChevronLeft size={16} /> Sebelumnya
             </Button>
-          )}
-        </div>
+            {currentStep < 6 && (
+              <Button
+                onClick={() => goToStep(currentStep + 1)}
+                disabled={
+                  submittingStep ||
+                  (currentStep === 4 && !attachmentOk)
+                }
+              >
+                Selanjutnya <ChevronRight size={16} />
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </>
   );
@@ -288,18 +296,33 @@ function Step4({
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [done, setDone] = useState(!!latestAttachment);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   async function uploadFile() {
     if (!file) return;
     setUploading(true);
+    setErrorMsg(null);
+
     const fd = new FormData();
     fd.append("file", file);
-    fd.append("type", "sosialisasi");
+    // FIX: gunakan field "tipe" (sesuai API), bukan "type"
+    fd.append("tipe", "sosialisasi");
+    // FIX: tambahkan field "bucket" yang dibutuhkan API
+    fd.append("bucket", "sosialisasi");
     fd.append("sopDocumentId", docId);
-    await fetch("/api/upload", { method: "POST", body: fd });
-    setDone(true);
-    setUploading(false);
+
+    try {
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || `Upload gagal (${res.status})`);
+      }
+      // Refresh halaman supaya latestAttachment ke-update
+      window.location.reload();
+    } catch (e) {
+      setErrorMsg(e instanceof Error ? e.message : "Upload gagal");
+      setUploading(false);
+    }
   }
 
   const statusMap: Record<
@@ -363,19 +386,27 @@ function Step4({
                 type="file"
                 className="hidden"
                 accept="image/*,.pdf"
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                onChange={(e) => {
+                  setFile(e.target.files?.[0] ?? null);
+                  setErrorMsg(null);
+                }}
               />
             </label>
             <p className="text-xs text-muted-foreground mt-1">
-              JPG, JPEG, PDF · Maks 5MB
+              JPG, JPEG, PNG, WebP, PDF · Maks 10MB
             </p>
           </div>
           {file && (
             <div className="bg-muted rounded-lg px-4 py-2 text-sm text-left flex items-center justify-between">
-              <span>{file.name}</span>
+              <span className="truncate">{file.name}</span>
               <Button size="sm" onClick={uploadFile} disabled={uploading}>
                 {uploading ? "Mengupload..." : "Unggah & Kirim"}
               </Button>
+            </div>
+          )}
+          {errorMsg && (
+            <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-sm text-destructive text-left">
+              {errorMsg}
             </div>
           )}
         </div>
@@ -386,137 +417,6 @@ function Step4({
         bukti Anda. Notifikasi akan dikirim via email dan in-app. Post Test
         akan terbuka setelah disetujui.
       </div>
-    </div>
-  );
-}
-
-function Step5({ postTest, myResults, attachmentOk, docId, userId }: any) {
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [result, setResult] = useState<any>(null);
-  const [submitting, setSubmit] = useState(false);
-  const startTime = useState(Date.now())[0];
-  const bestResult =
-    myResults.find((r: any) => r.status === "lulus") ??
-    myResults[myResults.length - 1];
-
-  async function submitTest() {
-    if (!postTest) return;
-    setSubmit(true);
-    const res = await fetch("/api/post-test", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        postTestId: postTest.id,
-        answers,
-        durasiDetik: Math.round((Date.now() - startTime) / 1000),
-      }),
-    });
-    const data = await res.json();
-    setResult(data);
-    setSubmit(false);
-  }
-
-  if (!attachmentOk)
-    return (
-      <div className="flex flex-col items-center justify-center h-48 gap-3 text-center">
-        <Lock size={32} className="text-muted-foreground" />
-        <p className="font-semibold">Post Test Terkunci</p>
-        <p className="text-sm text-muted-foreground">
-          Selesaikan upload bukti sosialisasi dan tunggu persetujuan admin.
-        </p>
-      </div>
-    );
-
-  if (!postTest)
-    return (
-      <div className="text-center text-muted-foreground py-12">
-        Post Test belum tersedia untuk SOP ini.
-      </div>
-    );
-
-  if (result)
-    return (
-      <div className="text-center space-y-4 py-8">
-        <div
-          className={`text-6xl font-display font-bold ${
-            result.status === "lulus" ? "text-green-600" : "text-destructive"
-          }`}
-        >
-          {result.skor}
-        </div>
-        <div className="text-lg font-semibold">
-          {result.status === "lulus" ? "🎉 Lulus!" : "Belum Lulus"}
-        </div>
-        <div className="text-sm text-muted-foreground">
-          Benar: {result.jumlahBenar} · Salah: {result.jumlahSalah}
-        </div>
-        {result.status !== "lulus" && (
-          <Button
-            onClick={() => {
-              setResult(null);
-              setAnswers({});
-            }}
-          >
-            Coba Lagi
-          </Button>
-        )}
-      </div>
-    );
-
-  return (
-    <div className="space-y-6 max-w-2xl">
-      <div className="flex items-center justify-between">
-        <h2 className="font-display font-bold text-2xl">Post Test</h2>
-        {bestResult && (
-          <span className="text-sm text-muted-foreground">
-            Percobaan ke-{myResults.length + 1} · Terbaik: {bestResult.skor}
-          </span>
-        )}
-      </div>
-      {postTest.questions.map((q: any, i: number) => (
-        <div key={q.id} className="space-y-2">
-          <p className="font-medium text-sm">
-            {i + 1}. {q.pertanyaan}
-          </p>
-          <div className="space-y-1.5">
-            {(["a", "b", "c", "d"] as const).map((opt) => (
-              <label
-                key={opt}
-                className={`flex items-center gap-3 border rounded-lg p-3 cursor-pointer transition-colors
-                ${
-                  answers[q.id] === opt
-                    ? "border-foreground bg-foreground/5"
-                    : "hover:bg-muted"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name={q.id}
-                  value={opt}
-                  checked={answers[q.id] === opt}
-                  onChange={() =>
-                    setAnswers((prev) => ({ ...prev, [q.id]: opt }))
-                  }
-                  className="accent-foreground"
-                />
-                <span className="text-sm">
-                  {q[`opsi${opt.toUpperCase()}`]}
-                </span>
-              </label>
-            ))}
-          </div>
-        </div>
-      ))}
-      <Button
-        onClick={submitTest}
-        disabled={
-          submitting ||
-          Object.keys(answers).length < postTest.questions.length
-        }
-        className="w-full"
-      >
-        {submitting ? "Mengirim..." : "Kumpulkan Jawaban"}
-      </Button>
     </div>
   );
 }
