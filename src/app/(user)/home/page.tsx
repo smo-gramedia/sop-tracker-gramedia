@@ -2,6 +2,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import Image from "next/image";
 import { BookOpen, Trophy } from "lucide-react";
 
 export default async function HomePage() {
@@ -26,20 +27,44 @@ export default async function HomePage() {
     include: { store: { select: { nama: true, kota: true } } },
   });
 
- const sopMenus = [
-  { href: "/sop/sr", label: "SOP Operation", icon: "/icon/sop-operation.png", desc: "Prosedur operasional ritel" },
-  { href: "/sop/ss", label: "SOP Supporting Unit", icon: "/icon/sop-support.png", desc: "Prosedur unit pendukung" },
-  { href: "/sop/sp", label: "SOP Publishing & Education", icon: "/icon/sop-publish.png", desc: "Prosedur penerbitan & edukasi" },
-  { href: "/sop/sg", label: "SOP General", icon: "/icon/sop-general.png", desc: "Prosedur umum lintas divisi" },
-  { href: "/juklak", label: "Petunjuk Pelaksanaan", icon: "/icon/juklak.png", desc: "Panduan pelaksanaan tugas" },
-];
+  const sopMenus = [
+    {
+      href: "/sop/sr",
+      label: "SOP Operation",
+      icon: "/icon/sop-operation.png",
+      desc: "Prosedur operasional ritel",
+    },
+    {
+      href: "/sop/ss",
+      label: "SOP Supporting Unit",
+      icon: "/icon/sop-supporting-unit.png",
+      desc: "Prosedur unit pendukung",
+    },
+    {
+      href: "/sop/sp",
+      label: "SOP Publishing & Education",
+      icon: "/icon/sop-publishing-education.png",
+      desc: "Prosedur penerbitan & edukasi",
+    },
+    {
+      href: "/sop/sg",
+      label: "SOP General",
+      icon: "/icon/sop-general.png",
+      desc: "Prosedur umum lintas divisi",
+    },
+    {
+      href: "/sop/petunjuk",
+      label: "Petunjuk Pelaksanaan",
+      icon: "/icon/petunjuk-pelaksanaan.png",
+      desc: "Panduan pelaksanaan tugas",
+    },
+  ];
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-10 space-y-10">
       {/* Hero — biru Gramedia */}
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-2 bg-brand rounded-2xl p-8 relative overflow-hidden">
-          {/* Decorative gradient overlay */}
           <div
             className="absolute inset-0 opacity-30 pointer-events-none"
             style={{
@@ -109,7 +134,15 @@ export default async function HomePage() {
               href={m.href}
               className="bg-background rounded-xl border p-4 hover:shadow-md hover:-translate-y-0.5 hover:border-primary/40 transition-all group"
             >
-              <div className="text-2xl mb-2">{m.icon}</div>
+              <div className="w-10 h-10 mb-3 relative">
+                <Image
+                  src={m.icon}
+                  alt={m.label}
+                  width={40}
+                  height={40}
+                  className="object-contain"
+                />
+              </div>
               <div className="font-semibold text-sm group-hover:text-primary transition-colors">
                 {m.label}
               </div>
