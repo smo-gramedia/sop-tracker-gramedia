@@ -65,7 +65,7 @@ export default function UserNavbar({ userName, unreadCount = 0 }: Props) {
 
   return (
     <nav className="bg-background border-b sticky top-0 z-30">
-      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center">
+      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center">
 
         {/* LEFT (FIX WIDTH) */}
         <div className="min-w-[200px] flex items-center">

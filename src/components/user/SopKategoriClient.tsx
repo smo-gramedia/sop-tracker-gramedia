@@ -1,375 +1,423 @@
-// src/components/user/SopKategoriClient.tsx
 "use client";
 
+// src/components/user/SopKategoriClient.tsx
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Search, ChevronDown, Eye, Download, BookOpen } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import {
+  BookOpen,
+  Eye,
+  Download,
+  AlertCircle,
+  X,
+  Search,
+  ChevronDown,
+} from "lucide-react";
+import PdfPreviewModal from "./PdfPreviewModal";
 
-// ─── Types ────────────────────────────────────────────────────────────
-type SopDocument = {
+type ProgressItem = {
+  sopDocumentId: string;
+  stepCurrent: number;
+  status: string;
+};
+
+type Doc = {
   id: string;
   kode: string;
   judul: string;
   deskripsi: string | null;
   tipe: string;
   versi: string;
-  tanggalBerlaku: string | null;
-  departmentId: string | null;
-  departmentNama: string | null;
-  divisionId: string | null;
-  divisionNama: string | null;
-  subcategoryId: string | null;
-  subcategoryNama: string | null;
-  progressStatus: string | null;
-  stepCurrent: number | null;
+  tanggalBerlaku: Date | null;
+  department: {
+    id: string;
+    nama: string;
+    divisionId: string;
+    division: { id: string; nama: string };
+  } | null;
+  subcategory: { id: string; nama: string } | null;
+  sopAttachments: { id: string; filename: string }[];
 };
 
 type Division = {
   id: string;
-  kode: string;
   nama: string;
-  deskripsi: string | null;
-  directorateNama: string;
-  count: number;
-  departments: { id: string; kode: string; nama: string; count: number }[];
+  departments: { id: string; nama: string }[];
 };
 
-type Subcategory = {
-  id: string;
-  kode: string;
-  nama: string;
-  deskripsi: string | null;
-  count: number;
+type Subcategory = { id: string; kode: string; nama: string };
+
+type Props = {
+  kategori: string;
+  pageTitle: string;
+  documents: Doc[];
+  totalDocs: number;
+  progressList: ProgressItem[];
+  progressMap: Record<string, ProgressItem>;
+  isAdmin: boolean;
+  divisions: Division[];
+  subcategories: Subcategory[];
 };
 
-type Props =
-  | {
-      mode: "division";
-      kategori: string;
-      pageTitle: string;
-      documents: SopDocument[];
-      divisions: Division[];
-    }
-  | {
-      mode: "subcategory";
-      kategori: string;
-      pageTitle: string;
-      documents: SopDocument[];
-      subcategories: Subcategory[];
-    };
+export default function SopKategoriClient({
+  kategori,
+  pageTitle,
+  documents,
+  totalDocs,
+  progressList,
+  progressMap,
+  isAdmin,
+  divisions,
+  subcategories,
+}: Props) {
+  // Modal state
+  const [previewDoc, setPreviewDoc] = useState<Doc | null>(null);
+  const [popup, setPopup] = useState<{
+    title: string;
+    message: string;
+  } | null>(null);
 
-// ─── Selection state ─────────────────────────────────────────────────
-type Selection =
-  | { type: "all" }
-  | { type: "division"; id: string }
-  | { type: "department"; id: string; divisionId: string }
-  | { type: "subcategory"; id: string };
-
-export default function SopKategoriClient(props: Props) {
-  const { mode, kategori, pageTitle, documents } = props;
-
-  // Default: tampilkan semua SOP (sesuai pilihan user)
-  const [selection, setSelection] = useState<Selection>({ type: "all" });
+  // Filter & sidebar state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [tipeFilter, setTipeFilter] = useState("");
+  const [selectedDeptId, setSelectedDeptId] = useState<string | null>(null);
+  const [selectedSubcatId, setSelectedSubcatId] = useState<string | null>(null);
   const [sidebarSearch, setSidebarSearch] = useState("");
   const [expandedDivisions, setExpandedDivisions] = useState<Set<string>>(
     new Set()
   );
 
-  // Filter content area
-  const [contentSearch, setContentSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
-  const [filterTipe, setFilterTipe] = useState("");
+  // Hanya divisions yang punya departemen ber-SOP di kategori ini
+  const relevantDivisions = useMemo(() => {
+    if (kategori === "sg" || kategori === "petunjuk") return [];
+    const deptIdsWithSops = new Set(
+      documents.map((d) => d.department?.id).filter(Boolean)
+    );
+    return divisions
+      .map((div) => ({
+        ...div,
+        departments: div.departments.filter((d) => deptIdsWithSops.has(d.id)),
+      }))
+      .filter((div) => div.departments.length > 0);
+  }, [divisions, documents, kategori]);
 
-  // ─── Filter documents berdasarkan selection ────────────────────────
-  const filteredDocs = useMemo(() => {
-    let docs = documents;
-
-    // Step 1: filter berdasarkan selection sidebar
-    if (selection.type === "division") {
-      docs = docs.filter((d) => d.divisionId === selection.id);
-    } else if (selection.type === "department") {
-      docs = docs.filter((d) => d.departmentId === selection.id);
-    } else if (selection.type === "subcategory") {
-      docs = docs.filter((d) => d.subcategoryId === selection.id);
-    }
-    // selection.type === "all" → tidak filter
-
-    // Step 2: filter content area (search, status, tipe)
-    if (contentSearch.trim()) {
-      const q = contentSearch.toLowerCase();
-      docs = docs.filter(
-        (d) =>
-          d.judul.toLowerCase().includes(q) ||
-          d.kode.toLowerCase().includes(q) ||
-          (d.deskripsi?.toLowerCase().includes(q) ?? false)
-      );
-    }
-    if (filterStatus) {
-      docs = docs.filter((d) => {
-        if (filterStatus === "Sedang dipelajari")
-          return d.progressStatus === "dipelajari";
-        if (filterStatus === "Belum Dibaca")
-          return !d.progressStatus || d.progressStatus === "belum";
-        if (filterStatus === "Selesai") return d.progressStatus === "selesai";
-        return true;
-      });
-    }
-    if (filterTipe) {
-      docs = docs.filter((d) => d.tipe === filterTipe);
-    }
-
-    return docs;
-  }, [documents, selection, contentSearch, filterStatus, filterTipe]);
-
-  // ─── Sidebar items filter berdasarkan search sidebar ──────────────
-  const filteredSidebarItems = useMemo(() => {
-    const q = sidebarSearch.trim().toLowerCase();
-    if (!q) return mode === "division" ? props.divisions : props.subcategories;
-
-    if (mode === "division") {
-      return props.divisions.filter(
+  // Filter sidebar by search
+  const filteredDivisions = useMemo(() => {
+    if (!sidebarSearch) return relevantDivisions;
+    const q = sidebarSearch.toLowerCase();
+    return relevantDivisions
+      .map((div) => ({
+        ...div,
+        departments: div.departments.filter((d) =>
+          d.nama.toLowerCase().includes(q)
+        ),
+      }))
+      .filter(
         (div) =>
-          div.nama.toLowerCase().includes(q) ||
-          div.departments.some((dept) => dept.nama.toLowerCase().includes(q))
+          div.nama.toLowerCase().includes(q) || div.departments.length > 0
       );
-    } else {
-      return props.subcategories.filter((sub) =>
-        sub.nama.toLowerCase().includes(q)
-      );
-    }
-  }, [mode, sidebarSearch, props]);
+  }, [relevantDivisions, sidebarSearch]);
 
-  // ─── Stats ────────────────────────────────────────────────────────
-  const stats = useMemo(() => {
-    const total = documents.length;
-    const dipelajari = documents.filter(
-      (d) => d.progressStatus === "dipelajari"
-    ).length;
-    const selesai = documents.filter(
-      (d) => d.progressStatus === "selesai"
-    ).length;
-    return { total, dipelajari, selesai };
-  }, [documents]);
+  // Subcategories yang punya dokumen (untuk SOP General)
+  const relevantSubcats = useMemo(() => {
+    if (kategori !== "sg") return [];
+    const subcatIdsWithSops = new Set(
+      documents.map((d) => d.subcategory?.id).filter(Boolean)
+    );
+    return subcategories.filter((s) => subcatIdsWithSops.has(s.id));
+  }, [subcategories, documents, kategori]);
 
-  // ─── Selected entity name (untuk header content area) ─────────────
-  const selectedName = useMemo(() => {
-    if (selection.type === "all") return "Semua SOP";
-    if (mode === "division") {
-      if (selection.type === "division") {
-        return props.divisions.find((d) => d.id === selection.id)?.nama ?? "";
+  // Filter dokumen
+  const filteredDocs = useMemo(() => {
+    return documents.filter((doc) => {
+      // Filter by department (kategori non-sg, non-petunjuk)
+      if (selectedDeptId && doc.department?.id !== selectedDeptId) {
+        return false;
       }
-      if (selection.type === "department") {
-        const div = props.divisions.find((d) => d.id === selection.divisionId);
-        const dept = div?.departments.find((d) => d.id === selection.id);
-        return dept?.nama ?? "";
+      // Filter by subcategory (kategori sg)
+      if (selectedSubcatId && doc.subcategory?.id !== selectedSubcatId) {
+        return false;
       }
-    } else {
-      if (selection.type === "subcategory") {
-        return (
-          props.subcategories.find((s) => s.id === selection.id)?.nama ?? ""
-        );
+      // Search by kode/judul/deskripsi
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        const matches =
+          doc.kode.toLowerCase().includes(q) ||
+          doc.judul.toLowerCase().includes(q) ||
+          (doc.deskripsi?.toLowerCase().includes(q) ?? false);
+        if (!matches) return false;
       }
-    }
-    return "";
-  }, [selection, mode, props]);
+      // Filter by status
+      if (statusFilter) {
+        const progress = progressMap[doc.id];
+        if (statusFilter === "selesai") {
+          if (progress?.status !== "selesai") return false;
+        } else if (statusFilter === "dipelajari") {
+          if (progress?.status !== "dipelajari") return false;
+        } else if (statusFilter === "belum") {
+          if (progress && progress.status !== "belum") return false;
+        }
+      }
+      // Filter by tipe
+      if (tipeFilter && doc.tipe !== tipeFilter) {
+        return false;
+      }
+      return true;
+    });
+  }, [
+    documents,
+    selectedDeptId,
+    selectedSubcatId,
+    searchQuery,
+    statusFilter,
+    tipeFilter,
+    progressMap,
+  ]);
 
-  const selectedSubtitle = useMemo(() => {
-    if (selection.type === "all") return "Menampilkan seluruh dokumen";
-    if (selection.type === "division") return "Semua departemen";
-    if (selection.type === "department") return "Filter per departemen";
-    if (selection.type === "subcategory") {
-      return (
-        props.subcategories.find((s) => s.id === selection.id)?.deskripsi ?? ""
-      );
-    }
-    return "";
-  }, [selection, props]);
-
-  function toggleDivisionExpand(divisionId: string) {
+  // Toggle accordion division
+  function toggleDivision(divId: string) {
     setExpandedDivisions((prev) => {
       const next = new Set(prev);
-      if (next.has(divisionId)) next.delete(divisionId);
-      else next.add(divisionId);
+      if (next.has(divId)) next.delete(divId);
+      else next.add(divId);
       return next;
     });
   }
 
+  /** Cek action availability based on progress + role */
+  function getActionLock(doc: Doc): { title: string; message: string } | null {
+    if (isAdmin) return null;
+
+    const progress = progressMap[doc.id];
+
+    if (!progress || progress.status === "belum") {
+      return {
+        title: "SOP Belum Dipelajari",
+        message:
+          "Silakan pelajari SOP terlebih dahulu sebelum dapat melihat atau mengunduh dokumen.",
+      };
+    }
+
+    const isCompleted =
+      progress.status === "selesai" && progress.stepCurrent === 6;
+    if (!isCompleted) {
+      return {
+        title: "Pembelajaran Belum Selesai",
+        message:
+          "Pembelajaran SOP harus diselesaikan terlebih dahulu (100%) sebelum Anda dapat melihat atau mengunduh dokumen.",
+      };
+    }
+
+    return null;
+  }
+
+  function handleView(doc: Doc) {
+    const lock = getActionLock(doc);
+    if (lock) {
+      setPopup(lock);
+      return;
+    }
+    if (doc.sopAttachments.length === 0) {
+      setPopup({
+        title: "Dokumen Belum Tersedia",
+        message:
+          "PDF utama untuk SOP ini belum di-upload oleh admin. Hubungi admin untuk informasi lebih lanjut.",
+      });
+      return;
+    }
+    setPreviewDoc(doc);
+  }
+
+  function handleDownload(doc: Doc) {
+    const lock = getActionLock(doc);
+    if (lock) {
+      setPopup(lock);
+      return;
+    }
+    if (doc.sopAttachments.length === 0) {
+      setPopup({
+        title: "Dokumen Belum Tersedia",
+        message:
+          "PDF utama untuk SOP ini belum di-upload oleh admin. Hubungi admin untuk informasi lebih lanjut.",
+      });
+      return;
+    }
+    window.location.href = `/api/sop/${doc.id}/download`;
+  }
+
+  // Untuk header sub-display
+  const selectedDivision = useMemo(() => {
+    if (!selectedDeptId) return null;
+    for (const div of relevantDivisions) {
+      const dept = div.departments.find((d) => d.id === selectedDeptId);
+      if (dept) return { div, dept };
+    }
+    return null;
+  }, [selectedDeptId, relevantDivisions]);
+
+  const selectedSubcat = useMemo(() => {
+    if (!selectedSubcatId) return null;
+    return relevantSubcats.find((s) => s.id === selectedSubcatId) ?? null;
+  }, [selectedSubcatId, relevantSubcats]);
+
+  // Header for content area
+  const contentHeader = (() => {
+    if (kategori === "sg") {
+      return {
+        title: selectedSubcat ? selectedSubcat.nama : "Semua SOP General",
+        sub: selectedSubcat
+          ? selectedSubcat.kode
+          : "Pilih sub-kategori untuk filter",
+      };
+    }
+    if (kategori === "petunjuk") {
+      return {
+        title: "Semua Petunjuk Pelaksanaan",
+        sub: `${filteredDocs.length} dokumen tersedia`,
+      };
+    }
+    return {
+      title: selectedDivision
+        ? selectedDivision.dept.nama
+        : "Semua Division",
+      sub: selectedDivision
+        ? selectedDivision.div.nama
+        : "Pilih division/department untuk filter",
+    };
+  })();
+
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8">
-      {/* ─── Header ─────────────────────────────────────────────── */}
+    <div className="max-w-6xl mx-auto px-6 py-8">
+      {/* Header */}
       <div className="mb-6">
-        <div className="text-xs uppercase tracking-wider text-primary mb-1 font-semibold">
+        <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1.5">
           {pageTitle}
         </div>
-        <h1 className="font-display font-bold text-3xl mb-2">
+        <h1 className="font-display font-bold text-3xl md:text-4xl mb-2">
           Temukan {pageTitle} dengan lebih cepat dan terstruktur.
         </h1>
-        <p className="text-muted-foreground text-sm">
-          {mode === "division"
-            ? "Pilih division untuk melihat daftar SOP yang relevan, cek status pembelajaran Anda, lalu buka dokumen yang perlu dipelajari."
-            : "Pilih sub-kategori untuk melihat SOP yang relevan, cek status pembelajaran, dan buka dokumen yang perlu dipelajari."}
+        <p className="text-muted-foreground text-sm max-w-2xl">
+          {kategori === "sg" || kategori === "petunjuk"
+            ? "Cek status pembelajaran Anda, lalu buka dokumen yang perlu dipelajari."
+            : "Pilih division untuk melihat daftar SOP yang relevan, cek status pembelajaran Anda, lalu buka dokumen yang perlu dipelajari."}
         </p>
       </div>
 
-      {/* ─── Stats ──────────────────────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-brand rounded-xl p-5">
-          <div className="text-sm text-white/70 mb-1">Total Dokumen</div>
-          <div className="font-display font-bold text-3xl text-white">
-            {stats.total}
-          </div>
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="bg-foreground text-background rounded-xl p-4">
+          <div className="text-xs text-background/60 mb-1">Total Dokumen</div>
+          <div className="font-display font-bold text-2xl">{totalDocs}</div>
         </div>
-        <div className="bg-background border rounded-xl p-5">
-          <div className="text-sm text-muted-foreground mb-1">
+        <div className="bg-background border rounded-xl p-4">
+          <div className="text-xs text-muted-foreground mb-1">
             Sedang Dipelajari
           </div>
-          <div className="font-display font-bold text-3xl">
-            {stats.dipelajari}
+          <div className="font-display font-bold text-2xl">
+            {progressList.filter((p) => p.status === "dipelajari").length}
           </div>
         </div>
-        <div className="bg-background border rounded-xl p-5">
-          <div className="text-sm text-muted-foreground mb-1">Selesai</div>
-          <div className="font-display font-bold text-3xl text-green-600">
-            {stats.selesai}
+        <div className="bg-background border rounded-xl p-4">
+          <div className="text-xs text-muted-foreground mb-1">Selesai</div>
+          <div className="font-display font-bold text-2xl text-green-600">
+            {progressList.filter((p) => p.status === "selesai").length}
           </div>
         </div>
       </div>
 
-      {/* ─── 2-column layout: Sidebar + Content ──────────────────── */}
-      <div className="grid grid-cols-[280px_1fr] gap-6">
-        {/* SIDEBAR */}
-        <aside className="bg-background border rounded-xl overflow-hidden h-fit sticky top-20">
-          {/* Sidebar search */}
-          <div className="flex items-center gap-2 p-3 border-b">
-            <Search size={14} className="text-muted-foreground" />
-            <input
-              type="text"
-              placeholder={
-                mode === "division"
-                  ? "Cari divisi / departemen..."
-                  : "Cari sub-kategori..."
-              }
-              value={sidebarSearch}
-              onChange={(e) => setSidebarSearch(e.target.value)}
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-            />
-          </div>
-
-          {/* "Semua" option */}
-          <button
-            onClick={() => setSelection({ type: "all" })}
-            className={cn(
-              "w-full text-left px-4 py-3 text-sm border-b transition-colors hover:bg-muted/50",
-              selection.type === "all" &&
-                "bg-primary/10 text-primary font-medium"
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <span>Semua {mode === "division" ? "SOP" : "Sub-Kategori"}</span>
-              <span className="text-xs text-muted-foreground">
-                {documents.length}
-              </span>
+      {/* Layout: 2-column for sr/ss/sp, 1-column for sg/petunjuk */}
+      {kategori !== "sg" && kategori !== "petunjuk" ? (
+        // ─── 2-column layout ─────────────────────────────────────
+        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-5 items-start">
+          {/* SIDEBAR — Division/Department list */}
+          <aside className="bg-background border rounded-xl overflow-hidden">
+            {/* Sidebar search */}
+            <div className="flex items-center gap-2 px-3 py-2.5 border-b">
+              <Search size={13} className="text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Cari divisi / departemen..."
+                value={sidebarSearch}
+                onChange={(e) => setSidebarSearch(e.target.value)}
+                className="flex-1 text-xs bg-transparent border-none outline-none placeholder:text-muted-foreground"
+              />
             </div>
-          </button>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-3 py-2 border-b bg-muted/40">
+              Daftar Division
+            </div>
 
-          {/* Header */}
-          <div className="px-4 py-2 bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
-            {mode === "division" ? "Daftar Division" : "Daftar Sub-Kategori"}
-          </div>
+            {/* Division accordion */}
+            <div className="max-h-[600px] overflow-y-auto">
+              {/* "Semua" option */}
+              <button
+                onClick={() => setSelectedDeptId(null)}
+                className={`w-full flex items-center justify-between px-3 py-2.5 text-xs hover:bg-muted/40 transition-colors border-b ${
+                  !selectedDeptId ? "bg-foreground/5 font-medium" : ""
+                }`}
+              >
+                <span>Semua Division</span>
+                <span className="text-[10px] bg-muted text-muted-foreground rounded-full px-2 py-0.5">
+                  {totalDocs}
+                </span>
+              </button>
 
-          {/* List items */}
-          <div className="max-h-[600px] overflow-y-auto">
-            {mode === "division" &&
-              (filteredSidebarItems as Division[]).map((div) => {
-                const isDivSelected =
-                  selection.type === "division" && selection.id === div.id;
-                const isDivExpanded = expandedDivisions.has(div.id);
-                const hasDeptSelected =
-                  selection.type === "department" &&
-                  selection.divisionId === div.id;
+              {filteredDivisions.length === 0 && sidebarSearch && (
+                <div className="text-xs text-muted-foreground p-4 text-center">
+                  Tidak ada hasil
+                </div>
+              )}
 
+              {filteredDivisions.map((div) => {
+                const isExpanded = expandedDivisions.has(div.id);
+                const docCount = documents.filter(
+                  (d) =>
+                    d.department?.id &&
+                    div.departments.some((dp) => dp.id === d.department!.id)
+                ).length;
                 return (
                   <div key={div.id} className="border-b last:border-0">
-                    {/* Division row */}
-                    <div className="flex">
-                      <button
-                        onClick={() =>
-                          setSelection({ type: "division", id: div.id })
-                        }
-                        className={cn(
-                          "flex-1 text-left px-4 py-3 transition-colors hover:bg-muted/40",
-                          (isDivSelected || hasDeptSelected) &&
-                            "bg-primary/10"
-                        )}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span
-                            className={cn(
-                              "text-sm font-medium",
-                              (isDivSelected || hasDeptSelected) &&
-                                "text-primary"
-                            )}
-                          >
-                            {div.nama}
-                          </span>
-                          <span className="text-xs text-muted-foreground flex-shrink-0">
-                            {div.count}
-                          </span>
-                        </div>
-                        {div.deskripsi && (
-                          <div className="text-xs text-muted-foreground mt-0.5 truncate">
-                            {div.deskripsi}
-                          </div>
-                        )}
-                      </button>
-                      {div.departments.length > 0 && (
-                        <button
-                          onClick={() => toggleDivisionExpand(div.id)}
-                          className="px-3 hover:bg-muted/40 transition-colors text-muted-foreground"
-                          aria-label="Toggle departments"
-                        >
-                          <ChevronDown
-                            size={14}
-                            className={cn(
-                              "transition-transform",
-                              isDivExpanded && "rotate-180"
-                            )}
-                          />
-                        </button>
-                      )}
-                    </div>
+                    <button
+                      onClick={() => toggleDivision(div.id)}
+                      className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted/40 transition-colors text-left"
+                    >
+                      <span className="text-xs font-semibold flex-1 truncate pr-2">
+                        {div.nama}
+                      </span>
+                      <span className="flex items-center gap-1.5 flex-shrink-0">
+                        <span className="text-[10px] bg-muted text-muted-foreground rounded-full px-2 py-0.5">
+                          {docCount}
+                        </span>
+                        <ChevronDown
+                          size={11}
+                          className={`text-muted-foreground transition-transform ${
+                            isExpanded ? "rotate-180" : ""
+                          }`}
+                        />
+                      </span>
+                    </button>
 
-                    {/* Departments (expanded) */}
-                    {isDivExpanded && div.departments.length > 0 && (
+                    {isExpanded && (
                       <div className="bg-muted/20">
-                        <div className="px-4 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold pl-8">
+                        <div className="px-3 pt-1.5 pb-1 text-[10px] uppercase tracking-wider text-muted-foreground">
                           Departemen
                         </div>
                         {div.departments.map((dept) => {
-                          const isDeptSelected =
-                            selection.type === "department" &&
-                            selection.id === dept.id;
+                          const deptDocCount = documents.filter(
+                            (d) => d.department?.id === dept.id
+                          ).length;
                           return (
                             <button
                               key={dept.id}
-                              onClick={() =>
-                                setSelection({
-                                  type: "department",
-                                  id: dept.id,
-                                  divisionId: div.id,
-                                })
-                              }
-                              className={cn(
-                                "w-full text-left pl-8 pr-4 py-2 text-xs hover:bg-muted/50 transition-colors flex items-center justify-between gap-2 border-t border-border/50",
-                                isDeptSelected &&
-                                  "bg-primary/10 text-primary font-medium"
-                              )}
+                              onClick={() => setSelectedDeptId(dept.id)}
+                              className={`w-full flex items-center justify-between text-left text-xs px-5 py-1.5 hover:bg-muted/50 transition-colors ${
+                                selectedDeptId === dept.id
+                                  ? "bg-foreground/5 font-medium border-l-2 border-foreground"
+                                  : "text-muted-foreground"
+                              }`}
                             >
-                              <span>{dept.nama}</span>
-                              <span className="text-muted-foreground">
-                                {dept.count}
+                              <span className="truncate pr-2">{dept.nama}</span>
+                              <span className="text-[10px] flex-shrink-0">
+                                {deptDocCount}
                               </span>
                             </button>
                           );
@@ -379,218 +427,313 @@ export default function SopKategoriClient(props: Props) {
                   </div>
                 );
               })}
+            </div>
+          </aside>
 
-            {mode === "subcategory" &&
-              (filteredSidebarItems as Subcategory[]).map((sub) => {
-                const isSelected =
-                  selection.type === "subcategory" &&
-                  selection.id === sub.id;
-                return (
-                  <button
-                    key={sub.id}
-                    onClick={() =>
-                      setSelection({ type: "subcategory", id: sub.id })
-                    }
-                    className={cn(
-                      "w-full text-left px-4 py-3 border-b last:border-0 transition-colors hover:bg-muted/40",
-                      isSelected && "bg-primary/10"
-                    )}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span
-                        className={cn(
-                          "text-sm font-medium",
-                          isSelected && "text-primary"
-                        )}
-                      >
-                        {sub.nama}
-                      </span>
-                      <span className="text-xs text-muted-foreground flex-shrink-0">
-                        {sub.count}
-                      </span>
-                    </div>
-                    {sub.deskripsi && (
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        {sub.deskripsi}
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-
-            {filteredSidebarItems.length === 0 && (
-              <div className="px-4 py-8 text-center text-xs text-muted-foreground">
-                Tidak ada hasil
+          {/* MAIN CONTENT */}
+          <div>
+            {/* Selected header */}
+            <div className="mb-4">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">
+                {selectedDeptId ? "DEPARTMENT TERPILIH" : "SEMUA DIVISION"}
               </div>
-            )}
-          </div>
-        </aside>
-
-        {/* CONTENT */}
-        <div className="bg-background border rounded-xl p-6">
-          {/* Header content area */}
-          <div className="mb-4">
-            <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">
-              {selection.type === "all"
-                ? "TAMPILAN"
-                : selection.type === "subcategory"
-                ? "SUB-KATEGORI TERPILIH"
-                : selection.type === "department"
-                ? "DEPARTEMEN TERPILIH"
-                : "DIVISION TERPILIH"}
+              <h2 className="font-display font-bold text-xl">
+                {contentHeader.title}
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                {contentHeader.sub}
+              </p>
             </div>
-            <div className="font-display font-bold text-xl">{selectedName}</div>
-            <div className="text-sm text-muted-foreground">
-              {selectedSubtitle}
+
+            {/* Filter bar */}
+            <div className="flex flex-col sm:flex-row gap-2 mb-4">
+              <div className="flex-1 flex items-center gap-2 bg-background border rounded-lg px-3 py-2">
+                <Search size={14} className="text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Cari SOP..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="flex-1 text-sm bg-transparent border-none outline-none"
+                />
+              </div>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="bg-background border rounded-lg px-3 py-2 text-sm"
+              >
+                <option value="">Semua Status</option>
+                <option value="belum">Belum Dipelajari</option>
+                <option value="dipelajari">Sedang Dipelajari</option>
+                <option value="selesai">Selesai</option>
+              </select>
+              <select
+                value={tipeFilter}
+                onChange={(e) => setTipeFilter(e.target.value)}
+                className="bg-background border rounded-lg px-3 py-2 text-sm"
+              >
+                <option value="">Semua Jenis</option>
+                <option value="MP">Manual Prosedur</option>
+                <option value="PS">Panduan / Standar</option>
+                <option value="IK">Instruksi Kerja</option>
+              </select>
+            </div>
+
+            {/* Cards list */}
+            <div className="space-y-2.5">
+              {filteredDocs.map((doc) => (
+                <SopCard
+                  key={doc.id}
+                  doc={doc}
+                  progress={progressMap[doc.id]}
+                  onView={() => handleView(doc)}
+                  onDownload={() => handleDownload(doc)}
+                />
+              ))}
+              {filteredDocs.length === 0 && (
+                <div className="bg-background border rounded-xl p-12 text-center text-sm text-muted-foreground">
+                  Tidak ada SOP yang sesuai dengan filter.
+                </div>
+              )}
             </div>
           </div>
-
-          {/* Filter row */}
-          <div className="flex flex-col md:flex-row gap-3 mb-5">
-            <div className="relative flex-1">
-              <Search
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-              />
+        </div>
+      ) : (
+        // ─── Single column layout (sg & petunjuk) ────────────────
+        <div>
+          {/* Filter bar */}
+          <div className="flex flex-col sm:flex-row gap-2 mb-4">
+            <div className="flex-1 flex items-center gap-2 bg-background border rounded-lg px-3 py-2">
+              <Search size={14} className="text-muted-foreground" />
               <input
                 type="text"
                 placeholder="Cari SOP..."
-                value={contentSearch}
-                onChange={(e) => setContentSearch(e.target.value)}
-                className="w-full h-10 pl-9 pr-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 text-sm bg-transparent border-none outline-none"
               />
             </div>
+            {kategori === "sg" && relevantSubcats.length > 0 && (
+              <select
+                value={selectedSubcatId ?? ""}
+                onChange={(e) => setSelectedSubcatId(e.target.value || null)}
+                className="bg-background border rounded-lg px-3 py-2 text-sm"
+              >
+                <option value="">Semua Sub-Kategori</option>
+                {relevantSubcats.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.nama}
+                  </option>
+                ))}
+              </select>
+            )}
             <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring min-w-[160px]"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="bg-background border rounded-lg px-3 py-2 text-sm"
             >
-              <option value="">Status</option>
-              <option value="Sedang dipelajari">Sedang dipelajari</option>
-              <option value="Belum Dibaca">Belum Dibaca</option>
-              <option value="Selesai">Selesai</option>
+              <option value="">Semua Status</option>
+              <option value="belum">Belum Dipelajari</option>
+              <option value="dipelajari">Sedang Dipelajari</option>
+              <option value="selesai">Selesai</option>
             </select>
-            <select
-              value={filterTipe}
-              onChange={(e) => setFilterTipe(e.target.value)}
-              className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring min-w-[180px]"
-            >
-              <option value="">Jenis Dokumen</option>
-              <option value="MP">Manual Prosedur</option>
-              <option value="PS">Panduan / Standar</option>
-              <option value="IK">Instruksi Kerja</option>
-            </select>
-          </div>
-
-          {/* SOP cards */}
-          <div className="space-y-3">
-            {filteredDocs.map((doc) => (
-              <SopCard key={doc.id} doc={doc} />
-            ))}
-
-            {filteredDocs.length === 0 && (
-              <div className="py-12 text-center text-sm text-muted-foreground">
-                {documents.length === 0
-                  ? "Belum ada SOP untuk kategori ini."
-                  : "Tidak ada SOP yang cocok dengan filter Anda."}
-              </div>
+            {kategori !== "petunjuk" && (
+              <select
+                value={tipeFilter}
+                onChange={(e) => setTipeFilter(e.target.value)}
+                className="bg-background border rounded-lg px-3 py-2 text-sm"
+              >
+                <option value="">Semua Jenis</option>
+                <option value="MP">Manual Prosedur</option>
+                <option value="PS">Panduan / Standar</option>
+                <option value="IK">Instruksi Kerja</option>
+              </select>
             )}
           </div>
+
+          {/* Cards grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {filteredDocs.map((doc) => (
+              <SopCard
+                key={doc.id}
+                doc={doc}
+                progress={progressMap[doc.id]}
+                onView={() => handleView(doc)}
+                onDownload={() => handleDownload(doc)}
+              />
+            ))}
+          </div>
+          {filteredDocs.length === 0 && (
+            <div className="bg-background border rounded-xl p-12 text-center text-sm text-muted-foreground">
+              Tidak ada dokumen yang sesuai dengan filter.
+            </div>
+          )}
         </div>
-      </div>
+      )}
+
+      {/* Popup info modal */}
+      {popup && (
+        <InfoPopup
+          title={popup.title}
+          message={popup.message}
+          onClose={() => setPopup(null)}
+        />
+      )}
+
+      {/* PDF preview modal */}
+      {previewDoc && previewDoc.sopAttachments[0] && (
+        <PdfPreviewModal
+          open={!!previewDoc}
+          onClose={() => setPreviewDoc(null)}
+          title={previewDoc.judul}
+          fileUrl={`/api/files/sop-attachments/${previewDoc.sopAttachments[0].filename}`}
+        />
+      )}
     </div>
   );
 }
 
-// ─── SOP Card component ───────────────────────────────────────────────
-function SopCard({ doc }: { doc: SopDocument }) {
-  const tanggalStr = doc.tanggalBerlaku
-    ? new Date(doc.tanggalBerlaku).toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
-    : "—";
-
+// ─── SOP Card ─────────────────────────────────────────────────────────
+function SopCard({
+  doc,
+  progress,
+  onView,
+  onDownload,
+}: {
+  doc: Doc;
+  progress?: ProgressItem;
+  onView: () => void;
+  onDownload: () => void;
+}) {
   return (
-    <div className="border rounded-xl p-5 hover:border-primary/40 hover:shadow-sm transition-all">
-      {/* Top meta */}
-      <div className="flex items-center gap-2 mb-2 flex-wrap">
-        <span className="font-mono text-xs text-muted-foreground">
+    <div className="bg-background border rounded-xl p-4 hover:shadow-sm transition-shadow">
+      <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+        <span className="font-mono text-[11px] text-muted-foreground">
           {doc.kode}
         </span>
-        <StatusBadge status={doc.progressStatus} />
-        <span className="text-xs text-muted-foreground ml-auto">
-          {doc.versi} · {tanggalStr}
+        <StatusBadge status={progress?.status} />
+        <span className="text-[11px] text-muted-foreground ml-auto">
+          {doc.versi} ·{" "}
+          {doc.tanggalBerlaku
+            ? new Date(doc.tanggalBerlaku).toLocaleDateString("id-ID", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })
+            : "—"}
         </span>
       </div>
-
-      {/* Title */}
-      <div className="font-display font-bold text-base mb-1.5">
+      <h3 className="font-display font-bold text-base leading-snug mb-1.5">
         {doc.judul}
-      </div>
-
-      {/* Description */}
+      </h3>
       {doc.deskripsi && (
-        <p className="text-sm text-muted-foreground leading-relaxed mb-3 line-clamp-2">
+        <p className="text-xs text-muted-foreground leading-relaxed mb-3 line-clamp-2">
           {doc.deskripsi}
         </p>
       )}
-
-      {/* Actions */}
       <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 px-3 text-xs gap-1.5"
+        <button
+          onClick={onView}
+          title="Lihat dokumen"
+          className="text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-muted transition-colors flex items-center gap-1.5"
         >
           <Eye size={12} /> View
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 px-3 text-xs gap-1.5"
+        </button>
+        <button
+          onClick={onDownload}
+          title="Download dokumen"
+          className="text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-muted transition-colors flex items-center gap-1.5"
         >
           <Download size={12} /> Download
-        </Button>
-        <Link href={`/belajar/${doc.id}`} className="ml-auto">
-          <Button size="sm" className="h-8 px-3 text-xs gap-1.5">
-            <BookOpen size={12} /> Pelajari
-          </Button>
+        </button>
+        <Link
+          href={`/belajar/${doc.id}`}
+          className="ml-auto text-xs font-medium bg-foreground text-background rounded-lg px-3 py-1.5 hover:bg-foreground/90 transition-colors flex items-center gap-1.5"
+        >
+          <BookOpen size={12} /> Pelajari
         </Link>
       </div>
     </div>
   );
 }
 
-function StatusBadge({ status }: { status: string | null }) {
+// ─── Status Badge ─────────────────────────────────────────────────────
+function StatusBadge({ status }: { status?: string }) {
   if (!status || status === "belum") {
     return (
-      <span className="text-[10px] px-2 py-0.5 rounded-full border bg-muted text-muted-foreground border-border font-medium">
+      <span className="text-[10px] px-2 py-0.5 rounded-full border font-medium bg-gray-50 text-gray-600 border-gray-200">
         Belum Dibaca
       </span>
     );
   }
-  const map: Record<string, { className: string; label: string }> = {
+  const map: Record<string, { color: string; label: string }> = {
     dipelajari: {
-      className: "bg-amber-50 text-amber-700 border-amber-200",
+      color: "bg-amber-50 text-amber-700 border-amber-200",
       label: "Sedang dipelajari",
     },
     selesai: {
-      className: "bg-green-50 text-green-700 border-green-200",
+      color: "bg-green-50 text-green-700 border-green-200",
       label: "✓ Selesai",
     },
   };
-  const conf = map[status];
-  if (!conf) return null;
+  const cfg = map[status];
+  if (!cfg) return null;
   return (
     <span
-      className={cn(
-        "text-[10px] px-2 py-0.5 rounded-full border font-medium",
-        conf.className
-      )}
+      className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${cfg.color}`}
     >
-      {conf.label}
+      {cfg.label}
     </span>
+  );
+}
+
+// ─── Info Popup ───────────────────────────────────────────────────────
+function InfoPopup({
+  title,
+  message,
+  onClose,
+}: {
+  title: string;
+  message: string;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="bg-background rounded-2xl border w-full max-w-md overflow-hidden shadow-xl">
+        <div className="p-6">
+          <div className="flex items-start gap-3 mb-3">
+            <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+              <AlertCircle size={20} className="text-amber-600" />
+            </div>
+            <div className="flex-1 pt-1">
+              <h3 className="font-display font-bold text-lg">{title}</h3>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+              aria-label="Tutup"
+            >
+              <X size={18} />
+            </button>
+          </div>
+          <p className="text-sm text-muted-foreground leading-relaxed mb-5">
+            {message}
+          </p>
+          <div className="flex justify-end">
+            <button
+              onClick={onClose}
+              className="text-sm font-medium px-4 py-2 bg-foreground text-background rounded-lg hover:bg-foreground/90 transition-colors"
+            >
+              Mengerti
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

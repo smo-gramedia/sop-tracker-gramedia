@@ -245,7 +245,7 @@ model RawDocument {
 }
 
 // ─────────────────────────────────────────────
-// 6. SOP ATTACHMENTS (.zip — lampiran SOP)
+// 6. SOP ATTACHMENTS (PDF utama + lampiran)
 // ─────────────────────────────────────────────
 
 model SopAttachment {
@@ -256,6 +256,7 @@ model SopAttachment {
   ukuranKb      Int      @map("ukuran_kb")
   uploadedById  String   @map("uploaded_by")
   uploadedAt    DateTime @default(now()) @map("uploaded_at")
+  tipe          String   @default("lampiran")
 
   sopDocument SopDocument @relation(fields: [sopDocumentId], references: [id], onDelete: Cascade)
   uploadedBy  User        @relation(fields: [uploadedById], references: [id])
@@ -295,29 +296,6 @@ model FaqEntry {
 
   @@map("faqs")
 }
-
-await prisma.faqEntry.createMany({
-  data: [
-    {
-      pertanyaan: "Bagaimana cara mengakses SOP?",
-      jawaban: "Pilih kategori SOP di halaman Home, lalu klik dokumen yang ingin dipelajari.",
-      urutan: 0,
-      createdById: superadmin.id,
-    },
-    {
-      pertanyaan: "Berapa lama waktu untuk menyelesaikan satu SOP?",
-      jawaban: "Setiap SOP memiliki 7 step pembelajaran. Tahap baca dokumen minimal 20 menit, dilanjutkan upload bukti sosialisasi, dan post test (10 soal, 10 menit, passing 70).",
-      urutan: 1,
-      createdById: superadmin.id,
-    },
-    {
-      pertanyaan: "Apa yang terjadi jika bukti sosialisasi saya ditolak?",
-      jawaban: "Anda akan menerima notifikasi beserta alasan penolakan. Silakan upload ulang bukti yang sesuai. Tidak ada batasan jumlah upload ulang.",
-      urutan: 2,
-      createdById: superadmin.id,
-    },
-  ],
-});
 
 // ─────────────────────────────────────────────
 // 9. STORES
@@ -406,7 +384,7 @@ model ActivityLog {
   id            String   @id @default(uuid())
   userId        String   @map("user_id")
   sopDocumentId String?  @map("sop_document_id")
-  action        String   // e.g. "upload_bukti", "mulai_belajar", "selesai_post_test"
+  action        String
   deskripsi     String   @db.Text
   createdAt     DateTime @default(now()) @map("created_at")
 
@@ -427,7 +405,7 @@ model SosialisasiAttachment {
   filename      String
   mimeType      String           @map("mime_type")
   ukuranKb      Int              @map("ukuran_kb")
-  uploadKe      Int              @default(1) @map("upload_ke") // nomor urut upload
+  uploadKe      Int              @default(1) @map("upload_ke")
   status        AttachmentStatus @default(menunggu)
   alasanTolak   String?          @db.Text @map("alasan_tolak")
   reviewedById  String?          @map("reviewed_by")
@@ -474,7 +452,7 @@ model PostTestQuestion {
   opsiB        String @map("opsi_b")
   opsiC        String @map("opsi_c")
   opsiD        String @map("opsi_d")
-  jawabanBenar String @map("jawaban_benar") // "a" | "b" | "c" | "d"
+  jawabanBenar String @map("jawaban_benar")
 
   postTest PostTest @relation(fields: [postTestId], references: [id], onDelete: Cascade)
 
@@ -494,7 +472,7 @@ model PostTestResult {
   jumlahBenar    Int                  @map("jumlah_benar")
   jumlahSalah    Int                  @map("jumlah_salah")
   status         PostTestResultStatus
-  jawaban        Json                 // { "q1": "a", "q2": "c", ... }
+  jawaban        Json
   dikerjakanAt   DateTime             @default(now()) @map("dikerjakan_at")
   selesaiAt      DateTime?            @map("selesai_at")
 

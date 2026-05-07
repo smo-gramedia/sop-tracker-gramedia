@@ -26,13 +26,13 @@ export default async function HomePage() {
     include: { store: { select: { nama: true, kota: true } } },
   });
 
-  const sopMenus = [
-    { href: "/sop/sr", label: "SOP Operation", icon: "📦", desc: "Prosedur operasional ritel" },
-    { href: "/sop/ss", label: "SOP Supporting Unit", icon: "🏢", desc: "Prosedur unit pendukung" },
-    { href: "/sop/sp", label: "SOP Publishing & Education", icon: "📚", desc: "Prosedur penerbitan & edukasi" },
-    { href: "/sop/sg", label: "SOP General", icon: "🗂", desc: "Prosedur umum lintas divisi" },
-    { href: "/juklak", label: "Petunjuk Pelaksanaan", icon: "📋", desc: "Panduan pelaksanaan tugas" },
-  ];
+ const sopMenus = [
+  { href: "/sop/sr", label: "SOP Operation", icon: "/icon/sop-operation.png", desc: "Prosedur operasional ritel" },
+  { href: "/sop/ss", label: "SOP Supporting Unit", icon: "/icon/sop-support.png", desc: "Prosedur unit pendukung" },
+  { href: "/sop/sp", label: "SOP Publishing & Education", icon: "/icon/sop-publish.png", desc: "Prosedur penerbitan & edukasi" },
+  { href: "/sop/sg", label: "SOP General", icon: "/icon/sop-general.png", desc: "Prosedur umum lintas divisi" },
+  { href: "/juklak", label: "Petunjuk Pelaksanaan", icon: "/icon/juklak.png", desc: "Panduan pelaksanaan tugas" },
+];
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-10 space-y-10">

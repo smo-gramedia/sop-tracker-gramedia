@@ -1,6 +1,6 @@
-// src/components/user/PostTestFlow.tsx
 "use client";
 
+// src/components/user/PostTestFlow.tsx
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -66,7 +66,10 @@ type Props = {
   attachmentOk: boolean;
   myResults: HistoryItem[];
   sopJudul: string;
-  onCompleted: () => void; // dipanggil saat lulus (untuk push ke step 6)
+  hasPassedPostTest: boolean;
+  onResultSubmitted: (result: ResultData) => void;
+  onContinueToNext: () => void; // Lanjut ke step 6
+  onCancel: () => void; // Kembali ke step 4
 };
 
 type Screen = "entry" | "quiz" | "result";
@@ -75,36 +78,47 @@ const OPT_LABELS = ["A", "B", "C", "D"] as const;
 const OPT_KEYS = ["a", "b", "c", "d"] as const;
 
 // ═════════════════════════════════════════════════════════════════════
-// MAIN COMPONENT — orchestrator 3 screen
+// MAIN COMPONENT
 // ═════════════════════════════════════════════════════════════════════
 export default function PostTestFlow({
   postTest,
   attachmentOk,
   myResults,
   sopJudul,
-  onCompleted,
+  hasPassedPostTest,
+  onResultSubmitted,
+  onContinueToNext,
+  onCancel,
 }: Props) {
   const [screen, setScreen] = useState<Screen>("entry");
   const [currentResult, setCurrentResult] = useState<ResultData | null>(null);
 
-  // Locked state — bukti sosialisasi belum disetujui
+  // Gate: attachment belum disetujui
   if (!attachmentOk) {
     return (
-      <div className="flex flex-col items-center justify-center h-48 gap-3 text-center">
-        <Lock size={32} className="text-muted-foreground" />
-        <p className="font-semibold">Post Test Terkunci</p>
+      <div className="flex flex-col items-center justify-center py-16 gap-3 text-center max-w-md mx-auto">
+        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+          <Lock size={28} className="text-muted-foreground" />
+        </div>
+        <p className="font-semibold text-lg">Post Test Terkunci</p>
         <p className="text-sm text-muted-foreground">
-          Selesaikan upload bukti sosialisasi dan tunggu persetujuan admin.
+          Selesaikan upload bukti sosialisasi dan tunggu persetujuan admin
+          untuk membuka Post Test.
         </p>
+        <Button variant="outline" onClick={onCancel} className="mt-2">
+          ← Kembali ke Upload Bukti
+        </Button>
       </div>
     );
   }
 
-  // Belum ada post test
   if (!postTest) {
     return (
-      <div className="text-center text-muted-foreground py-12">
-        Post Test belum tersedia untuk SOP ini.
+      <div className="text-center text-muted-foreground py-16">
+        <p>Post Test belum tersedia untuk SOP ini.</p>
+        <Button variant="outline" onClick={onCancel} className="mt-4">
+          ← Kembali
+        </Button>
       </div>
     );
   }
@@ -114,14 +128,11 @@ export default function PostTestFlow({
       <QuizScreen
         postTest={postTest}
         sopJudul={sopJudul}
-        onCancel={() => setScreen("entry")}
+        onCancelQuiz={() => setScreen("entry")}
         onSubmitted={(result) => {
           setCurrentResult(result);
           setScreen("result");
-          if (result.status === "lulus") {
-            // Trigger update parent state ke step 6
-            onCompleted();
-          }
+          onResultSubmitted(result);
         }}
       />
     );
@@ -133,19 +144,19 @@ export default function PostTestFlow({
         result={currentResult}
         onClose={() => setScreen("entry")}
         onRetry={() => setScreen("quiz")}
-        onContinue={() => onCompleted()}
+        onContinueToNext={onContinueToNext}
       />
     );
   }
 
-  // Default: Entry screen
   return (
     <EntryScreen
       postTest={postTest}
       myResults={myResults}
+      hasPassedPostTest={hasPassedPostTest}
       onStart={() => setScreen("quiz")}
+      onContinueToNext={onContinueToNext}
       onViewResult={async (resultId) => {
-        // Fetch detail result lalu show
         try {
           const res = await fetch(`/api/post-test/result/${resultId}`);
           if (!res.ok) throw new Error("Gagal memuat detail");
@@ -166,38 +177,42 @@ export default function PostTestFlow({
 function EntryScreen({
   postTest,
   myResults,
+  hasPassedPostTest,
   onStart,
+  onContinueToNext,
   onViewResult,
 }: {
   postTest: PostTest;
   myResults: HistoryItem[];
+  hasPassedPostTest: boolean;
   onStart: () => void;
+  onContinueToNext: () => void;
   onViewResult: (resultId: string) => void;
 }) {
   return (
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="font-display font-bold text-2xl mb-2">Post Test</h2>
+          <h2 className="font-display font-bold text-3xl mb-2">Post Test</h2>
           <p className="text-sm text-muted-foreground">
             Kerjakan evaluasi untuk mengukur pemahaman Anda. Durasi:{" "}
             {postTest.durasiMenit} menit, {postTest.jumlahSoal} soal pilihan
-            ganda.
+            ganda. Passing grade: {postTest.passingGrade}%.
           </p>
         </div>
         <Button onClick={onStart} className="flex-shrink-0">
-          Mulai Post Test
+          {myResults.length > 0 ? "Coba Lagi" : "Mulai Post Test"}
         </Button>
       </div>
 
       {/* Riwayat */}
       <div className="bg-background border rounded-xl overflow-hidden">
         <div className="p-5 border-b">
-          <h3 className="font-display font-semibold">Riwayat</h3>
+          <h3 className="font-display font-semibold">Riwayat Percobaan</h3>
         </div>
 
         {myResults.length === 0 ? (
-          <div className="p-8 text-center text-sm text-muted-foreground">
+          <div className="p-12 text-center text-sm text-muted-foreground">
             Belum ada percobaan. Klik "Mulai Post Test" untuk memulai.
           </div>
         ) : (
@@ -208,7 +223,7 @@ function EntryScreen({
                   Tanggal
                 </th>
                 <th className="text-left px-5 py-3 font-medium text-muted-foreground">
-                  Persentase
+                  Skor
                 </th>
                 <th className="text-left px-5 py-3 font-medium text-muted-foreground">
                   Status
@@ -260,37 +275,58 @@ function EntryScreen({
           </table>
         )}
       </div>
+
+      {/* "Lanjut ke Penutup" hanya muncul kalau hasPassedPostTest */}
+      {hasPassedPostTest && (
+        <div className="flex justify-end">
+          <Button onClick={onContinueToNext} className="gap-1.5">
+            Lanjut ke Penutup <ChevronRight size={14} />
+          </Button>
+        </div>
+      )}
+
+      {/* Reminder kalau belum lulus */}
+      {!hasPassedPostTest && myResults.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+          <Lock size={16} className="text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="text-sm">
+            <div className="font-semibold text-amber-800 mb-0.5">
+              Belum lulus Post Test
+            </div>
+            <div className="text-amber-700 text-xs">
+              Anda harus mendapatkan skor minimal {postTest.passingGrade}% untuk
+              membuka halaman Penutup. Silakan coba lagi.
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // ═════════════════════════════════════════════════════════════════════
-// QUIZ SCREEN — full screen dengan timer + sidebar nomor + 1 soal at a time
+// QUIZ SCREEN
 // ═════════════════════════════════════════════════════════════════════
 function QuizScreen({
   postTest,
   sopJudul,
-  onCancel,
+  onCancelQuiz,
   onSubmitted,
 }: {
   postTest: PostTest;
   sopJudul: string;
-  onCancel: () => void;
+  onCancelQuiz: () => void;
   onSubmitted: (result: ResultData) => void;
 }) {
   const total = postTest.questions.length;
   const [current, setCurrent] = useState(0);
-  // answers: { [questionId]: 'a' | 'b' | 'c' | 'd' }
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
-
-  // Timer (countdown dari durasiMenit * 60 detik)
   const [secondsLeft, setSecondsLeft] = useState(postTest.durasiMenit * 60);
 
   useEffect(() => {
     if (submitting) return;
     if (secondsLeft <= 0) {
-      // Auto-submit ketika waktu habis
       handleSubmit();
       return;
     }
@@ -300,8 +336,7 @@ function QuizScreen({
   }, [secondsLeft, submitting]);
 
   const timerStr = formatTimer(secondsLeft);
-  const isUrgent = secondsLeft <= 60; // warna merah saat <= 1 menit
-
+  const isUrgent = secondsLeft <= 60;
   const q = postTest.questions[current];
   const selectedAnswer = answers[q.id];
 
@@ -352,9 +387,7 @@ function QuizScreen({
   }
 
   return (
-    // Fixed overlay covering entire viewport (di atas UserNavbar)
     <div className="fixed inset-0 bg-background z-50 flex flex-col">
-      {/* Top sticky header */}
       <div className="flex items-center justify-between px-6 h-14 border-b flex-shrink-0">
         <div className="text-sm font-medium text-muted-foreground">
           Soal {current + 1} dari {total}
@@ -369,12 +402,9 @@ function QuizScreen({
         </div>
       </div>
 
-      {/* Body: sidebar + main */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar nomor soal */}
         <aside className="w-[200px] flex-shrink-0 bg-muted/30 border-r p-4 overflow-y-auto">
           <div className="font-bold text-sm mb-3 leading-snug">{sopJudul}</div>
-
           <div className="grid grid-cols-5 gap-1.5 mb-4">
             {postTest.questions.map((qq, i) => {
               const isCurrent = i === current;
@@ -397,8 +427,6 @@ function QuizScreen({
               );
             })}
           </div>
-
-          {/* Legend */}
           <div className="text-[11px] text-muted-foreground space-y-1.5">
             <div className="flex items-center gap-1.5">
               <div className="w-3.5 h-3.5 rounded-sm bg-foreground" />
@@ -413,8 +441,6 @@ function QuizScreen({
               Belum dijawab
             </div>
           </div>
-
-          {/* Cancel button */}
           <button
             onClick={() => {
               if (
@@ -422,7 +448,7 @@ function QuizScreen({
                   "Yakin keluar dari Post Test? Jawaban Anda tidak akan disimpan."
                 )
               ) {
-                onCancel();
+                onCancelQuiz();
               }
             }}
             className="mt-6 w-full text-xs text-muted-foreground hover:text-destructive transition-colors flex items-center justify-center gap-1"
@@ -431,15 +457,11 @@ function QuizScreen({
           </button>
         </aside>
 
-        {/* Main soal */}
         <main className="flex-1 overflow-y-auto px-10 py-8">
           <div className="max-w-2xl mx-auto">
-            {/* Question */}
             <div className="text-base leading-relaxed font-medium mb-6">
               {q.pertanyaan}
             </div>
-
-            {/* Options */}
             <div className="space-y-2.5 mb-8">
               {OPT_KEYS.map((opt, i) => {
                 const text = q[`opsi${OPT_LABELS[i]}` as `opsiA`];
@@ -470,8 +492,6 @@ function QuizScreen({
                 );
               })}
             </div>
-
-            {/* Navigation */}
             <div className="flex justify-between items-center pt-4 border-t">
               <Button
                 variant="outline"
@@ -481,7 +501,6 @@ function QuizScreen({
               >
                 <ChevronLeft size={16} /> Sebelumnya
               </Button>
-
               {current === total - 1 ? (
                 <Button onClick={handleSubmit} disabled={submitting}>
                   {submitting ? "Mengirim..." : "Submit"}
@@ -500,18 +519,18 @@ function QuizScreen({
 }
 
 // ═════════════════════════════════════════════════════════════════════
-// RESULT SCREEN — split panel (stats kiri + review kanan)
+// RESULT SCREEN — split panel
 // ═════════════════════════════════════════════════════════════════════
 function ResultScreen({
   result,
   onClose,
   onRetry,
-  onContinue,
+  onContinueToNext,
 }: {
   result: ResultData;
   onClose: () => void;
   onRetry: () => void;
-  onContinue: () => void;
+  onContinueToNext: () => void;
 }) {
   const isPassed = result.status === "lulus";
   const tanggalStr = new Date(result.selesaiAt).toLocaleDateString("id-ID", {
@@ -527,7 +546,6 @@ function ResultScreen({
 
   return (
     <div className="fixed inset-0 bg-background z-50 flex flex-col">
-      {/* Top header */}
       <div className="flex items-center justify-between px-6 h-14 border-b flex-shrink-0">
         <h2 className="font-display font-bold text-lg">Hasil Post Test</h2>
         <button
@@ -539,9 +557,7 @@ function ResultScreen({
         </button>
       </div>
 
-      {/* Split: stats left + review right */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left panel: Statistics */}
         <aside className="w-[260px] flex-shrink-0 bg-muted/30 border-r p-6 overflow-y-auto">
           <div className="text-xs font-semibold mb-1">Tanggal Post Test :</div>
           <div className="text-sm">{tanggalStr}</div>
@@ -549,7 +565,6 @@ function ResultScreen({
             Pukul {waktuStr}
           </div>
 
-          {/* Score */}
           <div className="mb-6">
             <div className="text-xs text-muted-foreground mb-1">Score</div>
             <div className="font-display font-bold text-5xl leading-none">
@@ -565,7 +580,6 @@ function ResultScreen({
             </div>
           </div>
 
-          {/* Stats grid 2x2 */}
           <div className="grid grid-cols-2 gap-2.5 mb-6">
             <StatCard label="Total Soal" value={result.jumlahSoal} />
             <StatCard
@@ -581,7 +595,6 @@ function ResultScreen({
             <StatCard label="Passing" value={`${result.passingGrade}%`} />
           </div>
 
-          {/* Action buttons */}
           <div className="flex flex-col gap-2">
             <Button
               variant="outline"
@@ -590,15 +603,26 @@ function ResultScreen({
             >
               <RotateCw size={14} /> Ulangi Post Test
             </Button>
+            {/* HANYA muncul kalau lulus */}
             {isPassed && (
-              <Button onClick={onContinue} className="w-full">
-                Lanjut ke Penutup →
+              <Button onClick={onContinueToNext} className="w-full gap-1.5">
+                Lanjut ke Penutup <ChevronRight size={14} />
               </Button>
             )}
           </div>
+
+          {/* Pesan kalau tidak lulus */}
+          {!isPassed && (
+            <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 leading-relaxed">
+              <div className="font-semibold mb-1 flex items-center gap-1.5">
+                <Lock size={11} /> Penutup Terkunci
+              </div>
+              Anda perlu mendapat skor minimal {result.passingGrade}% untuk
+              membuka halaman Penutup. Silakan coba lagi.
+            </div>
+          )}
         </aside>
 
-        {/* Right panel: Review semua soal */}
         <main className="flex-1 overflow-y-auto px-9 py-7">
           <div className="max-w-3xl">
             {result.review.map((r, i) => {
@@ -623,15 +647,12 @@ function ResultScreen({
                       {isCorrect ? "✓ Benar" : "✗ Salah"}
                     </span>
                   </div>
-
                   <p className="text-sm leading-relaxed mb-3">{r.pertanyaan}</p>
-
                   <div className="space-y-1.5">
                     {OPT_KEYS.map((opt, j) => {
                       const text = r[`opsi${OPT_LABELS[j]}` as `opsiA`];
                       const isUserPick = r.jawabanUser === opt;
                       const isCorrectAns = r.jawabanBenar === opt;
-
                       return (
                         <div
                           key={opt}
@@ -681,7 +702,6 @@ function ResultScreen({
   );
 }
 
-// ─── StatCard kecil di Result panel kiri ────────────────────────────────
 function StatCard({
   label,
   value,
@@ -702,10 +722,7 @@ function StatCard({
         {label}
       </div>
       <div
-        className={cn(
-          "font-display font-bold text-2xl leading-none",
-          color
-        )}
+        className={cn("font-display font-bold text-2xl leading-none", color)}
       >
         {value}
       </div>
@@ -713,13 +730,10 @@ function StatCard({
   );
 }
 
-// ─── Helper format timer ────────────────────────────────────────────────
 function formatTimer(totalSeconds: number): string {
   if (totalSeconds < 0) totalSeconds = 0;
   const h = Math.floor(totalSeconds / 3600);
   const m = Math.floor((totalSeconds % 3600) / 60);
   const s = totalSeconds % 60;
-  return [h, m, s]
-    .map((n) => String(n).padStart(2, "0"))
-    .join(":");
+  return [h, m, s].map((n) => String(n).padStart(2, "0")).join(":");
 }

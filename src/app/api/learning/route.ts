@@ -1,16 +1,71 @@
+// src/app/api/learning/route.ts
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { getStepLockInfo } from "@/lib/learning-gates";
 
-// Update step progress
+// Update step progress with server-side gate enforcement
 export async function PATCH(req: Request) {
   const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { sopDocumentId, step } = await req.json();
 
+  // Validasi range
+  if (typeof step !== "number" || step < 0 || step > 6) {
+    return NextResponse.json(
+      { error: "Invalid step (must be 0-6)" },
+      { status: 400 }
+    );
+  }
+
+  // ─── SERVER-SIDE GATE ENFORCEMENT ──────────────────────────────────
+  // Cek attachment status & post test result untuk validasi
+  const [latestAttachment, postTest] = await Promise.all([
+    prisma.sosialisasiAttachment.findFirst({
+      where: { userId: session.user.id, sopDocumentId },
+      orderBy: { uploadedAt: "desc" },
+      select: { status: true },
+    }),
+    prisma.postTest.findUnique({
+      where: { sopDocumentId },
+      select: { id: true },
+    }),
+  ]);
+
+  // Cek apakah user pernah lulus post test
+  let hasPassedPostTest = false;
+  if (postTest) {
+    const passedResult = await prisma.postTestResult.findFirst({
+      where: {
+        userId: session.user.id,
+        postTestId: postTest.id,
+        status: "lulus",
+      },
+      select: { id: true },
+    });
+    hasPassedPostTest = !!passedResult;
+  }
+
+  const ctx = {
+    attachmentStatus: (latestAttachment?.status as any) ?? null,
+    hasPassedPostTest,
+  };
+
+  const lockInfo = getStepLockInfo(step, ctx);
+  if (lockInfo.locked) {
+    return NextResponse.json(
+      { error: lockInfo.reason || "Step belum accessible" },
+      { status: 403 }
+    );
+  }
+
+  // ─── PERSIST ──────────────────────────────────────────────────────
   const progress = await prisma.learningProgress.upsert({
-    where: { userId_sopDocumentId: { userId: session.user.id, sopDocumentId } },
+    where: {
+      userId_sopDocumentId: { userId: session.user.id, sopDocumentId },
+    },
     create: {
       userId: session.user.id,
       sopDocumentId,
@@ -28,7 +83,15 @@ export async function PATCH(req: Request) {
   });
 
   // Log activity
-  const stepLabels = ["Petunjuk","Akses Dokumen","Baca Dokumen","Lampiran","Upload Bukti","Post Test","Selesai"];
+  const stepLabels = [
+    "Petunjuk",
+    "Akses Dokumen",
+    "Baca Dokumen",
+    "Lampiran",
+    "Upload Bukti",
+    "Post Test",
+    "Selesai",
+  ];
   await prisma.activityLog.create({
     data: {
       userId: session.user.id,

@@ -3,24 +3,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Plus, Eye, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 import TambahDokumenModal from "./TambahDokumenModal";
-import EditDokumenModal from "./EditDokumenModal";
+import EditDokumenModal  from "./EditDokumenModal";
 import { deleteSopDocument } from "@/actions/sop-document";
 
 type Doc = {
   id: string;
   kode: string;
   judul: string;
-  deskripsi: string | null;
   kategori: string;
   tipe: string;
   status: string;
-  versi: string;
-  permittedAccess: string | null;
-  subcategoryId: string | null;
-  departmentId: string | null;
-  tanggalBerlaku: Date | string | null;
   createdAt: Date;
   department: { nama: string } | null;
 };
@@ -52,25 +46,18 @@ export default function UploadDokumenClient({
   subcategories,
 }: Props) {
   const router = useRouter();
-  const [tambahOpen, setTambahOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<Doc | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingDoc, setEditingDoc] = useState<Doc | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
 
-  // Flatten all departments from directorates → divisions → departments
-  const allDepartments = directorates.flatMap((dir) =>
-    dir.divisions.flatMap((div) =>
-      div.departments.map((d) => ({ id: d.id, nama: d.nama, kode: d.kode }))
-    )
-  );
-
   async function handleDelete(id: string) {
-    if (!confirm("Hapus dokumen ini?")) return;
+    if (!confirm("Hapus dokumen ini? Semua lampiran juga akan terhapus.")) return;
     setDeleting(id);
     try {
       await deleteSopDocument(id);
       router.refresh();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Gagal menghapus");
+      alert(e instanceof Error ? e.message : "Gagal hapus");
     } finally {
       setDeleting(null);
     }
@@ -86,7 +73,7 @@ export default function UploadDokumenClient({
               Upload Dokumen
             </h1>
           </div>
-          <Button className="gap-2" onClick={() => setTambahOpen(true)}>
+          <Button className="gap-2" onClick={() => setModalOpen(true)}>
             <Plus size={16} /> Tambah Dokumen
           </Button>
         </div>
@@ -140,16 +127,9 @@ export default function UploadDokumenClient({
                         variant="outline"
                         size="sm"
                         className="h-7 px-2.5 text-xs gap-1"
+                        onClick={() => setEditingDoc(doc)}
                       >
-                        <Eye size={12} /> View
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-7 px-2.5 text-xs gap-1"
-                        onClick={() => setEditTarget(doc)}
-                      >
-                        <Pencil size={12} /> Update
+                        <Pencil size={12} /> Edit
                       </Button>
                       <Button
                         variant="outline"
@@ -158,7 +138,7 @@ export default function UploadDokumenClient({
                         onClick={() => handleDelete(doc.id)}
                         disabled={deleting === doc.id}
                       >
-                        <Trash2 size={12} />
+                        <Trash2 size={12} />{" "}
                         {deleting === doc.id ? "..." : "Hapus"}
                       </Button>
                     </div>
@@ -184,19 +164,21 @@ export default function UploadDokumenClient({
       </div>
 
       <TambahDokumenModal
-        open={tambahOpen}
-        onClose={() => setTambahOpen(false)}
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
         directorates={directorates}
         subcategories={subcategories}
       />
 
-      <EditDokumenModal
-        open={editTarget !== null}
-        onClose={() => setEditTarget(null)}
-        sop={editTarget}
-        departments={allDepartments}
-        subcategories={subcategories}
-      />
+      {editingDoc && (
+        <EditDokumenModal
+          open={!!editingDoc}
+          onClose={() => setEditingDoc(null)}
+          doc={editingDoc}
+          directorates={directorates}
+          subcategories={subcategories}
+        />
+      )}
     </>
   );
 }
