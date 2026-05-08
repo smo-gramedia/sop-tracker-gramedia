@@ -1,0 +1,164 @@
+// src/components/user/RankingPanel.tsx
+import { Trophy, Award, TrendingUp } from "lucide-react";
+import type { RankingEntry } from "@/lib/ranking";
+
+type Props = {
+  top: RankingEntry[];
+  me: RankingEntry | null;
+  isInTop: boolean;
+  currentUserId: string;
+  totalRanked: number;
+};
+
+export default function RankingPanel({
+  top,
+  me,
+  isInTop,
+  currentUserId,
+  totalRanked,
+}: Props) {
+  return (
+    <div className="bg-gradient-to-br from-amber-50 via-orange-50 to-pink-50 rounded-2xl border border-amber-100 p-6 hover-lift">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-2 mb-5">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-md">
+            <Trophy size={16} className="text-white" />
+          </div>
+          <div>
+            <div className="font-display font-bold text-base">Top Learners</div>
+            <div className="text-[10px] text-muted-foreground">
+              {totalRanked} pelajar aktif
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* List */}
+      {top.length === 0 ? (
+        <div className="text-xs text-muted-foreground py-6 text-center bg-white/60 rounded-xl">
+          <Trophy size={20} className="mx-auto text-muted-foreground/40 mb-2" />
+          <p>Belum ada pelajar yang menyelesaikan SOP.</p>
+          <p className="font-semibold mt-1">Jadilah yang pertama! 🚀</p>
+        </div>
+      ) : (
+        <div className="space-y-1.5">
+          {top.map((entry) => (
+            <RankingRow
+              key={entry.userId}
+              entry={entry}
+              isCurrentUser={entry.userId === currentUserId}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Posisi user sendiri (kalau bukan top 10) */}
+      {me && !isInTop && (
+        <>
+          <div className="border-t border-amber-200/60 my-4" />
+          <div className="flex items-center gap-1.5 mb-2">
+            <Award size={11} className="text-primary" />
+            <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
+              Posisi Anda
+            </span>
+          </div>
+          <RankingRow entry={me} isCurrentUser />
+        </>
+      )}
+
+      {/* Empty state untuk user yang belum punya progress */}
+      {!me && top.length > 0 && (
+        <>
+          <div className="border-t border-amber-200/60 my-4" />
+          <div className="bg-white/60 rounded-xl p-3 text-center">
+            <TrendingUp
+              size={16}
+              className="mx-auto text-primary mb-1.5"
+            />
+            <p className="text-xs text-foreground font-medium">
+              Selesaikan SOP pertama Anda
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              dan masuk ranking 🚀
+            </p>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function RankingRow({
+  entry,
+  isCurrentUser,
+}: {
+  entry: RankingEntry;
+  isCurrentUser: boolean;
+}) {
+  const isTop3 = entry.rank <= 3;
+  const medal =
+    entry.rank === 1
+      ? "🥇"
+      : entry.rank === 2
+      ? "🥈"
+      : entry.rank === 3
+      ? "🥉"
+      : null;
+
+  return (
+    <div
+      className={`flex items-center gap-2.5 rounded-xl p-2 transition-all ${
+        isCurrentUser
+          ? "bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-primary/30 shadow-sm"
+          : isTop3
+          ? "bg-white/70 hover:bg-white"
+          : "hover:bg-white/50"
+      }`}
+    >
+      {/* Rank / Medal */}
+      <div className="w-7 flex-shrink-0 flex items-center justify-center">
+        {medal ? (
+          <span className="text-lg leading-none">{medal}</span>
+        ) : (
+          <span
+            className={`text-[11px] font-bold ${
+              isCurrentUser ? "text-primary" : "text-muted-foreground"
+            }`}
+          >
+            #{entry.rank}
+          </span>
+        )}
+      </div>
+
+      {/* Name & unit */}
+      <div className="flex-1 min-w-0">
+        <div
+          className={`text-xs font-semibold truncate ${
+            isCurrentUser ? "text-primary" : ""
+          }`}
+        >
+          {entry.nama}
+          {isCurrentUser && (
+            <span className="ml-1.5 text-[9px] bg-primary/15 text-primary px-1.5 py-0.5 rounded-full font-bold">
+              ANDA
+            </span>
+          )}
+        </div>
+        <div className="text-[10px] text-muted-foreground truncate">
+          {entry.unit ?? entry.jabatan ?? "—"}
+        </div>
+      </div>
+
+      {/* Score */}
+      <div className="flex-shrink-0 text-right bg-white/80 rounded-lg px-2 py-1">
+        <div className="text-xs font-bold text-green-600 leading-none">
+          {entry.selesaiCount}
+        </div>
+        <div className="text-[9px] text-muted-foreground leading-tight mt-0.5">
+          SOP
+        </div>
+      </div>
+    </div>
+  );
+}

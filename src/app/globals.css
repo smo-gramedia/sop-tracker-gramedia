@@ -4,58 +4,49 @@
 
 @layer base {
   :root {
-    /* Surface */
+    /* Base */
     --background: 0 0% 100%;
-    --foreground: 0 0% 10%;
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
-    --border: 0 0% 89%;
-    --input: 0 0% 89%;
+    --foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
 
-    /*
-      Primary = Gramedia Blue (#2563EB / Tailwind blue-600)
-      Dipakai untuk button, link aktif, focus ring, accent kecil
-    */
-    --primary: 217 91% 60%;
+    /* Primary — Coursera blue */
+    --primary: 217 91% 50%;
     --primary-foreground: 0 0% 100%;
 
-    /*
-      Brand Dark = biru gelap untuk hero card & section spotlight
-      ~#1E40AF (Tailwind blue-800)
-    */
-    --brand-dark: 224 76% 40%;
-    --brand-dark-foreground: 0 0% 100%;
+    /* Secondary */
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
 
-    /* Secondary tetap subtle gray */
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 9%;
-
-    --accent: 0 0% 96%;
-    --accent-foreground: 0 0% 9%;
-
+    /* Destructive */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
+    --ring: 217 91% 50%;
+    --radius: 0.75rem;
 
-    /* Focus ring jadi biru */
-    --ring: 217 91% 60%;
-    --radius: 0.5rem;
+    /* Brand vibrant gradient stops */
+    --brand-from: 217 91% 50%;
+    --brand-via: 250 84% 60%;
+    --brand-to: 322 75% 60%;
   }
 
   .dark {
-    --background: 0 0% 6%;
-    --foreground: 0 0% 98%;
-    --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 60%;
-    --border: 0 0% 18%;
-    --input: 0 0% 18%;
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
+    --muted: 222 30% 12%;
+    --muted-foreground: 215 20% 65%;
+    --border: 222 30% 18%;
+    --input: 222 30% 18%;
     --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
-    --brand-dark: 224 76% 40%;
-    --brand-dark-foreground: 0 0% 100%;
-    --secondary: 0 0% 12%;
-    --secondary-foreground: 0 0% 98%;
-    --accent: 0 0% 12%;
-    --accent-foreground: 0 0% 98%;
+    --secondary: 222 30% 12%;
+    --secondary-foreground: 210 40% 98%;
+    --accent: 222 30% 12%;
+    --accent-foreground: 210 40% 98%;
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 98%;
     --ring: 217 91% 60%;
@@ -71,24 +62,116 @@
   }
 }
 
-/* Brand utility classes — biar bisa pakai bg-brand, text-brand di JSX */
+/* ─── Coursera-inspired animations ──────────────────────────── */
 @layer utilities {
+  /* Vibrant brand gradient */
   .bg-brand {
-    background-color: hsl(var(--brand-dark));
-    color: hsl(var(--brand-dark-foreground));
+    background: linear-gradient(
+      135deg,
+      hsl(var(--brand-from)) 0%,
+      hsl(var(--brand-via)) 50%,
+      hsl(var(--brand-to)) 100%
+    );
   }
-  .text-brand {
-    color: hsl(var(--primary));
+
+  .bg-brand-soft {
+    background: linear-gradient(
+      135deg,
+      hsl(217 91% 95%) 0%,
+      hsl(250 84% 95%) 50%,
+      hsl(322 75% 95%) 100%
+    );
   }
-  .text-brand-dark {
-    color: hsl(var(--brand-dark));
+
+  /* Mesh background for hero */
+  .bg-mesh-hero {
+    background-color: hsl(217 91% 50%);
+    background-image:
+      radial-gradient(at 20% 30%, hsla(322, 75%, 70%, 0.4) 0px, transparent 50%),
+      radial-gradient(at 80% 20%, hsla(250, 84%, 70%, 0.5) 0px, transparent 50%),
+      radial-gradient(at 60% 80%, hsla(199, 89%, 60%, 0.4) 0px, transparent 50%);
   }
-  .border-brand {
-    border-color: hsl(var(--primary));
+
+  /* Per-kategori gradient backgrounds (Coursera-style colorful cards) */
+  .bg-cat-sr {
+    background: linear-gradient(135deg, #d1fae5 0%, #ecfccb 100%);
   }
-  .bg-brand-light {
-    /* untuk subtle backgrounds, mis: badge, alert info */
-    background-color: hsl(var(--primary) / 0.1);
-    color: hsl(var(--brand-dark));
+  .bg-cat-ss {
+    background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
+  }
+  .bg-cat-sp {
+    background: linear-gradient(135deg, #f3e8ff 0%, #fce7f3 100%);
+  }
+  .bg-cat-sg {
+    background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%);
+  }
+  .bg-cat-petunjuk {
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  }
+
+  /* Smooth animations */
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.6s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.4s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Hover lift effect */
+  .hover-lift {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Subtle glow on hover */
+  .hover-glow {
+    transition: box-shadow 0.3s ease;
+  }
+  .hover-glow:hover {
+    box-shadow: 0 0 0 4px hsl(217 91% 50% / 0.1);
+  }
+
+  /* Decorative blob for hero */
+  .blob-decoration {
+    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
   }
 }
