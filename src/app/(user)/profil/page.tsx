@@ -2,9 +2,9 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import { Settings } from "lucide-react";
 import { formatTanggal } from "@/lib/utils";
 import { SOP_KATEGORI_LABEL } from "@/lib/constants";
-import { Settings } from "lucide-react";
 
 export default async function ProfilPage() {
   const session = await auth();
@@ -42,9 +42,9 @@ export default async function ProfilPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-8 space-y-6">
-      {/* Profile header — avatar biru Gramedia */}
+      {/* Profile header */}
       <div className="bg-background rounded-2xl border p-6 flex items-start gap-6">
-        <div className="w-16 h-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-display font-bold text-2xl flex-shrink-0">
+        <div className="w-16 h-16 rounded-full bg-foreground text-background flex items-center justify-center font-display font-bold text-2xl flex-shrink-0">
           {user?.nama.charAt(0).toUpperCase()}
         </div>
         <div className="flex-1 min-w-0">
@@ -56,24 +56,21 @@ export default async function ProfilPage() {
             {user?.kodeKaryawan && (
               <span>
                 ID:{" "}
-                <strong className="text-foreground">{user.kodeKaryawan}</strong>
+                <strong className="text-foreground">
+                  {user.kodeKaryawan}
+                </strong>
               </span>
             )}
             {user?.unit && (
               <span>
-                Unit: <strong className="text-foreground">{user.unit}</strong>
+                Unit:{" "}
+                <strong className="text-foreground">{user.unit}</strong>
               </span>
             )}
             {user?.jabatan && (
               <span>
                 Jabatan:{" "}
                 <strong className="text-foreground">{user.jabatan}</strong>
-              </span>
-            )}
-            {user?.section && (
-              <span>
-                Section:{" "}
-                <strong className="text-foreground">{user.section}</strong>
               </span>
             )}
             {user?.joinedAt && (
@@ -83,12 +80,13 @@ export default async function ProfilPage() {
         </div>
         <Link
           href="/profil/settings"
-          className="text-sm text-muted-foreground hover:text-primary hover:border-primary/40 border rounded-lg px-3 py-1.5 flex items-center gap-1.5 transition-colors"
+          className="text-sm text-muted-foreground hover:text-foreground border rounded-lg px-3 py-1.5 flex items-center gap-1.5"
         >
           <Settings size={14} /> Pengaturan
         </Link>
       </div>
 
+      {/* Stats cards */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-background rounded-xl border p-5">
           <div className="text-3xl font-display font-bold text-green-600">
@@ -106,14 +104,14 @@ export default async function ProfilPage() {
         </div>
         <Link
           href="/notifikasi"
-          className="bg-background rounded-xl border p-5 relative hover:shadow-md hover:border-primary/40 transition-all"
+          className="bg-background rounded-xl border p-5 relative hover:shadow-sm transition-shadow"
         >
           {unreadNotif > 0 && (
             <span className="absolute top-4 right-4 bg-destructive text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
               {unreadNotif}
             </span>
           )}
-          <div className="text-3xl font-display font-bold text-primary">
+          <div className="text-3xl font-display font-bold">
             {notifications.length}
           </div>
           <div className="text-sm text-muted-foreground mt-1">Notifikasi</div>
@@ -143,18 +141,18 @@ export default async function ProfilPage() {
                   </div>
                 </div>
                 <span
-                  className={`text-xs px-2 py-0.5 rounded-full border flex-shrink-0 ${
+                  className={`text-xs px-2 py-0.5 rounded-full border flex-shrink-0 font-medium ${
                     p.status === "selesai"
                       ? "bg-green-50 text-green-700 border-green-200"
                       : p.status === "dipelajari"
-                      ? "bg-blue-50 text-blue-700 border-blue-200"
-                      : "bg-muted text-muted-foreground border-border"
+                      ? "bg-amber-50 text-amber-700 border-amber-200"
+                      : "bg-gray-50 text-gray-600 border-gray-200"
                   }`}
                 >
                   {p.status === "selesai"
                     ? "✓ Selesai"
                     : p.status === "dipelajari"
-                    ? "Dipelajari"
+                    ? "Sedang dipelajari"
                     : "Belum"}
                 </span>
               </Link>
