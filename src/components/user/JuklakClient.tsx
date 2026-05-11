@@ -1,147 +1,265 @@
-// src/components/user/JuklakClient.tsx
 "use client";
 
+// src/components/user/JuklakClient.tsx
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Search, Eye, Download, BookOpen } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import {
+  Search,
+  Eye,
+  Download,
+  BookOpen,
+  Sparkles,
+  AlertCircle,
+  X,
+  CheckCircle2,
+  Clock,
+  Circle,
+  FileText,
+} from "lucide-react";
+import PdfPreviewModal from "./PdfPreviewModal";
+
+type ProgressData = {
+  stepCurrent: number;
+  status: string;
+};
 
 type Document = {
   id: string;
   kode: string;
   judul: string;
+  deskripsi: string | null;
+  versi: string;
   tanggalBerlaku: string | null;
   permittedAccess: string | null;
   departmentNama: string | null;
-  progressStatus: "belum" | "dipelajari" | "selesai" | null;
+  sopAttachments: { id: string; filename: string }[];
 };
 
 type Props = {
   documents: Document[];
+  progressMap: Record<string, ProgressData>;
   accessValues: string[];
   departmentValues: string[];
+  isAdmin: boolean;
+};
+
+// Theme untuk Petunjuk Pelaksanaan (slate-gray)
+const THEME = {
+  gradient: "from-slate-600 via-slate-700 to-zinc-800",
+  badge: "bg-slate-100 text-slate-700",
+  icon: "📋",
 };
 
 export default function JuklakClient({
   documents,
+  progressMap,
   accessValues,
   departmentValues,
+  isAdmin,
 }: Props) {
+  // Filter state
   const [search, setSearch] = useState("");
   const [filterDept, setFilterDept] = useState("");
   const [filterAccess, setFilterAccess] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+
+  // Modal state
+  const [previewDoc, setPreviewDoc] = useState<Document | null>(null);
+  const [popup, setPopup] = useState<{ title: string; message: string } | null>(
+    null
+  );
 
   // Filter logic
   const filtered = useMemo(() => {
     return documents.filter((doc) => {
-      // Search by judul or kode
       if (search.trim()) {
         const q = search.toLowerCase();
         if (
           !doc.judul.toLowerCase().includes(q) &&
-          !doc.kode.toLowerCase().includes(q)
+          !doc.kode.toLowerCase().includes(q) &&
+          !(doc.deskripsi?.toLowerCase().includes(q) ?? false)
         ) {
           return false;
         }
       }
-      // Filter by departemen
       if (filterDept && doc.departmentNama !== filterDept) return false;
-      // Filter by permitted access
       if (filterAccess && doc.permittedAccess !== filterAccess) return false;
+      if (statusFilter) {
+        const progress = progressMap[doc.id];
+        if (statusFilter === "selesai") {
+          if (progress?.status !== "selesai") return false;
+        } else if (statusFilter === "dipelajari") {
+          if (progress?.status !== "dipelajari") return false;
+        } else if (statusFilter === "belum") {
+          if (progress && progress.status !== "belum") return false;
+        }
+      }
       return true;
     });
-  }, [documents, search, filterDept, filterAccess]);
+  }, [documents, search, filterDept, filterAccess, statusFilter, progressMap]);
+
+  // Stats
+  const selesaiCount = Object.values(progressMap).filter(
+    (p) => p.status === "selesai"
+  ).length;
+  const dipelajariCount = Object.values(progressMap).filter(
+    (p) => p.status === "dipelajari"
+  ).length;
+
+  // Gating logic (sama dengan SOP kategori lain)
+  function getActionLock(
+    doc: Document
+  ): { title: string; message: string } | null {
+    if (isAdmin) return null;
+    const progress = progressMap[doc.id];
+    if (!progress || progress.status === "belum") {
+      return {
+        title: "Petunjuk Belum Dipelajari",
+        message:
+          "Silakan pelajari Petunjuk Pelaksanaan terlebih dahulu sebelum dapat melihat atau mengunduh dokumen.",
+      };
+    }
+    const isCompleted =
+      progress.status === "selesai" && progress.stepCurrent === 6;
+    if (!isCompleted) {
+      return {
+        title: "Pembelajaran Belum Selesai",
+        message:
+          "Pembelajaran Petunjuk Pelaksanaan harus diselesaikan terlebih dahulu (100%) sebelum Anda dapat melihat atau mengunduh dokumen.",
+      };
+    }
+    return null;
+  }
+
+  function handleView(doc: Document) {
+    const lock = getActionLock(doc);
+    if (lock) {
+      setPopup(lock);
+      return;
+    }
+    if (!doc.sopAttachments || doc.sopAttachments.length === 0) {
+      setPopup({
+        title: "Dokumen Belum Tersedia",
+        message:
+          "PDF utama untuk Petunjuk Pelaksanaan ini belum di-upload oleh admin. Hubungi admin untuk informasi lebih lanjut.",
+      });
+      return;
+    }
+    setPreviewDoc(doc);
+  }
+
+  function handleDownload(doc: Document) {
+    const lock = getActionLock(doc);
+    if (lock) {
+      setPopup(lock);
+      return;
+    }
+    if (!doc.sopAttachments || doc.sopAttachments.length === 0) {
+      setPopup({
+        title: "Dokumen Belum Tersedia",
+        message:
+          "PDF utama untuk Petunjuk Pelaksanaan ini belum di-upload oleh admin. Hubungi admin untuk informasi lebih lanjut.",
+      });
+      return;
+    }
+    window.location.href = `/api/sop/${doc.id}/download`;
+  }
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-10">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="text-xs uppercase tracking-wider text-primary mb-2 font-semibold">
-          Petunjuk Pelaksanaan
+    <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
+      {/* Hero — gradient slate */}
+      <div
+        className={`relative bg-gradient-to-br ${THEME.gradient} rounded-3xl overflow-hidden animate-fade-in`}
+      >
+        <div className="absolute -top-12 -right-12 w-64 h-64 bg-white/10 blob-decoration" />
+        <div className="absolute -bottom-20 -left-12 w-72 h-72 bg-white/5 blob-decoration" />
+
+        <div className="relative px-8 py-10 md:px-12">
+          <div className="flex items-start justify-between gap-6 flex-wrap">
+            <div className="flex-1 min-w-[280px]">
+              <h1 className="font-display font-bold text-3xl md:text-4xl text-white leading-tight mb-3">
+                Temukan Petunjuk Pelaksanaan
+                <br />
+                <span className="text-white/90">
+                  dengan lebih cepat dan terstruktur.
+                </span>
+              </h1>
+              <p className="text-white/80 text-sm leading-relaxed max-w-xl">
+                Halaman ini menampilkan seluruh juklak yang dapat diakses
+                berdasarkan unit atau departemen. Cek status pembelajaran Anda,
+                lalu buka dokumen yang perlu dipelajari.
+              </p>
+            </div>
+          </div>
+
+          {/* Stats inline */}
+          <div className="grid grid-cols-3 gap-3 mt-6">
+            <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+              <div className="text-white text-2xl font-display font-bold">
+                {documents.length}
+              </div>
+              <div className="text-white/70 text-xs">Total Dokumen</div>
+            </div>
+            <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+              <div className="text-white text-2xl font-display font-bold">
+                {dipelajariCount}
+              </div>
+              <div className="text-white/70 text-xs">Sedang Dipelajari</div>
+            </div>
+            <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+              <div className="text-white text-2xl font-display font-bold">
+                {selesaiCount}
+              </div>
+              <div className="text-white/70 text-xs">Selesai</div>
+            </div>
+          </div>
         </div>
-        <h1 className="font-display font-bold text-4xl mb-3">
-          Petunjuk Pelaksanaan
-        </h1>
-        <p className="text-muted-foreground max-w-2xl">
-          Halaman ini menampilkan seluruh juklak yang dapat diakses berdasarkan
-          unit atau departemen.
-        </p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
-        <div className="bg-brand rounded-xl p-5">
-          <div className="text-sm text-white/70 mb-1">Total Dokumen</div>
-          <div className="font-display font-bold text-3xl text-white">
-            {documents.length}
-          </div>
+      {/* Filter Bar */}
+      <div className="flex flex-col sm:flex-row gap-2 animate-slide-up">
+        <div className="flex-1 flex items-center gap-2 bg-background border rounded-xl px-3 py-2 focus-within:ring-2 focus-within:ring-primary/20 transition-shadow">
+          <Search size={14} className="text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Cari juklak berdasarkan judul, kode, atau deskripsi..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1 text-sm bg-transparent border-none outline-none"
+          />
         </div>
-        <div className="bg-background border rounded-xl p-5">
-          <div className="text-sm text-muted-foreground mb-1">
-            Kategori Aktif
-          </div>
-          <div className="font-display font-bold text-xl">
-            {departmentValues.length > 0
-              ? `${departmentValues.length} Departemen`
-              : "Semua Akses"}
-          </div>
-        </div>
-        <div className="bg-background border rounded-xl p-5">
-          <div className="text-sm text-muted-foreground mb-1">Akses Aktif</div>
-          <div className="font-display font-bold text-xl">
-            {accessValues.length > 0
-              ? `${accessValues.length} Tipe`
-              : "Semua Akses"}
-          </div>
-        </div>
-      </div>
 
-      {/* Search + Filter Card */}
-      <div className="bg-background rounded-xl border p-6 mb-6">
-        <h3 className="font-display font-semibold text-lg mb-1">
-          Cari juklak yang Anda butuhkan
-        </h3>
-        <p className="text-sm text-muted-foreground mb-5">
-          Tabel menampilkan daftar juklak dengan informasi nomor, subjek,
-          tanggal berlaku, dan akses.
-        </p>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="bg-background border rounded-xl px-3 py-2 text-sm"
+        >
+          <option value="">Semua Status</option>
+          <option value="belum">Belum Dipelajari</option>
+          <option value="dipelajari">Sedang Dipelajari</option>
+          <option value="selesai">Selesai</option>
+        </select>
 
-        <div className="flex flex-col md:flex-row gap-3 mb-5">
-          {/* Search input */}
-          <div className="relative flex-1">
-            <Search
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-            />
-            <Input
-              type="text"
-              placeholder="Cari judul juklak..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-
-          {/* Filter departemen */}
+        {departmentValues.length > 0 && (
           <select
             value={filterDept}
             onChange={(e) => setFilterDept(e.target.value)}
-            className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring min-w-[180px]"
+            className="bg-background border rounded-xl px-3 py-2 text-sm"
           >
-            <option value="">Semua Kategori</option>
+            <option value="">Semua Departemen</option>
             {departmentValues.map((d) => (
               <option key={d} value={d}>
                 {d}
               </option>
             ))}
           </select>
+        )}
 
-          {/* Filter access */}
+        {accessValues.length > 0 && (
           <select
             value={filterAccess}
             onChange={(e) => setFilterAccess(e.target.value)}
-            className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring min-w-[180px]"
+            className="bg-background border rounded-xl px-3 py-2 text-sm"
           >
             <option value="">Semua Akses</option>
             {accessValues.map((a) => (
@@ -150,137 +268,284 @@ export default function JuklakClient({
               </option>
             ))}
           </select>
+        )}
+      </div>
+
+      {/* Cards grid */}
+      {filtered.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 animate-slide-up">
+          {filtered.map((doc) => (
+            <JuklakCard
+              key={doc.id}
+              doc={doc}
+              progress={progressMap[doc.id]}
+              onView={() => handleView(doc)}
+              onDownload={() => handleDownload(doc)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="bg-background border rounded-2xl p-12 text-center animate-slide-up">
+          <div className="w-12 h-12 rounded-full bg-muted/60 mx-auto mb-3 flex items-center justify-center">
+            <FileText size={20} className="text-muted-foreground/60" />
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {documents.length === 0
+              ? "Belum ada juklak yang tersedia."
+              : "Tidak ada juklak yang cocok dengan filter Anda."}
+          </p>
+          {documents.length > 0 && (
+            <p className="text-xs text-muted-foreground/70 mt-1">
+              Coba ubah filter atau search keyword.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Footer count */}
+      {filtered.length > 0 && (
+        <div className="text-xs text-muted-foreground text-right">
+          Menampilkan {filtered.length} dari {documents.length} juklak
+        </div>
+      )}
+
+      {/* Popup info modal */}
+      {popup && (
+        <InfoPopup
+          title={popup.title}
+          message={popup.message}
+          onClose={() => setPopup(null)}
+        />
+      )}
+
+      {/* PDF preview modal */}
+      {previewDoc && previewDoc.sopAttachments[0] && (
+        <PdfPreviewModal
+          open={!!previewDoc}
+          onClose={() => setPreviewDoc(null)}
+          title={previewDoc.judul}
+          fileUrl={`/api/files/sop-attachments/${previewDoc.sopAttachments[0].filename}`}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Juklak Card ──────────────────────────────────────────────────────
+function JuklakCard({
+  doc,
+  progress,
+  onView,
+  onDownload,
+}: {
+  doc: Document;
+  progress?: ProgressData;
+  onView: () => void;
+  onDownload: () => void;
+}) {
+  return (
+    <div className="bg-background border rounded-2xl overflow-hidden hover-lift hover:border-primary/30 group">
+      <div className="p-5">
+        <div className="flex items-center justify-between gap-2 mb-2.5 flex-wrap">
+          <span
+            className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded-full ${THEME.badge}`}
+          >
+            {doc.kode}
+          </span>
+          <StatusBadge status={progress?.status} />
+          <span className="text-[11px] text-muted-foreground ml-auto">
+            {doc.versi} ·{" "}
+            {doc.tanggalBerlaku
+              ? new Date(doc.tanggalBerlaku).toLocaleDateString("id-ID", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })
+              : "—"}
+          </span>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b-2">
-                <th className="text-left py-3 px-3 font-semibold text-muted-foreground w-12">
-                  No
-                </th>
-                <th className="text-left py-3 px-3 font-semibold text-muted-foreground">
-                  Nama Dokumen
-                </th>
-                <th className="text-left py-3 px-3 font-semibold text-muted-foreground w-36">
-                  Valid Date
-                </th>
-                <th className="text-left py-3 px-3 font-semibold text-muted-foreground w-44">
-                  Permitted Access
-                </th>
-                <th className="text-right py-3 px-3 font-semibold text-muted-foreground w-72">
-                  Aksi
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((doc, idx) => (
-                <tr
-                  key={doc.id}
-                  className="border-b last:border-0 hover:bg-muted/30 transition-colors"
-                >
-                  <td className="py-3 px-3 text-muted-foreground">
-                    {idx + 1}
-                  </td>
-                  <td className="py-3 px-3">
-                    <div className="font-medium">{doc.judul}</div>
-                    <div className="text-xs text-muted-foreground font-mono mt-0.5">
-                      {doc.kode}
-                    </div>
-                  </td>
-                  <td className="py-3 px-3 text-muted-foreground">
-                    {doc.tanggalBerlaku
-                      ? new Date(doc.tanggalBerlaku).toLocaleDateString(
-                          "id-ID",
-                          {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          }
-                        )
-                      : "—"}
-                  </td>
-                  <td className="py-3 px-3">
-                    <AccessBadge access={doc.permittedAccess} />
-                  </td>
-                  <td className="py-3 px-3">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-7 px-2.5 text-xs gap-1"
-                      >
-                        <Eye size={12} /> View
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-7 px-2.5 text-xs gap-1"
-                      >
-                        <Download size={12} /> Download
-                      </Button>
-                      <Link href={`/belajar/${doc.id}`}>
-                        <Button
-                          size="sm"
-                          className="h-7 px-2.5 text-xs gap-1"
-                        >
-                          <BookOpen size={12} /> Pelajari
-                        </Button>
-                      </Link>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={5}
-                    className="py-12 text-center text-muted-foreground"
-                  >
-                    {documents.length === 0
-                      ? "Belum ada juklak yang tersedia."
-                      : "Tidak ada hasil yang cocok dengan filter Anda."}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+        <h3 className="font-display font-bold text-base leading-snug mb-2 group-hover:text-primary transition-colors">
+          {doc.judul}
+        </h3>
+
+        {doc.deskripsi && (
+          <p className="text-xs text-muted-foreground leading-relaxed mb-3 line-clamp-2">
+            {doc.deskripsi}
+          </p>
+        )}
+
+        {/* Department & Permitted Access */}
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
+          {doc.departmentNama && (
+            <span className="text-[11px] bg-muted text-muted-foreground rounded-full px-2 py-0.5">
+              {doc.departmentNama}
+            </span>
+          )}
+          <AccessBadge access={doc.permittedAccess} />
         </div>
 
-        {/* Footer count */}
-        {filtered.length > 0 && (
-          <div className="mt-4 text-xs text-muted-foreground text-right">
-            Menampilkan {filtered.length} dari {documents.length} juklak
+        {/* Progress indicator */}
+        {progress && progress.status !== "belum" && (
+          <div className="mb-4">
+            <div className="flex items-center justify-between text-[11px] mb-1.5">
+              <span className="text-muted-foreground">Progress</span>
+              <span className="font-bold">
+                {Math.round((progress.stepCurrent / 6) * 100)}%
+              </span>
+            </div>
+            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+              <div
+                className={`h-full bg-gradient-to-r ${THEME.gradient} rounded-full transition-all`}
+                style={{
+                  width: `${Math.round((progress.stepCurrent / 6) * 100)}%`,
+                }}
+              />
+            </div>
           </div>
         )}
+
+        {/* Action buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onView();
+            }}
+            title="Lihat dokumen"
+            className="text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-muted transition-colors flex items-center gap-1.5 relative z-10"
+          >
+            <Eye size={12} /> View
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onDownload();
+            }}
+            title="Download dokumen"
+            className="text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-muted transition-colors flex items-center gap-1.5 relative z-10"
+          >
+            <Download size={12} /> Download
+          </button>
+          <Link
+            href={`/belajar/${doc.id}`}
+            className={`ml-auto text-xs font-bold text-white rounded-lg px-4 py-1.5 hover:opacity-90 transition-opacity flex items-center gap-1.5 bg-gradient-to-r ${THEME.gradient} shadow-sm relative z-10`}
+          >
+            <BookOpen size={12} /> Pelajari
+          </Link>
+        </div>
       </div>
     </div>
   );
 }
 
-// Badge component untuk Permitted Access
-function AccessBadge({ access }: { access: string | null }) {
-  if (!access) {
-    return <span className="text-xs text-muted-foreground">—</span>;
+// ─── Status Badge ─────────────────────────────────────────────────────
+function StatusBadge({ status }: { status?: string }) {
+  if (!status || status === "belum") {
+    return (
+      <span className="text-[10px] px-2 py-0.5 rounded-full border font-medium bg-gray-50 text-gray-600 border-gray-200 flex items-center gap-1">
+        <Circle size={8} /> Belum Dibaca
+      </span>
+    );
   }
+  const map: Record<
+    string,
+    { color: string; label: string; icon: React.ElementType }
+  > = {
+    dipelajari: {
+      color: "bg-amber-50 text-amber-700 border-amber-200",
+      label: "Sedang dipelajari",
+      icon: Clock,
+    },
+    selesai: {
+      color: "bg-green-50 text-green-700 border-green-200",
+      label: "Selesai",
+      icon: CheckCircle2,
+    },
+  };
+  const cfg = map[status];
+  if (!cfg) return null;
+  const Icon = cfg.icon;
+  return (
+    <span
+      className={`text-[10px] px-2 py-0.5 rounded-full border font-medium flex items-center gap-1 ${cfg.color}`}
+    >
+      <Icon size={8} /> {cfg.label}
+    </span>
+  );
+}
 
-  // Beberapa color hint berdasarkan value (fallback ke neutral)
+// ─── Access Badge ─────────────────────────────────────────────────────
+function AccessBadge({ access }: { access: string | null }) {
+  if (!access) return null;
   const colorMap: Record<string, string> = {
     all: "bg-blue-50 text-blue-700 border-blue-200",
     "store-only": "bg-amber-50 text-amber-700 border-amber-200",
     Store: "bg-amber-50 text-amber-700 border-amber-200",
     Finance: "bg-purple-50 text-purple-700 border-purple-200",
   };
-
   const color =
     colorMap[access] ?? "bg-muted text-muted-foreground border-border";
-
   return (
     <span
-      className={`inline-flex text-xs px-2.5 py-0.5 rounded-full border font-medium ${color}`}
+      className={`inline-flex text-[11px] px-2 py-0.5 rounded-full border font-medium ${color}`}
     >
       {access}
     </span>
+  );
+}
+
+// ─── Info Popup ───────────────────────────────────────────────────────
+function InfoPopup({
+  title,
+  message,
+  onClose,
+}: {
+  title: string;
+  message: string;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fade-in"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="bg-background rounded-2xl border w-full max-w-md overflow-hidden shadow-xl animate-scale-in">
+        <div className="p-6">
+          <div className="flex items-start gap-3 mb-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center flex-shrink-0">
+              <AlertCircle size={20} className="text-amber-600" />
+            </div>
+            <div className="flex-1 pt-1">
+              <h3 className="font-display font-bold text-lg">{title}</h3>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+              aria-label="Tutup"
+            >
+              <X size={18} />
+            </button>
+          </div>
+          <p className="text-sm text-muted-foreground leading-relaxed mb-5">
+            {message}
+          </p>
+          <div className="flex justify-end">
+            <button
+              onClick={onClose}
+              className="text-sm font-medium px-4 py-2 bg-foreground text-background rounded-xl hover:bg-foreground/90 transition-colors"
+            >
+              Mengerti
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

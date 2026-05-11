@@ -14,7 +14,6 @@ import NoteEditor from "./NoteEditor";
 import {
   type LearningGateContext,
   getStepLockInfo,
-  calculateProgress,
 } from "@/lib/learning-gates";
 
 // ─── Step structure (sesuai prototype) ──────────────────────────────────
@@ -60,8 +59,6 @@ export default function LearningSidebar({
     return s;
   });
 
-  const percentage = calculateProgress(highestStep, gateContext);
-
   function toggleSection(i: number) {
     setOpenSections((prev) => {
       const next = new Set(prev);
@@ -94,18 +91,11 @@ export default function LearningSidebar({
       {/* Content */}
       {tab === "progress" ? (
         <div>
-          {/* Header progress */}
-          <div className="px-4 py-3 border-b">
-            <div className="text-xs font-semibold mb-1.5">
-              {percentage}% Selesai
-            </div>
-            <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-              <div
-                className="h-full bg-green-500 rounded-full transition-all duration-500"
-                style={{ width: `${percentage}%` }}
-              />
-            </div>
-          </div>
+          {/*
+            Header progress (angka % + progress bar) DIHAPUS.
+            Persentase progress sudah ditampilkan di header card atas pada BelajarClient.
+            Sidebar sekarang langsung mulai dari step navigation.
+          */}
 
           {/* Sections */}
           <div className="max-h-[500px] overflow-y-auto">

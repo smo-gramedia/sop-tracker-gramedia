@@ -11,6 +11,11 @@ import {
   X,
   Search,
   ChevronDown,
+  CheckCircle2,
+  Clock,
+  Circle,
+  FileText,
+  Sparkles,
 } from "lucide-react";
 import PdfPreviewModal from "./PdfPreviewModal";
 
@@ -58,6 +63,54 @@ type Props = {
   subcategories: Subcategory[];
 };
 
+// Konfigurasi visual per kategori
+const KATEGORI_THEME: Record<
+  string,
+  {
+    gradient: string;
+    bgSoft: string;
+    accent: string;
+    badge: string;
+    icon: string;
+  }
+> = {
+  sr: {
+    gradient: "from-green-500 via-emerald-500 to-teal-500",
+    bgSoft: "from-green-50 to-emerald-50",
+    accent: "text-green-700",
+    badge: "bg-green-100 text-green-700",
+    icon: "🏬",
+  },
+  ss: {
+    gradient: "from-blue-500 via-cyan-500 to-indigo-500",
+    bgSoft: "from-blue-50 to-cyan-50",
+    accent: "text-blue-700",
+    badge: "bg-blue-100 text-blue-700",
+    icon: "👥",
+  },
+  sp: {
+    gradient: "from-purple-500 via-fuchsia-500 to-pink-500",
+    bgSoft: "from-purple-50 to-pink-50",
+    accent: "text-purple-700",
+    badge: "bg-purple-100 text-purple-700",
+    icon: "🎓",
+  },
+  sg: {
+    gradient: "from-amber-500 via-orange-500 to-red-500",
+    bgSoft: "from-amber-50 to-orange-50",
+    accent: "text-amber-700",
+    badge: "bg-amber-100 text-amber-700",
+    icon: "📄",
+  },
+  petunjuk: {
+    gradient: "from-slate-500 via-gray-500 to-zinc-500",
+    bgSoft: "from-slate-50 to-gray-50",
+    accent: "text-slate-700",
+    badge: "bg-slate-100 text-slate-700",
+    icon: "📋",
+  },
+};
+
 export default function SopKategoriClient({
   kategori,
   pageTitle,
@@ -69,12 +122,13 @@ export default function SopKategoriClient({
   divisions,
   subcategories,
 }: Props) {
+  const theme = KATEGORI_THEME[kategori] ?? KATEGORI_THEME.petunjuk;
+
   // Modal state
   const [previewDoc, setPreviewDoc] = useState<Doc | null>(null);
-  const [popup, setPopup] = useState<{
-    title: string;
-    message: string;
-  } | null>(null);
+  const [popup, setPopup] = useState<{ title: string; message: string } | null>(
+    null
+  );
 
   // Filter & sidebar state
   const [searchQuery, setSearchQuery] = useState("");
@@ -87,7 +141,6 @@ export default function SopKategoriClient({
     new Set()
   );
 
-  // Hanya divisions yang punya departemen ber-SOP di kategori ini
   const relevantDivisions = useMemo(() => {
     if (kategori === "sg" || kategori === "petunjuk") return [];
     const deptIdsWithSops = new Set(
@@ -101,7 +154,6 @@ export default function SopKategoriClient({
       .filter((div) => div.departments.length > 0);
   }, [divisions, documents, kategori]);
 
-  // Filter sidebar by search
   const filteredDivisions = useMemo(() => {
     if (!sidebarSearch) return relevantDivisions;
     const q = sidebarSearch.toLowerCase();
@@ -118,7 +170,6 @@ export default function SopKategoriClient({
       );
   }, [relevantDivisions, sidebarSearch]);
 
-  // Subcategories yang punya dokumen (untuk SOP General)
   const relevantSubcats = useMemo(() => {
     if (kategori !== "sg") return [];
     const subcatIdsWithSops = new Set(
@@ -127,18 +178,11 @@ export default function SopKategoriClient({
     return subcategories.filter((s) => subcatIdsWithSops.has(s.id));
   }, [subcategories, documents, kategori]);
 
-  // Filter dokumen
   const filteredDocs = useMemo(() => {
     return documents.filter((doc) => {
-      // Filter by department (kategori non-sg, non-petunjuk)
-      if (selectedDeptId && doc.department?.id !== selectedDeptId) {
+      if (selectedDeptId && doc.department?.id !== selectedDeptId) return false;
+      if (selectedSubcatId && doc.subcategory?.id !== selectedSubcatId)
         return false;
-      }
-      // Filter by subcategory (kategori sg)
-      if (selectedSubcatId && doc.subcategory?.id !== selectedSubcatId) {
-        return false;
-      }
-      // Search by kode/judul/deskripsi
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         const matches =
@@ -147,7 +191,6 @@ export default function SopKategoriClient({
           (doc.deskripsi?.toLowerCase().includes(q) ?? false);
         if (!matches) return false;
       }
-      // Filter by status
       if (statusFilter) {
         const progress = progressMap[doc.id];
         if (statusFilter === "selesai") {
@@ -158,10 +201,7 @@ export default function SopKategoriClient({
           if (progress && progress.status !== "belum") return false;
         }
       }
-      // Filter by tipe
-      if (tipeFilter && doc.tipe !== tipeFilter) {
-        return false;
-      }
+      if (tipeFilter && doc.tipe !== tipeFilter) return false;
       return true;
     });
   }, [
@@ -174,7 +214,6 @@ export default function SopKategoriClient({
     progressMap,
   ]);
 
-  // Toggle accordion division
   function toggleDivision(divId: string) {
     setExpandedDivisions((prev) => {
       const next = new Set(prev);
@@ -184,12 +223,9 @@ export default function SopKategoriClient({
     });
   }
 
-  /** Cek action availability based on progress + role */
   function getActionLock(doc: Doc): { title: string; message: string } | null {
     if (isAdmin) return null;
-
     const progress = progressMap[doc.id];
-
     if (!progress || progress.status === "belum") {
       return {
         title: "SOP Belum Dipelajari",
@@ -197,7 +233,6 @@ export default function SopKategoriClient({
           "Silakan pelajari SOP terlebih dahulu sebelum dapat melihat atau mengunduh dokumen.",
       };
     }
-
     const isCompleted =
       progress.status === "selesai" && progress.stepCurrent === 6;
     if (!isCompleted) {
@@ -207,17 +242,28 @@ export default function SopKategoriClient({
           "Pembelajaran SOP harus diselesaikan terlebih dahulu (100%) sebelum Anda dapat melihat atau mengunduh dokumen.",
       };
     }
-
     return null;
   }
 
   function handleView(doc: Doc) {
+    // DEBUG LOGGING — bisa dihapus setelah bug ketemu
+    console.log("[SOP View Click]", {
+      kategori,
+      docId: doc.id,
+      docKode: doc.kode,
+      isAdmin,
+      progress: progressMap[doc.id],
+      attachments: doc.sopAttachments?.length ?? 0,
+    });
+
     const lock = getActionLock(doc);
     if (lock) {
+      console.log("[SOP View] Lock detected, showing popup:", lock.title);
       setPopup(lock);
       return;
     }
-    if (doc.sopAttachments.length === 0) {
+    if (!doc.sopAttachments || doc.sopAttachments.length === 0) {
+      console.log("[SOP View] No PDF, showing fallback popup");
       setPopup({
         title: "Dokumen Belum Tersedia",
         message:
@@ -225,16 +271,29 @@ export default function SopKategoriClient({
       });
       return;
     }
+    console.log("[SOP View] Opening preview modal");
     setPreviewDoc(doc);
   }
 
   function handleDownload(doc: Doc) {
+    // DEBUG LOGGING — bisa dihapus setelah bug ketemu
+    console.log("[SOP Download Click]", {
+      kategori,
+      docId: doc.id,
+      docKode: doc.kode,
+      isAdmin,
+      progress: progressMap[doc.id],
+      attachments: doc.sopAttachments?.length ?? 0,
+    });
+
     const lock = getActionLock(doc);
     if (lock) {
+      console.log("[SOP Download] Lock detected, showing popup:", lock.title);
       setPopup(lock);
       return;
     }
-    if (doc.sopAttachments.length === 0) {
+    if (!doc.sopAttachments || doc.sopAttachments.length === 0) {
+      console.log("[SOP Download] No PDF, showing fallback popup");
       setPopup({
         title: "Dokumen Belum Tersedia",
         message:
@@ -242,10 +301,10 @@ export default function SopKategoriClient({
       });
       return;
     }
+    console.log("[SOP Download] Triggering download for SOP:", doc.id);
     window.location.href = `/api/sop/${doc.id}/download`;
   }
 
-  // Untuk header sub-display
   const selectedDivision = useMemo(() => {
     if (!selectedDeptId) return null;
     for (const div of relevantDivisions) {
@@ -260,79 +319,69 @@ export default function SopKategoriClient({
     return relevantSubcats.find((s) => s.id === selectedSubcatId) ?? null;
   }, [selectedSubcatId, relevantSubcats]);
 
-  // Header for content area
-  const contentHeader = (() => {
-    if (kategori === "sg") {
-      return {
-        title: selectedSubcat ? selectedSubcat.nama : "Semua SOP General",
-        sub: selectedSubcat
-          ? selectedSubcat.kode
-          : "Pilih sub-kategori untuk filter",
-      };
-    }
-    if (kategori === "petunjuk") {
-      return {
-        title: "Semua Petunjuk Pelaksanaan",
-        sub: `${filteredDocs.length} dokumen tersedia`,
-      };
-    }
-    return {
-      title: selectedDivision
-        ? selectedDivision.dept.nama
-        : "Semua Division",
-      sub: selectedDivision
-        ? selectedDivision.div.nama
-        : "Pilih division/department untuk filter",
-    };
-  })();
+  // Stats
+  const selesaiCount = progressList.filter((p) => p.status === "selesai").length;
+  const dipelajariCount = progressList.filter(
+    (p) => p.status === "dipelajari"
+  ).length;
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-8">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1.5">
-          {pageTitle}
-        </div>
-        <h1 className="font-display font-bold text-3xl md:text-4xl mb-2">
-          Temukan {pageTitle} dengan lebih cepat dan terstruktur.
-        </h1>
-        <p className="text-muted-foreground text-sm max-w-2xl">
-          {kategori === "sg" || kategori === "petunjuk"
-            ? "Cek status pembelajaran Anda, lalu buka dokumen yang perlu dipelajari."
-            : "Pilih division untuk melihat daftar SOP yang relevan, cek status pembelajaran Anda, lalu buka dokumen yang perlu dipelajari."}
-        </p>
-      </div>
+    <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
+      {/* Hero per kategori — gradient berwarna */}
+      <div
+        className={`relative bg-gradient-to-br ${theme.gradient} rounded-3xl overflow-hidden animate-fade-in`}
+      >
+        <div className="absolute -top-12 -right-12 w-64 h-64 bg-white/10 blob-decoration" />
+        <div className="absolute -bottom-20 -left-12 w-72 h-72 bg-white/5 blob-decoration" />
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <div className="bg-foreground text-background rounded-xl p-4">
-          <div className="text-xs text-background/60 mb-1">Total Dokumen</div>
-          <div className="font-display font-bold text-2xl">{totalDocs}</div>
-        </div>
-        <div className="bg-background border rounded-xl p-4">
-          <div className="text-xs text-muted-foreground mb-1">
-            Sedang Dipelajari
+        <div className="relative px-8 py-10 md:px-12">
+          <div className="flex items-start justify-between gap-6 flex-wrap">
+            <div className="flex-1 min-w-[280px]">
+              <h1 className="font-display font-bold text-3xl md:text-4xl text-white leading-tight mb-3">
+                Temukan {pageTitle}
+                <br />
+                <span className="text-white/90">
+                  dengan lebih cepat dan terstruktur.
+                </span>
+              </h1>
+              <p className="text-white/80 text-sm leading-relaxed max-w-xl">
+                {kategori === "sg" || kategori === "petunjuk"
+                  ? "Cek status pembelajaran Anda, lalu buka dokumen yang perlu dipelajari."
+                  : "Pilih division untuk melihat daftar SOP yang relevan, cek status pembelajaran, lalu buka dokumen."}
+              </p>
+            </div>
           </div>
-          <div className="font-display font-bold text-2xl">
-            {progressList.filter((p) => p.status === "dipelajari").length}
-          </div>
-        </div>
-        <div className="bg-background border rounded-xl p-4">
-          <div className="text-xs text-muted-foreground mb-1">Selesai</div>
-          <div className="font-display font-bold text-2xl text-green-600">
-            {progressList.filter((p) => p.status === "selesai").length}
+
+          {/* Stats inline */}
+          <div className="grid grid-cols-3 gap-3 mt-6">
+            <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+              <div className="text-white text-2xl font-display font-bold">
+                {totalDocs}
+              </div>
+              <div className="text-white/70 text-xs">Total Dokumen</div>
+            </div>
+            <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+              <div className="text-white text-2xl font-display font-bold">
+                {dipelajariCount}
+              </div>
+              <div className="text-white/70 text-xs">Sedang Dipelajari</div>
+            </div>
+            <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+              <div className="text-white text-2xl font-display font-bold">
+                {selesaiCount}
+              </div>
+              <div className="text-white/70 text-xs">Selesai</div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Layout: 2-column for sr/ss/sp, 1-column for sg/petunjuk */}
       {kategori !== "sg" && kategori !== "petunjuk" ? (
-        // ─── 2-column layout ─────────────────────────────────────
-        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-5 items-start">
-          {/* SIDEBAR — Division/Department list */}
-          <aside className="bg-background border rounded-xl overflow-hidden">
-            {/* Sidebar search */}
-            <div className="flex items-center gap-2 px-3 py-2.5 border-b">
+        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-5 items-start animate-slide-up">
+          {/* SIDEBAR */}
+          <aside className="bg-background border rounded-2xl overflow-hidden sticky top-20">
+            <div className="flex items-center gap-2 px-3 py-3 border-b">
               <Search size={13} className="text-muted-foreground" />
               <input
                 type="text"
@@ -342,21 +391,27 @@ export default function SopKategoriClient({
                 className="flex-1 text-xs bg-transparent border-none outline-none placeholder:text-muted-foreground"
               />
             </div>
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-3 py-2 border-b bg-muted/40">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-3 py-2.5 border-b bg-muted/40">
               Daftar Division
             </div>
 
-            {/* Division accordion */}
             <div className="max-h-[600px] overflow-y-auto">
-              {/* "Semua" option */}
               <button
                 onClick={() => setSelectedDeptId(null)}
                 className={`w-full flex items-center justify-between px-3 py-2.5 text-xs hover:bg-muted/40 transition-colors border-b ${
-                  !selectedDeptId ? "bg-foreground/5 font-medium" : ""
+                  !selectedDeptId
+                    ? `bg-gradient-to-r ${theme.bgSoft} font-semibold`
+                    : ""
                 }`}
               >
                 <span>Semua Division</span>
-                <span className="text-[10px] bg-muted text-muted-foreground rounded-full px-2 py-0.5">
+                <span
+                  className={`text-[10px] rounded-full px-2 py-0.5 ${
+                    !selectedDeptId
+                      ? `${theme.badge} font-bold`
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
                   {totalDocs}
                 </span>
               </button>
@@ -405,18 +460,19 @@ export default function SopKategoriClient({
                           const deptDocCount = documents.filter(
                             (d) => d.department?.id === dept.id
                           ).length;
+                          const isActive = selectedDeptId === dept.id;
                           return (
                             <button
                               key={dept.id}
                               onClick={() => setSelectedDeptId(dept.id)}
-                              className={`w-full flex items-center justify-between text-left text-xs px-5 py-1.5 hover:bg-muted/50 transition-colors ${
-                                selectedDeptId === dept.id
-                                  ? "bg-foreground/5 font-medium border-l-2 border-foreground"
-                                  : "text-muted-foreground"
+                              className={`w-full flex items-center justify-between text-left text-xs px-5 py-1.5 transition-colors ${
+                                isActive
+                                  ? `bg-gradient-to-r ${theme.bgSoft} font-semibold border-l-2 ${theme.accent} border-current`
+                                  : "text-muted-foreground hover:bg-muted/50"
                               }`}
                             >
                               <span className="truncate pr-2">{dept.nama}</span>
-                              <span className="text-[10px] flex-shrink-0">
+                              <span className="text-[10px] flex-shrink-0 font-mono">
                                 {deptDocCount}
                               </span>
                             </button>
@@ -432,146 +488,92 @@ export default function SopKategoriClient({
 
           {/* MAIN CONTENT */}
           <div>
-            {/* Selected header */}
             <div className="mb-4">
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5 font-semibold">
                 {selectedDeptId ? "DEPARTMENT TERPILIH" : "SEMUA DIVISION"}
               </div>
-              <h2 className="font-display font-bold text-xl">
-                {contentHeader.title}
+              <h2 className="font-display font-bold text-2xl">
+                {selectedDivision
+                  ? selectedDivision.dept.nama
+                  : "Semua Division"}
               </h2>
               <p className="text-xs text-muted-foreground">
-                {contentHeader.sub}
+                {selectedDivision
+                  ? selectedDivision.div.nama
+                  : "Pilih division/department untuk filter"}
               </p>
             </div>
 
-            {/* Filter bar */}
-            <div className="flex flex-col sm:flex-row gap-2 mb-4">
-              <div className="flex-1 flex items-center gap-2 bg-background border rounded-lg px-3 py-2">
-                <Search size={14} className="text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Cari SOP..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1 text-sm bg-transparent border-none outline-none"
-                />
-              </div>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-background border rounded-lg px-3 py-2 text-sm"
-              >
-                <option value="">Semua Status</option>
-                <option value="belum">Belum Dipelajari</option>
-                <option value="dipelajari">Sedang Dipelajari</option>
-                <option value="selesai">Selesai</option>
-              </select>
-              <select
-                value={tipeFilter}
-                onChange={(e) => setTipeFilter(e.target.value)}
-                className="bg-background border rounded-lg px-3 py-2 text-sm"
-              >
-                <option value="">Semua Jenis</option>
-                <option value="MP">Manual Prosedur</option>
-                <option value="PS">Panduan / Standar</option>
-                <option value="IK">Instruksi Kerja</option>
-              </select>
-            </div>
+            <FilterBar
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              statusFilter={statusFilter}
+              setStatusFilter={setStatusFilter}
+              tipeFilter={tipeFilter}
+              setTipeFilter={setTipeFilter}
+              showTipeFilter
+            />
 
-            {/* Cards list */}
-            <div className="space-y-2.5">
+            <div className="space-y-2.5 mt-4">
               {filteredDocs.map((doc) => (
                 <SopCard
                   key={doc.id}
                   doc={doc}
                   progress={progressMap[doc.id]}
+                  theme={theme}
                   onView={() => handleView(doc)}
                   onDownload={() => handleDownload(doc)}
                 />
               ))}
-              {filteredDocs.length === 0 && (
-                <div className="bg-background border rounded-xl p-12 text-center text-sm text-muted-foreground">
-                  Tidak ada SOP yang sesuai dengan filter.
-                </div>
-              )}
+              {filteredDocs.length === 0 && <EmptyState />}
             </div>
           </div>
         </div>
       ) : (
-        // ─── Single column layout (sg & petunjuk) ────────────────
-        <div>
-          {/* Filter bar */}
-          <div className="flex flex-col sm:flex-row gap-2 mb-4">
-            <div className="flex-1 flex items-center gap-2 bg-background border rounded-lg px-3 py-2">
-              <Search size={14} className="text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Cari SOP..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 text-sm bg-transparent border-none outline-none"
-              />
-            </div>
-            {kategori === "sg" && relevantSubcats.length > 0 && (
-              <select
-                value={selectedSubcatId ?? ""}
-                onChange={(e) => setSelectedSubcatId(e.target.value || null)}
-                className="bg-background border rounded-lg px-3 py-2 text-sm"
-              >
-                <option value="">Semua Sub-Kategori</option>
-                {relevantSubcats.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.nama}
-                  </option>
-                ))}
-              </select>
-            )}
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-background border rounded-lg px-3 py-2 text-sm"
-            >
-              <option value="">Semua Status</option>
-              <option value="belum">Belum Dipelajari</option>
-              <option value="dipelajari">Sedang Dipelajari</option>
-              <option value="selesai">Selesai</option>
-            </select>
-            {kategori !== "petunjuk" && (
-              <select
-                value={tipeFilter}
-                onChange={(e) => setTipeFilter(e.target.value)}
-                className="bg-background border rounded-lg px-3 py-2 text-sm"
-              >
-                <option value="">Semua Jenis</option>
-                <option value="MP">Manual Prosedur</option>
-                <option value="PS">Panduan / Standar</option>
-                <option value="IK">Instruksi Kerja</option>
-              </select>
-            )}
-          </div>
+        // Single column layout (sg & petunjuk)
+        <div className="animate-slide-up">
+          <FilterBar
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            tipeFilter={tipeFilter}
+            setTipeFilter={setTipeFilter}
+            showTipeFilter={kategori !== "petunjuk"}
+            extraFilter={
+              kategori === "sg" && relevantSubcats.length > 0 ? (
+                <select
+                  value={selectedSubcatId ?? ""}
+                  onChange={(e) => setSelectedSubcatId(e.target.value || null)}
+                  className="bg-background border rounded-xl px-3 py-2 text-sm"
+                >
+                  <option value="">Semua Sub-Kategori</option>
+                  {relevantSubcats.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.nama}
+                    </option>
+                  ))}
+                </select>
+              ) : null
+            }
+          />
 
-          {/* Cards grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
             {filteredDocs.map((doc) => (
               <SopCard
                 key={doc.id}
                 doc={doc}
                 progress={progressMap[doc.id]}
+                theme={theme}
                 onView={() => handleView(doc)}
                 onDownload={() => handleDownload(doc)}
               />
             ))}
           </div>
-          {filteredDocs.length === 0 && (
-            <div className="bg-background border rounded-xl p-12 text-center text-sm text-muted-foreground">
-              Tidak ada dokumen yang sesuai dengan filter.
-            </div>
-          )}
+          {filteredDocs.length === 0 && <EmptyState />}
         </div>
       )}
 
-      {/* Popup info modal */}
       {popup && (
         <InfoPopup
           title={popup.title}
@@ -580,7 +582,6 @@ export default function SopKategoriClient({
         />
       )}
 
-      {/* PDF preview modal */}
       {previewDoc && previewDoc.sopAttachments[0] && (
         <PdfPreviewModal
           open={!!previewDoc}
@@ -593,65 +594,161 @@ export default function SopKategoriClient({
   );
 }
 
-// ─── SOP Card ─────────────────────────────────────────────────────────
+// ─── Filter Bar ──────────────────────────────────────────────────────
+function FilterBar({
+  searchQuery,
+  setSearchQuery,
+  statusFilter,
+  setStatusFilter,
+  tipeFilter,
+  setTipeFilter,
+  showTipeFilter,
+  extraFilter,
+}: {
+  searchQuery: string;
+  setSearchQuery: (s: string) => void;
+  statusFilter: string;
+  setStatusFilter: (s: string) => void;
+  tipeFilter: string;
+  setTipeFilter: (s: string) => void;
+  showTipeFilter: boolean;
+  extraFilter?: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col sm:flex-row gap-2">
+      <div className="flex-1 flex items-center gap-2 bg-background border rounded-xl px-3 py-2 focus-within:ring-2 focus-within:ring-primary/20 transition-shadow">
+        <Search size={14} className="text-muted-foreground" />
+        <input
+          type="text"
+          placeholder="Cari SOP berdasarkan judul, kode, atau deskripsi..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="flex-1 text-sm bg-transparent border-none outline-none"
+        />
+      </div>
+      {extraFilter}
+      <select
+        value={statusFilter}
+        onChange={(e) => setStatusFilter(e.target.value)}
+        className="bg-background border rounded-xl px-3 py-2 text-sm"
+      >
+        <option value="">Semua Status</option>
+        <option value="belum">Belum Dipelajari</option>
+        <option value="dipelajari">Sedang Dipelajari</option>
+        <option value="selesai">Selesai</option>
+      </select>
+      {showTipeFilter && (
+        <select
+          value={tipeFilter}
+          onChange={(e) => setTipeFilter(e.target.value)}
+          className="bg-background border rounded-xl px-3 py-2 text-sm"
+        >
+          <option value="">Semua Jenis</option>
+          <option value="MP">Manual Prosedur</option>
+          <option value="PS">Panduan / Standar</option>
+          <option value="IK">Instruksi Kerja</option>
+        </select>
+      )}
+    </div>
+  );
+}
+
+// ─── SOP Card ──────────────────────────────────────────────────────
 function SopCard({
   doc,
   progress,
+  theme,
   onView,
   onDownload,
 }: {
   doc: Doc;
   progress?: ProgressItem;
+  theme: (typeof KATEGORI_THEME)[string];
   onView: () => void;
   onDownload: () => void;
 }) {
   return (
-    <div className="bg-background border rounded-xl p-4 hover:shadow-sm transition-shadow">
-      <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
-        <span className="font-mono text-[11px] text-muted-foreground">
-          {doc.kode}
-        </span>
-        <StatusBadge status={progress?.status} />
-        <span className="text-[11px] text-muted-foreground ml-auto">
-          {doc.versi} ·{" "}
-          {doc.tanggalBerlaku
-            ? new Date(doc.tanggalBerlaku).toLocaleDateString("id-ID", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              })
-            : "—"}
-        </span>
-      </div>
-      <h3 className="font-display font-bold text-base leading-snug mb-1.5">
-        {doc.judul}
-      </h3>
-      {doc.deskripsi && (
-        <p className="text-xs text-muted-foreground leading-relaxed mb-3 line-clamp-2">
-          {doc.deskripsi}
-        </p>
-      )}
-      <div className="flex items-center gap-2">
-        <button
-          onClick={onView}
-          title="Lihat dokumen"
-          className="text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-muted transition-colors flex items-center gap-1.5"
-        >
-          <Eye size={12} /> View
-        </button>
-        <button
-          onClick={onDownload}
-          title="Download dokumen"
-          className="text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-muted transition-colors flex items-center gap-1.5"
-        >
-          <Download size={12} /> Download
-        </button>
-        <Link
-          href={`/belajar/${doc.id}`}
-          className="ml-auto text-xs font-medium bg-foreground text-background rounded-lg px-3 py-1.5 hover:bg-foreground/90 transition-colors flex items-center gap-1.5"
-        >
-          <BookOpen size={12} /> Pelajari
-        </Link>
+    <div className="bg-background border rounded-2xl overflow-hidden hover-lift hover:border-primary/30 group">
+      <div className="p-5">
+        <div className="flex items-center justify-between gap-2 mb-2.5 flex-wrap">
+          <span
+            className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded-full ${theme.badge}`}
+          >
+            {doc.kode}
+          </span>
+          <StatusBadge status={progress?.status} />
+          <span className="text-[11px] text-muted-foreground ml-auto">
+            {doc.versi} ·{" "}
+            {doc.tanggalBerlaku
+              ? new Date(doc.tanggalBerlaku).toLocaleDateString("id-ID", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })
+              : "—"}
+          </span>
+        </div>
+        <h3 className="font-display font-bold text-base leading-snug mb-2 group-hover:text-primary transition-colors">
+          {doc.judul}
+        </h3>
+        {doc.deskripsi && (
+          <p className="text-xs text-muted-foreground leading-relaxed mb-4 line-clamp-2">
+            {doc.deskripsi}
+          </p>
+        )}
+
+        {/* Progress indicator (kalau ada progress) */}
+        {progress && progress.status !== "belum" && (
+          <div className="mb-4">
+            <div className="flex items-center justify-between text-[11px] mb-1.5">
+              <span className="text-muted-foreground">Progress</span>
+              <span className="font-bold">
+                {Math.round((progress.stepCurrent / 6) * 100)}%
+              </span>
+            </div>
+            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+              <div
+                className={`h-full bg-gradient-to-r ${theme.gradient} rounded-full transition-all`}
+                style={{
+                  width: `${Math.round((progress.stepCurrent / 6) * 100)}%`,
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onView();
+            }}
+            title="Lihat dokumen"
+            className="text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-muted transition-colors flex items-center gap-1.5 relative z-10"
+          >
+            <Eye size={12} /> View
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onDownload();
+            }}
+            title="Download dokumen"
+            className="text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-muted transition-colors flex items-center gap-1.5 relative z-10"
+          >
+            <Download size={12} /> Download
+          </button>
+          <Link
+            href={`/belajar/${doc.id}`}
+            className={`ml-auto text-xs font-bold text-white rounded-lg px-4 py-1.5 hover:opacity-90 transition-opacity flex items-center gap-1.5 bg-gradient-to-r ${theme.gradient} shadow-sm relative z-10`}
+          >
+            <BookOpen size={12} /> Pelajari
+          </Link>
+        </div>
       </div>
     </div>
   );
@@ -661,29 +758,52 @@ function SopCard({
 function StatusBadge({ status }: { status?: string }) {
   if (!status || status === "belum") {
     return (
-      <span className="text-[10px] px-2 py-0.5 rounded-full border font-medium bg-gray-50 text-gray-600 border-gray-200">
-        Belum Dibaca
+      <span className="text-[10px] px-2 py-0.5 rounded-full border font-medium bg-gray-50 text-gray-600 border-gray-200 flex items-center gap-1">
+        <Circle size={8} /> Belum Dibaca
       </span>
     );
   }
-  const map: Record<string, { color: string; label: string }> = {
+  const map: Record<
+    string,
+    { color: string; label: string; icon: React.ElementType }
+  > = {
     dipelajari: {
       color: "bg-amber-50 text-amber-700 border-amber-200",
       label: "Sedang dipelajari",
+      icon: Clock,
     },
     selesai: {
       color: "bg-green-50 text-green-700 border-green-200",
-      label: "✓ Selesai",
+      label: "Selesai",
+      icon: CheckCircle2,
     },
   };
   const cfg = map[status];
   if (!cfg) return null;
+  const Icon = cfg.icon;
   return (
     <span
-      className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${cfg.color}`}
+      className={`text-[10px] px-2 py-0.5 rounded-full border font-medium flex items-center gap-1 ${cfg.color}`}
     >
-      {cfg.label}
+      <Icon size={8} /> {cfg.label}
     </span>
+  );
+}
+
+// ─── Empty State ──────────────────────────────────────────────────────
+function EmptyState() {
+  return (
+    <div className="bg-background border rounded-2xl p-12 text-center">
+      <div className="w-12 h-12 rounded-full bg-muted/60 mx-auto mb-3 flex items-center justify-center">
+        <FileText size={20} className="text-muted-foreground/60" />
+      </div>
+      <p className="text-sm text-muted-foreground">
+        Tidak ada SOP yang sesuai dengan filter.
+      </p>
+      <p className="text-xs text-muted-foreground/70 mt-1">
+        Coba ubah filter atau search keyword.
+      </p>
+    </div>
   );
 }
 
@@ -699,15 +819,15 @@ function InfoPopup({
 }) {
   return (
     <div
-      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fade-in"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-background rounded-2xl border w-full max-w-md overflow-hidden shadow-xl">
+      <div className="bg-background rounded-2xl border w-full max-w-md overflow-hidden shadow-xl animate-scale-in">
         <div className="p-6">
           <div className="flex items-start gap-3 mb-3">
-            <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center flex-shrink-0">
               <AlertCircle size={20} className="text-amber-600" />
             </div>
             <div className="flex-1 pt-1">
@@ -727,7 +847,7 @@ function InfoPopup({
           <div className="flex justify-end">
             <button
               onClick={onClose}
-              className="text-sm font-medium px-4 py-2 bg-foreground text-background rounded-lg hover:bg-foreground/90 transition-colors"
+              className="text-sm font-medium px-4 py-2 bg-foreground text-background rounded-xl hover:bg-foreground/90 transition-colors"
             >
               Mengerti
             </button>

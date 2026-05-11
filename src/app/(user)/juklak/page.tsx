@@ -5,6 +5,7 @@ import JuklakClient from "@/components/user/JuklakClient";
 
 export default async function JuklakPage() {
   const session = await auth();
+  const isAdmin = ["admin", "superadmin"].includes(session!.user.role);
 
   // Ambil semua dokumen kategori "petunjuk" yang aktif
   const documents = await prisma.sopDocument.findMany({
@@ -17,13 +18,20 @@ export default async function JuklakPage() {
       id: true,
       kode: true,
       judul: true,
+      deskripsi: true,
+      versi: true,
       tanggalBerlaku: true,
       permittedAccess: true,
       department: { select: { id: true, nama: true } },
+      sopAttachments: {
+        where: { tipe: "utama" },
+        select: { id: true, filename: true },
+        take: 1,
+      },
     },
   });
 
-  // Untuk progress badge per dokumen (apakah user sedang/sudah belajar)
+  // Progress per dokumen (full: stepCurrent + status)
   const myProgress = await prisma.learningProgress.findMany({
     where: {
       userId: session!.user.id,
@@ -31,20 +39,21 @@ export default async function JuklakPage() {
     },
     select: {
       sopDocumentId: true,
+      stepCurrent: true,
       status: true,
     },
   });
   const progressMap = Object.fromEntries(
-    myProgress.map((p) => [p.sopDocumentId, p.status])
+    myProgress.map((p) => [
+      p.sopDocumentId,
+      { stepCurrent: p.stepCurrent, status: p.status },
+    ])
   );
 
-  // Unique permitted access values untuk filter dropdown
+  // Unique values untuk filter
   const accessValues = Array.from(
     new Set(documents.map((d) => d.permittedAccess).filter(Boolean) as string[])
   ).sort();
-
-  // Unique departemen untuk filter "Kategori" (di prototype dia panggil "Kategori"
-  // tapi sebenarnya ini grouping per departemen. Saya pakai departemen.)
   const departmentValues = Array.from(
     new Set(documents.map((d) => d.department?.nama).filter(Boolean) as string[])
   ).sort();
@@ -55,13 +64,17 @@ export default async function JuklakPage() {
         id: d.id,
         kode: d.kode,
         judul: d.judul,
+        deskripsi: d.deskripsi,
+        versi: d.versi,
         tanggalBerlaku: d.tanggalBerlaku?.toISOString() ?? null,
         permittedAccess: d.permittedAccess,
         departmentNama: d.department?.nama ?? null,
-        progressStatus: progressMap[d.id] ?? null,
+        sopAttachments: d.sopAttachments,
       }))}
+      progressMap={progressMap}
       accessValues={accessValues}
       departmentValues={departmentValues}
+      isAdmin={isAdmin}
     />
   );
 }

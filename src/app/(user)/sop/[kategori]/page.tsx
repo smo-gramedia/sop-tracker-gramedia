@@ -1,7 +1,7 @@
 // src/app/(user)/sop/[kategori]/page.tsx
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { SOP_KATEGORI_LABEL } from "@/lib/constants";
 import type { SopKategori } from "@prisma/client";
 import SopKategoriClient from "@/components/user/SopKategoriClient";
@@ -12,6 +12,13 @@ type Props = { params: { kategori: string } };
 
 export default async function SopKategoriPage({ params }: Props) {
   const { kategori } = params;
+
+  // Redirect: /sop/petunjuk → /juklak (halaman juklak yang utama)
+  // Backward compat untuk bookmark/link lama
+  if (kategori === "petunjuk") {
+    redirect("/juklak");
+  }
+
   if (!VALID_KATEGORI.includes(kategori as never)) notFound();
 
   const session = await auth();

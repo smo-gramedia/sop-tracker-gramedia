@@ -111,7 +111,8 @@ export default async function HomePage() {
       kategori: "sg",
     },
     {
-      href: "/sop/petunjuk",
+      // CHANGED: /sop/petunjuk → /juklak (halaman juklak yang utama)
+      href: "/juklak",
       label: "Petunjuk Pelaksanaan",
       icon: "/icon/petunjuk-pelaksanaan.png",
       desc: "Panduan pelaksanaan tugas",
