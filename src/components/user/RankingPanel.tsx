@@ -72,15 +72,8 @@ export default function RankingPanel({
         <>
           <div className="border-t border-amber-200/60 my-4" />
           <div className="bg-white/60 rounded-xl p-3 text-center">
-            <TrendingUp
-              size={16}
-              className="mx-auto text-primary mb-1.5"
-            />
             <p className="text-xs text-foreground font-medium">
               Selesaikan SOP pertama Anda
-            </p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">
-              dan masuk ranking 🚀
             </p>
           </div>
         </>
