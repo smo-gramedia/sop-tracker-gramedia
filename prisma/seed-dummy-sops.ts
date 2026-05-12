@@ -29,6 +29,10 @@ async function main() {
     );
   }
 
+  // Extract ID ke const non-null, biar TypeScript narrowing tetap berlaku
+  // di dalam nested function `insertCategory` di bawah.
+  const superadminId = superadmin.id;
+
   // ─── Get departments by code ────────────────────────────────────
   const allDepts = await prisma.department.findMany({
     select: { id: true, kode: true, nama: true },
@@ -703,7 +707,7 @@ async function main() {
           versi: sop.versi,
           tanggalBerlaku: sop.tanggalBerlaku,
           status: "aktif",
-          uploadedById: superadmin.id,
+          uploadedById: superadminId,  // ← FIX: pakai const non-null
           departmentId: sop.departmentId,
           subcategoryId: sop.subcategoryId,
         },
