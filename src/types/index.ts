@@ -1,4 +1,12 @@
-import type { Role, SopKategori, SopTipe, SopStatus, LearningStatus, AttachmentStatus } from "@prisma/client";
+import type {
+  Role,
+  SopKategori,
+  SopTipe,
+  SopStatus,
+  LearningStatus,
+  AttachmentStatus,
+  TipeUser,
+} from "@prisma/client";
 
 // ── Auth ──────────────────────────────────────
 export type SessionUser = {
@@ -46,7 +54,13 @@ export type AttachmentWithRelations = {
   alasanTolak: string | null;
   uploadedAt: Date;
   reviewedAt: Date | null;
-  user: { id: string; nama: string; kodeKaryawan: string; unit: string | null };
+  user: {
+    id: string;
+    nama: string;
+    kodeUser: string;
+    tipeUser: TipeUser | null;
+    unit: string | null;
+  };
   sopDocument: { id: string; kode: string; judul: string };
   reviewedBy: { id: string; nama: string } | null;
 };

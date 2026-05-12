@@ -28,6 +28,11 @@ enum UserStatus {
   nonaktif
 }
 
+enum TipeUser {
+  store
+  department
+}
+
 enum SopKategori {
   sr  // SOP Operation
   ss  // SOP Supporting Unit
@@ -97,13 +102,12 @@ enum StoreStatus {
 
 model User {
   id            String     @id @default(uuid())
-  kodeKaryawan  String     @unique @map("kode_karyawan")
+  kodeUser      String     @unique @map("kode_user")
+  tipeUser      TipeUser? @map("tipe_user")
   nama          String
   email         String     @unique
   passwordHash  String     @map("password_hash")
   unit          String?
-  jabatan       String?
-  section       String?
   role          Role       @default(user)
   status        UserStatus @default(aktif)
   joinedAt      DateTime?  @map("joined_at") @db.Date

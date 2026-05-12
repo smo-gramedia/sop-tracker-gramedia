@@ -9,7 +9,6 @@ import bcrypt from "bcryptjs";
 export async function updateMyProfile(input: {
   nama: string;
   unit?: string;
-  jabatan?: string;
 }) {
   const session = await auth();
   if (!session) throw new Error("Unauthorized");
@@ -21,7 +20,6 @@ export async function updateMyProfile(input: {
     data: {
       nama: input.nama.trim(),
       unit: input.unit?.trim() || null,
-      jabatan: input.jabatan?.trim() || null,
     },
   });
 

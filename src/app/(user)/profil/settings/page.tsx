@@ -11,10 +11,9 @@ export default async function ProfileSettingsPage() {
       id: true,
       nama: true,
       email: true,
-      kodeKaryawan: true,
+      kodeUser: true,
+      tipeUser: true,
       unit: true,
-      jabatan: true,
-      section: true,
     },
   });
 
@@ -26,7 +25,7 @@ export default async function ProfileSettingsPage() {
         <p className="text-sm text-muted-foreground">Profil</p>
         <h1 className="font-display font-bold text-3xl mt-1">Pengaturan</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Kelola informasi profil dan keamanan akun Anda.
+          Kelola informasi profil dan keamanan akun unit kerja Anda.
         </p>
       </div>
 

@@ -1,4 +1,10 @@
-// prisma/seed.ts  (replace existing)
+// prisma/seed.ts
+// ════════════════════════════════════════════════════════════════════
+// Seed Fase 1: Konsep baru user = unit kerja (store/department)
+// - 2 Admin accounts (ADMIN-001, SUPERADMIN-001)
+// - 5 Store users (STR-XXXXX-001)
+// - 7 Department users (DEPT-XXX-001)
+// ════════════════════════════════════════════════════════════════════
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
@@ -59,122 +65,221 @@ async function main() {
     where: { kode: "HRD" }, update: {},
     create: { kode:"HRD", nama:"Human Resources Division", directorateId: hc.id },
   });
-  const divGA = await prisma.division.upsert({
-    where: { kode: "GAD" }, update: {},
-    create: { kode:"GAD", nama:"General Affairs Division", directorateId: hc.id },
-  });
   console.log("✓ Divisions");
 
   // ── Departments ───────────────────────────────────────────────────────
   const deptSMO = await prisma.department.upsert({
     where: { kode: "SMO" }, update: {},
-    create: { kode:"SMO", nama:"SMO Department", divisionId: divCSSM.id },
+    create: { kode:"SMO", nama:"Strategic Management Office", divisionId: divCSSM.id },
   });
-  await prisma.department.upsert({
-    where: { kode: "ITIF" }, update: {},
-    create: { kode:"ITIF", nama:"IT Infrastructure Department", divisionId: divIT.id },
+  const deptIT = await prisma.department.upsert({
+    where: { kode: "IT" }, update: {},
+    create: { kode:"IT", nama:"Information Technology", divisionId: divIT.id },
   });
   const deptStore = await prisma.department.upsert({
-    where: { kode: "STOR" }, update: {},
-    create: { kode:"STOR", nama:"Store Operations Department", divisionId: divRetail.id },
+    where: { kode: "STORE" }, update: {},
+    create: { kode:"STORE", nama:"Store Operations", divisionId: divRetail.id },
   });
-  await prisma.department.upsert({
-    where: { kode: "GCOM" }, update: {},
-    create: { kode:"GCOM", nama:"Gramedia.com Department", divisionId: divRetail.id },
-  });
-  await prisma.department.upsert({
+  const deptEdit = await prisma.department.upsert({
     where: { kode: "EDIT" }, update: {},
-    create: { kode:"EDIT", nama:"Editorial Department", divisionId: divPub.id },
+    create: { kode:"EDIT", nama:"Editorial", divisionId: divPub.id },
   });
   const deptFin = await prisma.department.upsert({
     where: { kode: "FIN" }, update: {},
     create: { kode:"FIN", nama:"Finance Department", divisionId: divFin.id },
   });
+  const deptAcc = await prisma.department.upsert({
+    where: { kode: "ACC" }, update: {},
+    create: { kode:"ACC", nama:"Accounting Department", divisionId: divAcc.id },
+  });
   const deptHR = await prisma.department.upsert({
-    where: { kode: "HROP" }, update: {},
-    create: { kode:"HROP", nama:"HR Operations Department", divisionId: divHR.id },
+    where: { kode: "HR" }, update: {},
+    create: { kode:"HR", nama:"Human Resources", divisionId: divHR.id },
   });
   console.log("✓ Departments");
 
-  // ── SOP Subcategories ─────────────────────────────────────────────────
-  await prisma.sopSubcategory.upsert({
-    where: { kode: "SMGR" }, update: {},
-    create: { kode:"SMGR", nama:"SOP Manager", deskripsi:"Panduan manajerial dan kepemimpinan untuk posisi manajer di seluruh unit Gramedia" },
-  });
-  await prisma.sopSubcategory.upsert({
-    where: { kode: "SADF" }, update: {},
-    create: { kode:"SADF", nama:"SOP Administration - Financial", deskripsi:"Prosedur administrasi keuangan, pelaporan, dan tata kelola umum lintas divisi" },
-  });
-  console.log("✓ SOP Subcategories");
-
-  // ── Stores ────────────────────────────────────────────────────────────
-  const storeData = [
-    { kode:"1-CP-2026",  nama:"Gramedia Summarecon Bekasi",  wilayah:"Jawa Barat", kota:"Bekasi",   departemen:"Store" },
-    { kode:"2-CP-2026",  nama:"Gramedia Central Park",       wilayah:"DKI Jakarta",kota:"Jakarta",  departemen:"Store" },
-    { kode:"3-CP-2026",  nama:"Gramedia Matraman",           wilayah:"DKI Jakarta",kota:"Jakarta",  departemen:"Store" },
-    { kode:"4-CP-2026",  nama:"Gramedia Lippo Cikarang",     wilayah:"Jawa Barat", kota:"Cikarang", departemen:"Store" },
-    { kode:"5-CP-2026",  nama:"Gramedia Surabaya",           wilayah:"Jawa Timur", kota:"Surabaya", departemen:"Store" },
-  ];
-  for (const s of storeData) {
-    await prisma.store.upsert({ where: { kode: s.kode }, update: {}, create: { ...s, status:"aktif" } });
-  }
-  console.log("✓ Stores");
-
-  // ── Users ─────────────────────────────────────────────────────────────
+  // ── Users (Konsep Baru: Unit Kerja) ──────────────────────────────────
+  // Password semua user: Admin@123!
   const hash = await bcrypt.hash("Admin@123!", 12);
 
-  // Super Admin
+  // ────────────────────────────────────────────────────────────────────
+  // ADMIN ACCOUNTS (kodeUser format ADMIN-NNN / SUPERADMIN-NNN)
+  // tipeUser = null (admin bukan unit kerja)
+  // ────────────────────────────────────────────────────────────────────
   const superAdmin = await prisma.user.upsert({
     where: { email: "superadmin@gramedia.co.id" },
     update: {},
     create: {
-      kodeKaryawan: "SA-001", nama:"Super Admin",
-      email:"superadmin@gramedia.co.id", passwordHash: hash,
-      unit:"SMO", jabatan:"System Administrator", section:"IT Ops",
-      role:"superadmin", status:"aktif", joinedAt: new Date("2020-01-01"),
+      kodeUser: "SUPERADMIN-001",
+      tipeUser: null,
+      nama: "Super Admin",
+      email: "superadmin@gramedia.co.id",
+      passwordHash: hash,
+      unit: "SMO",
+      role: "superadmin",
+      status: "aktif",
+      joinedAt: new Date("2020-01-01"),
     },
   });
 
-  // Admin
   const admin = await prisma.user.upsert({
     where: { email: "admin@gramedia.co.id" },
     update: {},
     create: {
-      kodeKaryawan: "ADM-001", nama:"Budi Admin",
-      email:"admin@gramedia.co.id", passwordHash: hash,
-      unit:"SMO", jabatan:"SOP Administrator", section:"Integration 1",
-      role:"admin", status:"aktif", joinedAt: new Date("2021-03-15"),
+      kodeUser: "ADMIN-001",
+      tipeUser: null,
+      nama: "Admin SMO",
+      email: "admin@gramedia.co.id",
+      passwordHash: hash,
+      unit: "SMO",
+      role: "admin",
+      status: "aktif",
+      joinedAt: new Date("2021-03-15"),
     },
   });
 
-  // User biasa
-  const user1 = await prisma.user.upsert({
-    where: { email: "user@gramedia.co.id" },
-    update: {},
-    create: {
-      kodeKaryawan: "USR-001", nama:"Siti Karyawan",
-      email:"user@gramedia.co.id", passwordHash: hash,
-      unit:"Store", jabatan:"Store Associate", section:"Operations",
-      role:"user", status:"aktif", joinedAt: new Date("2022-06-01"),
+  // ────────────────────────────────────────────────────────────────────
+  // STORE USERS (kodeUser format STR-XXXXX-001)
+  // tipeUser = "store"
+  // ────────────────────────────────────────────────────────────────────
+  const stores = [
+    {
+      kode: "STR-00001-001",
+      nama: "Gramedia Matraman",
+      email: "str.matraman@gramedia.co.id",
+      unit: "Store Operations",
+      joinedAt: new Date("2022-01-15"),
     },
-  });
-
-  const user2 = await prisma.user.upsert({
-    where: { email: "user2@gramedia.co.id" },
-    update: {},
-    create: {
-      kodeKaryawan: "USR-002", nama:"Andi Prasetyo",
-      email:"user2@gramedia.co.id", passwordHash: hash,
-      unit:"Finance", jabatan:"Staff Keuangan", section:"Treasury",
-      role:"user", status:"aktif", joinedAt: new Date("2023-01-10"),
+    {
+      kode: "STR-00012-001",
+      nama: "Gramedia Kelapa Gading",
+      email: "str.kelapagading@gramedia.co.id",
+      unit: "Store Operations",
+      joinedAt: new Date("2022-03-10"),
     },
-  });
+    {
+      kode: "STR-00023-001",
+      nama: "Gramedia Cibubur Junction",
+      email: "str.cibubur@gramedia.co.id",
+      unit: "Store Operations",
+      joinedAt: new Date("2022-06-22"),
+    },
+    {
+      kode: "STR-00045-001",
+      nama: "Gramedia Plaza Senayan",
+      email: "str.plazasenayan@gramedia.co.id",
+      unit: "Store Operations",
+      joinedAt: new Date("2023-01-05"),
+    },
+    {
+      kode: "STR-00078-001",
+      nama: "Gramedia Bandung Trans Studio",
+      email: "str.bandungtransstudio@gramedia.co.id",
+      unit: "Store Operations",
+      joinedAt: new Date("2023-04-18"),
+    },
+  ];
 
-  console.log("✓ Users — 4 akun dibuat");
-  console.log("   Super Admin : superadmin@gramedia.co.id / Admin@123!");
-  console.log("   Admin       : admin@gramedia.co.id       / Admin@123!");
-  console.log("   User 1      : user@gramedia.co.id        / Admin@123!");
-  console.log("   User 2      : user2@gramedia.co.id       / Admin@123!");
+  const storeUsers = [];
+  for (const s of stores) {
+    const u = await prisma.user.upsert({
+      where: { email: s.email },
+      update: {},
+      create: {
+        kodeUser: s.kode,
+        tipeUser: "store",
+        nama: s.nama,
+        email: s.email,
+        passwordHash: hash,
+        unit: s.unit,
+        role: "user",
+        status: "aktif",
+        joinedAt: s.joinedAt,
+      },
+    });
+    storeUsers.push(u);
+  }
+
+  // ────────────────────────────────────────────────────────────────────
+  // DEPARTMENT USERS (kodeUser format DEPT-AAA-001)
+  // tipeUser = "department"
+  // ────────────────────────────────────────────────────────────────────
+  const departments = [
+    {
+      kode: "DEPT-SMO-001",
+      nama: "Strategic Management Office",
+      email: "dept.smo@gramedia.co.id",
+      unit: "SMO",
+      joinedAt: new Date("2020-06-01"),
+    },
+    {
+      kode: "DEPT-FIN-001",
+      nama: "Finance Department",
+      email: "dept.finance@gramedia.co.id",
+      unit: "Finance",
+      joinedAt: new Date("2020-07-15"),
+    },
+    {
+      kode: "DEPT-HR-001",
+      nama: "Human Resources Department",
+      email: "dept.hr@gramedia.co.id",
+      unit: "Human Resources",
+      joinedAt: new Date("2020-08-20"),
+    },
+    {
+      kode: "DEPT-IT-001",
+      nama: "Information Technology Department",
+      email: "dept.it@gramedia.co.id",
+      unit: "IT",
+      joinedAt: new Date("2020-09-10"),
+    },
+    {
+      kode: "DEPT-ACC-001",
+      nama: "Accounting Department",
+      email: "dept.accounting@gramedia.co.id",
+      unit: "Accounting",
+      joinedAt: new Date("2021-01-12"),
+    },
+    {
+      kode: "DEPT-EDIT-001",
+      nama: "Editorial Department",
+      email: "dept.editorial@gramedia.co.id",
+      unit: "Editorial",
+      joinedAt: new Date("2021-03-08"),
+    },
+    {
+      kode: "DEPT-AUDIT-001",
+      nama: "Internal Audit Department",
+      email: "dept.audit@gramedia.co.id",
+      unit: "Internal Audit",
+      joinedAt: new Date("2021-05-22"),
+    },
+  ];
+
+  const deptUsers = [];
+  for (const d of departments) {
+    const u = await prisma.user.upsert({
+      where: { email: d.email },
+      update: {},
+      create: {
+        kodeUser: d.kode,
+        tipeUser: "department",
+        nama: d.nama,
+        email: d.email,
+        passwordHash: hash,
+        unit: d.unit,
+        role: "user",
+        status: "aktif",
+        joinedAt: d.joinedAt,
+      },
+    });
+    deptUsers.push(u);
+  }
+
+  console.log("✓ Users — 14 akun dibuat");
+  console.log("   Admin (2): SUPERADMIN-001, ADMIN-001");
+  console.log("   Store (5): STR-00001-001, STR-00012-001, STR-00023-001, STR-00045-001, STR-00078-001");
+  console.log("   Department (7): DEPT-SMO/FIN/HR/IT/ACC/EDIT/AUDIT-001");
 
   // ── Sample SOP Documents ──────────────────────────────────────────────
   const sop1 = await prisma.sopDocument.upsert({
@@ -207,26 +312,40 @@ async function main() {
       tanggalBerlaku: new Date("2025-05-10"),
     },
   });
-  console.log("✓ Sample SOP Documents");
+  console.log("✓ Sample SOP Documents (3 utama)");
 
   // ── Sample Learning Progress ──────────────────────────────────────────
+  // Store Matraman sedang belajar Pick Up In Store
   await prisma.learningProgress.upsert({
-    where: { userId_sopDocumentId: { userId: user1.id, sopDocumentId: sop2.id } },
+    where: { userId_sopDocumentId: { userId: storeUsers[0].id, sopDocumentId: sop2.id } },
     update: {},
     create: {
-      userId: user1.id, sopDocumentId: sop2.id,
+      userId: storeUsers[0].id, sopDocumentId: sop2.id,
       stepCurrent: 2, status: "dipelajari",
       startedAt: new Date(), lastAccessedAt: new Date(),
     },
   });
+  // Finance Department sedang belajar Pembayaran PO
   await prisma.learningProgress.upsert({
-    where: { userId_sopDocumentId: { userId: user2.id, sopDocumentId: sop1.id } },
+    where: { userId_sopDocumentId: { userId: deptUsers[1].id, sopDocumentId: sop1.id } },
     update: {},
     create: {
-      userId: user2.id, sopDocumentId: sop1.id,
+      userId: deptUsers[1].id, sopDocumentId: sop1.id,
       stepCurrent: 4, status: "dipelajari",
       startedAt: new Date(Date.now() - 3*24*60*60*1000),
       lastAccessedAt: new Date(),
+    },
+  });
+  // SMO Department sudah selesai Champion Team
+  await prisma.learningProgress.upsert({
+    where: { userId_sopDocumentId: { userId: deptUsers[0].id, sopDocumentId: sop3.id } },
+    update: {},
+    create: {
+      userId: deptUsers[0].id, sopDocumentId: sop3.id,
+      stepCurrent: 6, status: "selesai",
+      startedAt: new Date(Date.now() - 7*24*60*60*1000),
+      lastAccessedAt: new Date(Date.now() - 1*24*60*60*1000),
+      completedAt: new Date(Date.now() - 1*24*60*60*1000),
     },
   });
   console.log("✓ Sample Learning Progress");
@@ -260,11 +379,11 @@ async function main() {
 
   // ── FAQs ──────────────────────────────────────────────────────────────
   const faqs = [
-    { pertanyaan:"Apa itu SOP Tracker?", jawaban:"SOP Tracker adalah sistem manajemen pembelajaran SOP internal Kompas Gramedia yang memungkinkan karyawan mempelajari SOP secara terstruktur.", urutan:1 },
+    { pertanyaan:"Apa itu SOP Tracker?", jawaban:"SOP Tracker adalah sistem manajemen pembelajaran SOP internal Kompas Gramedia. Sistem ini digunakan oleh unit kerja (toko dan departemen) untuk mempelajari SOP secara terstruktur.", urutan:1 },
     { pertanyaan:"Bagaimana cara memulai pembelajaran SOP?", jawaban:"Pilih SOP dari menu navigasi, klik tombol 'Pelajari' pada kartu SOP, lalu ikuti 7 langkah alur pembelajaran hingga selesai.", urutan:2 },
     { pertanyaan:"Apa yang harus dilakukan setelah membaca SOP?", jawaban:"Upload foto atau dokumen sebagai bukti sosialisasi. Admin akan memverifikasi dan membuka akses Post Test.", urutan:3 },
     { pertanyaan:"Berapa nilai minimum untuk lulus Post Test?", jawaban:"Nilai minimum kelulusan adalah 70 dari 100. Post Test terdiri dari 10 soal pilihan ganda dengan waktu 10 menit.", urutan:4 },
-    { pertanyaan:"Bagaimana cara melihat progress belajar saya?", jawaban:"Kunjungi halaman Profil untuk melihat seluruh riwayat pembelajaran, aktivitas, dan hasil post test.", urutan:5 },
+    { pertanyaan:"Bagaimana cara melihat progress belajar unit kerja saya?", jawaban:"Kunjungi halaman Profil untuk melihat seluruh riwayat pembelajaran, aktivitas, dan hasil post test unit kerja Anda.", urutan:5 },
   ];
   for (const faq of faqs) {
     const existing = await prisma.faqEntry.findFirst({ where: { pertanyaan: faq.pertanyaan } });
@@ -288,12 +407,25 @@ async function main() {
   }
   console.log("✓ Glossary");
 
-  console.log("\n✅ Seeding selesai!");
-  console.log("\n📋 Akun yang tersedia:");
-  console.log("   Super Admin : superadmin@gramedia.co.id / Admin@123!");
-  console.log("   Admin       : admin@gramedia.co.id       / Admin@123!");
-  console.log("   User 1      : user@gramedia.co.id        / Admin@123!");
-  console.log("   User 2      : user2@gramedia.co.id       / Admin@123!");
+  console.log("\n✅ Seeding selesai!\n");
+  console.log("📋 Akun yang tersedia (password: Admin@123!):\n");
+  console.log("   ADMIN:");
+  console.log("   • SUPERADMIN-001  → superadmin@gramedia.co.id");
+  console.log("   • ADMIN-001       → admin@gramedia.co.id\n");
+  console.log("   STORE (5):");
+  console.log("   • STR-00001-001   → str.matraman@gramedia.co.id");
+  console.log("   • STR-00012-001   → str.kelapagading@gramedia.co.id");
+  console.log("   • STR-00023-001   → str.cibubur@gramedia.co.id");
+  console.log("   • STR-00045-001   → str.plazasenayan@gramedia.co.id");
+  console.log("   • STR-00078-001   → str.bandungtransstudio@gramedia.co.id\n");
+  console.log("   DEPARTMENT (7):");
+  console.log("   • DEPT-SMO-001    → dept.smo@gramedia.co.id");
+  console.log("   • DEPT-FIN-001    → dept.finance@gramedia.co.id");
+  console.log("   • DEPT-HR-001     → dept.hr@gramedia.co.id");
+  console.log("   • DEPT-IT-001     → dept.it@gramedia.co.id");
+  console.log("   • DEPT-ACC-001    → dept.accounting@gramedia.co.id");
+  console.log("   • DEPT-EDIT-001   → dept.editorial@gramedia.co.id");
+  console.log("   • DEPT-AUDIT-001  → dept.audit@gramedia.co.id\n");
 }
 
 main()

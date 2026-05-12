@@ -1,5 +1,5 @@
 // src/components/user/RankingPanel.tsx
-import { Trophy, Award, TrendingUp } from "lucide-react";
+import { Trophy, Award, Store, Building2 } from "lucide-react";
 import type { RankingEntry } from "@/lib/ranking";
 
 type Props = {
@@ -28,7 +28,7 @@ export default function RankingPanel({
           <div>
             <div className="font-display font-bold text-base">Top Learners</div>
             <div className="text-[10px] text-muted-foreground">
-              {totalRanked} pelajar aktif
+              {totalRanked} unit kerja aktif
             </div>
           </div>
         </div>
@@ -38,7 +38,7 @@ export default function RankingPanel({
       {top.length === 0 ? (
         <div className="text-xs text-muted-foreground py-6 text-center bg-white/60 rounded-xl">
           <Trophy size={20} className="mx-auto text-muted-foreground/40 mb-2" />
-          <p>Belum ada pelajar yang menyelesaikan SOP.</p>
+          <p>Belum ada unit kerja yang menyelesaikan SOP.</p>
           <p className="font-semibold mt-1">Jadilah yang pertama! 🚀</p>
         </div>
       ) : (
@@ -124,6 +124,9 @@ function RankingRow({
         )}
       </div>
 
+      {/* Tipe icon */}
+      <TipeIcon tipe={entry.tipeUser} />
+
       {/* Name & unit */}
       <div className="flex-1 min-w-0">
         <div
@@ -138,8 +141,14 @@ function RankingRow({
             </span>
           )}
         </div>
-        <div className="text-[10px] text-muted-foreground truncate">
-          {entry.unit ?? entry.jabatan ?? "—"}
+        <div className="text-[10px] text-muted-foreground truncate font-mono">
+          {entry.kodeUser}
+          {entry.unit && (
+            <>
+              {" · "}
+              <span className="font-sans">{entry.unit}</span>
+            </>
+          )}
         </div>
       </div>
 
@@ -154,4 +163,23 @@ function RankingRow({
       </div>
     </div>
   );
+}
+
+// ─── Tipe Icon mini ───────────────────────────────────────────────────
+function TipeIcon({ tipe }: { tipe: "store" | "department" | null }) {
+  if (tipe === "store") {
+    return (
+      <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center flex-shrink-0">
+        <Store size={9} />
+      </div>
+    );
+  }
+  if (tipe === "department") {
+    return (
+      <div className="w-5 h-5 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center flex-shrink-0">
+        <Building2 size={9} />
+      </div>
+    );
+  }
+  return null;
 }

@@ -1,30 +1,53 @@
 // src/components/admin/PostTestAdminClient.tsx
 "use client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Plus, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Search, FileText } from "lucide-react";
 import TambahPostTestModal from "./TambahPostTestModal";
-import { formatTanggal } from "@/lib/utils";
 
 type PostTest = {
-  id: string; passingGrade: number; durasiMenit: number; jumlahSoal: number; createdAt: Date;
+  id: string;
+  passingGrade: number;
+  durasiMenit: number;
+  jumlahSoal: number;
+  createdAt: Date;
   sopDocument: { kode: string; judul: string; kategori: string };
   _count: { questions: number; results: number };
-  questions?: Array<{ id:string; pertanyaan:string; opsiA:string; opsiB:string; opsiC:string; opsiD:string; jawabanBenar:string }>;
-  results?: Array<{ id:string; skor:number; status:string; attemptNumber:number; dikerjakan_at:Date; user?:{ nama:string } }>;
 };
+
 type SopOption = { id: string; kode: string; judul: string };
 
 type Props = { postTests: PostTest[]; sopOptions: SopOption[] };
 
 export default function PostTestAdminClient({ postTests, sopOptions }: Props) {
   const router = useRouter();
-  const [modalOpen,  setModalOpen]  = useState(false);
-  const [expanded,   setExpanded]   = useState<string|null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  // ─── Filter state ───────────────────────────────────────────────────
+  const [search, setSearch] = useState("");
+  const [kategoriFilter, setKategoriFilter] = useState("");
+
+  // ─── Filtered list ──────────────────────────────────────────────────
+  const filtered = useMemo(() => {
+    return postTests.filter((pt) => {
+      if (search.trim()) {
+        const q = search.toLowerCase();
+        const matches =
+          pt.sopDocument.judul.toLowerCase().includes(q) ||
+          pt.sopDocument.kode.toLowerCase().includes(q);
+        if (!matches) return false;
+      }
+      if (kategoriFilter && pt.sopDocument.kategori !== kategoriFilter)
+        return false;
+      return true;
+    });
+  }, [postTests, search, kategoriFilter]);
 
   async function handleDelete(id: string) {
-    if (!confirm("Hapus post test ini?")) return;
+    if (!confirm("Hapus post test ini? Semua hasil pengerjaan user juga akan terhapus."))
+      return;
     await fetch(`/api/post-test/create?id=${id}`, { method: "DELETE" });
     router.refresh();
   }
@@ -36,20 +59,56 @@ export default function PostTestAdminClient({ postTests, sopOptions }: Props) {
           <div>
             <p className="text-sm text-muted-foreground">Monitoring</p>
             <h1 className="font-display font-bold text-3xl mt-1">Post Test</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Kelola soal Post Test dan pantau hasil pengerjaan user per SOP.
+            </p>
           </div>
           <Button className="gap-2" onClick={() => setModalOpen(true)}>
-            <Plus size={16}/> Tambah Post Test
+            <Plus size={16} /> Tambah Post Test
           </Button>
         </div>
 
+        {/* Filter Bar */}
+        <div className="flex flex-col sm:flex-row gap-2 mb-4">
+          <div className="flex-1 flex items-center gap-2 bg-background border rounded-xl px-3 py-2 focus-within:ring-2 focus-within:ring-primary/20 transition-shadow">
+            <Search size={14} className="text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Cari nama SOP atau kode..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="flex-1 text-sm bg-transparent border-none outline-none"
+            />
+          </div>
+          <select
+            value={kategoriFilter}
+            onChange={(e) => setKategoriFilter(e.target.value)}
+            className="bg-background border rounded-xl px-3 py-2 text-sm min-w-[160px]"
+          >
+            <option value="">Semua Kategori</option>
+            <option value="sr">SOP Operation</option>
+            <option value="ss">Supporting Unit</option>
+            <option value="sp">Publishing</option>
+            <option value="sg">General</option>
+            <option value="petunjuk">Petunjuk</option>
+          </select>
+        </div>
+
         <div className="space-y-3">
-          {postTests.map(pt => (
-            <div key={pt.id} className="bg-background rounded-xl border overflow-hidden">
-              {/* Header row */}
+          {filtered.map((pt) => (
+            <div
+              key={pt.id}
+              className="bg-background rounded-xl border overflow-hidden hover:border-primary/30 transition-colors"
+            >
               <div className="flex items-center gap-4 px-5 py-4">
                 <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <KategoriBadge kategori={pt.sopDocument.kategori} />
+                    <span className="text-xs font-mono text-muted-foreground">
+                      {pt.sopDocument.kode}
+                    </span>
+                  </div>
                   <div className="font-medium">{pt.sopDocument.judul}</div>
-                  <div className="text-xs font-mono text-muted-foreground mt-0.5">{pt.sopDocument.kode}</div>
                 </div>
                 <div className="flex items-center gap-6 text-sm flex-shrink-0">
                   <div className="text-center">
@@ -66,18 +125,23 @@ export default function PostTestAdminClient({ postTests, sopOptions }: Props) {
                   </div>
                   <div className="text-center">
                     <div className="font-semibold">{pt._count.results}</div>
-                    <div className="text-xs text-muted-foreground">Pengerjaan</div>
+                    <div className="text-xs text-muted-foreground">
+                      Pengerjaan
+                    </div>
                   </div>
                   <div className="flex gap-1.5">
+                    <Link href={`/post-test/${pt.id}`}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2.5 text-xs gap-1"
+                      >
+                        <FileText size={12} /> Lihat Detail
+                      </Button>
+                    </Link>
                     <Button
-                      variant="outline" size="sm" className="h-7 px-2.5 text-xs gap-1"
-                      onClick={() => setExpanded(expanded === pt.id ? null : pt.id)}
-                    >
-                      {expanded === pt.id ? <ChevronUp size={12}/> : <ChevronDown size={12}/>}
-                      {expanded === pt.id ? "Tutup" : "Lihat Soal"}
-                    </Button>
-                    <Button
-                      variant="outline" size="sm"
+                      variant="outline"
+                      size="sm"
                       className="h-7 px-2.5 text-xs text-destructive border-destructive/30 hover:bg-destructive/10"
                       onClick={() => handleDelete(pt.id)}
                     >
@@ -86,32 +150,18 @@ export default function PostTestAdminClient({ postTests, sopOptions }: Props) {
                   </div>
                 </div>
               </div>
-
-              {/* Expanded soal */}
-              {expanded === pt.id && pt.questions && (
-                <div className="border-t bg-muted/20 p-5 space-y-4">
-                  <h3 className="font-semibold text-sm">Daftar Soal</h3>
-                  {pt.questions.map((q, i) => (
-                    <div key={q.id} className="text-sm">
-                      <div className="font-medium mb-1.5">{i+1}. {q.pertanyaan}</div>
-                      <div className="grid grid-cols-2 gap-1 pl-4">
-                        {["A","B","C","D"].map(opt => (
-                          <div key={opt} className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded
-                            ${q.jawabanBenar === opt.toLowerCase() ? "bg-green-100 text-green-700 font-medium" : "text-muted-foreground"}`}>
-                            <span className="font-mono w-4">{opt}.</span>
-                            {q[`opsi${opt}` as keyof typeof q] as string}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           ))}
-          {postTests.length === 0 && (
+          {filtered.length === 0 && (
             <div className="bg-background rounded-xl border p-12 text-center text-muted-foreground">
-              Belum ada post test
+              {postTests.length === 0
+                ? "Belum ada post test"
+                : "Tidak ada post test yang sesuai filter"}
+            </div>
+          )}
+          {filtered.length > 0 && (
+            <div className="text-xs text-muted-foreground text-right pt-2">
+              Menampilkan {filtered.length} dari {postTests.length} post test
             </div>
           )}
         </div>
@@ -119,9 +169,38 @@ export default function PostTestAdminClient({ postTests, sopOptions }: Props) {
 
       <TambahPostTestModal
         open={modalOpen}
-        onClose={() => { setModalOpen(false); router.refresh(); }}
+        onClose={() => {
+          setModalOpen(false);
+          router.refresh();
+        }}
         sopOptions={sopOptions}
       />
     </>
+  );
+}
+
+function KategoriBadge({ kategori }: { kategori: string }) {
+  const colors: Record<string, string> = {
+    sr: "bg-green-50 text-green-700 border-green-200",
+    ss: "bg-blue-50 text-blue-700 border-blue-200",
+    sp: "bg-purple-50 text-purple-700 border-purple-200",
+    sg: "bg-amber-50 text-amber-700 border-amber-200",
+    petunjuk: "bg-gray-50 text-gray-600 border-gray-200",
+  };
+  const labels: Record<string, string> = {
+    sr: "Operation",
+    ss: "Supporting",
+    sp: "Publishing",
+    sg: "General",
+    petunjuk: "Petunjuk",
+  };
+  return (
+    <span
+      className={`text-[10px] px-2 py-0.5 rounded-full border font-bold uppercase ${
+        colors[kategori] ?? ""
+      }`}
+    >
+      {labels[kategori] ?? kategori}
+    </span>
   );
 }

@@ -2,7 +2,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { Settings } from "lucide-react";
+import { Settings, Store, Building2 } from "lucide-react";
 import { formatTanggal } from "@/lib/utils";
 import { SOP_KATEGORI_LABEL } from "@/lib/constants";
 
@@ -40,24 +40,36 @@ export default async function ProfilPage() {
   ).length;
   const unreadNotif = notifications.filter((n) => !n.isRead).length;
 
+  // Tipe label mapping
+  const tipeLabels: Record<string, string> = {
+    store: "Store",
+    department: "Department",
+  };
+
   return (
     <div className="max-w-5xl mx-auto px-6 py-8 space-y-6">
       {/* Profile header */}
       <div className="bg-background rounded-2xl border p-6 flex items-start gap-6">
-        <div className="w-16 h-16 rounded-full bg-foreground text-background flex items-center justify-center font-display font-bold text-2xl flex-shrink-0">
-          {user?.nama.charAt(0).toUpperCase()}
-        </div>
+        <ProfileAvatar tipeUser={user?.tipeUser ?? null} nama={user?.nama ?? ""} />
         <div className="flex-1 min-w-0">
           <h1 className="font-display font-bold text-2xl">{user?.nama}</h1>
           <div className="text-muted-foreground text-sm mt-0.5">
             {user?.email}
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-sm text-muted-foreground">
-            {user?.kodeKaryawan && (
+            {user?.kodeUser && (
               <span>
-                ID:{" "}
+                Kode User:{" "}
+                <strong className="text-foreground font-mono">
+                  {user.kodeUser}
+                </strong>
+              </span>
+            )}
+            {user?.tipeUser && (
+              <span>
+                Tipe:{" "}
                 <strong className="text-foreground">
-                  {user.kodeKaryawan}
+                  {tipeLabels[user.tipeUser] ?? user.tipeUser}
                 </strong>
               </span>
             )}
@@ -65,12 +77,6 @@ export default async function ProfilPage() {
               <span>
                 Unit:{" "}
                 <strong className="text-foreground">{user.unit}</strong>
-              </span>
-            )}
-            {user?.jabatan && (
-              <span>
-                Jabatan:{" "}
-                <strong className="text-foreground">{user.jabatan}</strong>
               </span>
             )}
             {user?.joinedAt && (
@@ -192,6 +198,35 @@ export default async function ProfilPage() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Profile Avatar (icon per tipe) ───────────────────────────────────
+function ProfileAvatar({
+  tipeUser,
+  nama,
+}: {
+  tipeUser: "store" | "department" | null;
+  nama: string;
+}) {
+  if (tipeUser === "store") {
+    return (
+      <div className="w-16 h-16 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center flex-shrink-0">
+        <Store size={28} />
+      </div>
+    );
+  }
+  if (tipeUser === "department") {
+    return (
+      <div className="w-16 h-16 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center flex-shrink-0">
+        <Building2 size={28} />
+      </div>
+    );
+  }
+  return (
+    <div className="w-16 h-16 rounded-full bg-foreground text-background flex items-center justify-center font-display font-bold text-2xl flex-shrink-0">
+      {nama.charAt(0).toUpperCase()}
     </div>
   );
 }

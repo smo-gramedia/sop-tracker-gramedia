@@ -1,9 +1,9 @@
 // src/components/admin/UploadDokumenClient.tsx
 "use client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import TambahDokumenModal from "./TambahDokumenModal";
 import EditDokumenModal  from "./EditDokumenModal";
 import { deleteSopDocument } from "@/actions/sop-document";
@@ -50,6 +50,39 @@ export default function UploadDokumenClient({
   const [editingDoc, setEditingDoc] = useState<Doc | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
 
+  // ─── Filter state ───────────────────────────────────────────────────
+  const [search, setSearch] = useState("");
+  const [kategoriFilter, setKategoriFilter] = useState("");
+  const [deptFilter, setDeptFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+
+  // ─── Dynamic department list (from current docs) ────────────────────
+  const departmentOptions = useMemo(() => {
+    const set = new Set<string>();
+    docs.forEach((d) => {
+      if (d.department?.nama) set.add(d.department.nama);
+    });
+    return Array.from(set).sort();
+  }, [docs]);
+
+  // ─── Filtered docs ──────────────────────────────────────────────────
+  const filteredDocs = useMemo(() => {
+    return docs.filter((doc) => {
+      // Search: nama SOP, kode
+      if (search.trim()) {
+        const q = search.toLowerCase();
+        const matches =
+          doc.judul.toLowerCase().includes(q) ||
+          doc.kode.toLowerCase().includes(q);
+        if (!matches) return false;
+      }
+      if (kategoriFilter && doc.kategori !== kategoriFilter) return false;
+      if (deptFilter && doc.department?.nama !== deptFilter) return false;
+      if (statusFilter && doc.status !== statusFilter) return false;
+      return true;
+    });
+  }, [docs, search, kategoriFilter, deptFilter, statusFilter]);
+
   async function handleDelete(id: string) {
     if (!confirm("Hapus dokumen ini? Semua lampiran juga akan terhapus.")) return;
     setDeleting(id);
@@ -78,6 +111,54 @@ export default function UploadDokumenClient({
           </Button>
         </div>
 
+        {/* Filter Bar */}
+        <div className="flex flex-col sm:flex-row gap-2 mb-4 flex-wrap">
+          <div className="flex-1 min-w-[240px] flex items-center gap-2 bg-background border rounded-xl px-3 py-2 focus-within:ring-2 focus-within:ring-primary/20 transition-shadow">
+            <Search size={14} className="text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Cari nama SOP atau kode..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="flex-1 text-sm bg-transparent border-none outline-none"
+            />
+          </div>
+          <select
+            value={kategoriFilter}
+            onChange={(e) => setKategoriFilter(e.target.value)}
+            className="bg-background border rounded-xl px-3 py-2 text-sm min-w-[160px]"
+          >
+            <option value="">Semua Kategori</option>
+            <option value="sr">SOP Operation</option>
+            <option value="ss">Supporting Unit</option>
+            <option value="sp">Publishing</option>
+            <option value="sg">General</option>
+            <option value="petunjuk">Petunjuk</option>
+          </select>
+          <select
+            value={deptFilter}
+            onChange={(e) => setDeptFilter(e.target.value)}
+            className="bg-background border rounded-xl px-3 py-2 text-sm min-w-[160px]"
+          >
+            <option value="">Semua Departemen</option>
+            {departmentOptions.map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
+          </select>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="bg-background border rounded-xl px-3 py-2 text-sm min-w-[140px]"
+          >
+            <option value="">Semua Status</option>
+            <option value="aktif">Aktif</option>
+            <option value="draft">Draft</option>
+            <option value="obsolete">Obsolete</option>
+          </select>
+        </div>
+
         <div className="bg-background rounded-xl border overflow-hidden">
           <table className="w-full text-sm">
             <thead>
@@ -103,7 +184,7 @@ export default function UploadDokumenClient({
               </tr>
             </thead>
             <tbody>
-              {docs.map((doc) => (
+              {filteredDocs.map((doc) => (
                 <tr
                   key={doc.id}
                   className="border-b last:border-0 hover:bg-muted/20 transition-colors"
@@ -145,20 +226,27 @@ export default function UploadDokumenClient({
                   </td>
                 </tr>
               ))}
-              {docs.length === 0 && (
+              {filteredDocs.length === 0 && (
                 <tr>
                   <td
                     colSpan={6}
                     className="px-5 py-12 text-center text-muted-foreground"
                   >
-                    Belum ada dokumen
+                    {docs.length === 0
+                      ? "Belum ada dokumen"
+                      : "Tidak ada dokumen yang sesuai filter"}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
-          <div className="px-5 py-3 border-t bg-muted/20 text-xs text-muted-foreground">
-            Total: {total} dokumen
+          <div className="px-5 py-3 border-t bg-muted/20 text-xs text-muted-foreground text-right">
+            Menampilkan {filteredDocs.length} dari {docs.length} dokumen
+            {total > docs.length && (
+              <span className="ml-1 text-muted-foreground/70">
+                (total {total} di database)
+              </span>
+            )}
           </div>
         </div>
       </div>

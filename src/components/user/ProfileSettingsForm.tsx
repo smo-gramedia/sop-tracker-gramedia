@@ -16,10 +16,9 @@ type UserData = {
   id: string;
   nama: string;
   email: string;
-  kodeKaryawan: string;
+  kodeUser: string;
+  tipeUser: "store" | "department" | null;
   unit: string | null;
-  jabatan: string | null;
-  section: string | null;
 };
 
 export default function ProfileSettingsForm({ user }: { user: UserData }) {
@@ -28,7 +27,6 @@ export default function ProfileSettingsForm({ user }: { user: UserData }) {
   // Profile state
   const [nama, setNama] = useState(user.nama);
   const [unit, setUnit] = useState(user.unit ?? "");
-  const [jabatan, setJabatan] = useState(user.jabatan ?? "");
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMsg, setProfileMsg] = useState<{
     type: "success" | "error";
@@ -45,6 +43,14 @@ export default function ProfileSettingsForm({ user }: { user: UserData }) {
     text: string;
   } | null>(null);
 
+  // Tipe label
+  const tipeLabel =
+    user.tipeUser === "store"
+      ? "Store"
+      : user.tipeUser === "department"
+      ? "Department"
+      : "Admin";
+
   async function handleProfileSubmit(e: React.FormEvent) {
     e.preventDefault();
     setProfileSaving(true);
@@ -53,7 +59,6 @@ export default function ProfileSettingsForm({ user }: { user: UserData }) {
       await updateMyProfile({
         nama: nama.trim(),
         unit: unit.trim() || undefined,
-        jabatan: jabatan.trim() || undefined,
       });
       setProfileMsg({ type: "success", text: "Profil berhasil disimpan" });
       router.refresh();
@@ -117,22 +122,22 @@ export default function ProfileSettingsForm({ user }: { user: UserData }) {
         <form onSubmit={handleProfileSubmit} className="p-5 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="kode">Kode Karyawan</Label>
+              <Label htmlFor="kode">Kode User</Label>
               <Input
                 id="kode"
-                value={user.kodeKaryawan}
+                value={user.kodeUser}
                 disabled
-                className="bg-muted"
+                className="bg-muted font-mono"
               />
               <p className="text-[11px] text-muted-foreground">
                 Tidak bisa diubah
               </p>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="tipe">Tipe</Label>
               <Input
-                id="email"
-                value={user.email}
+                id="tipe"
+                value={tipeLabel}
                 disabled
                 className="bg-muted"
               />
@@ -143,8 +148,26 @@ export default function ProfileSettingsForm({ user }: { user: UserData }) {
           </div>
 
           <div className="space-y-1.5">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              value={user.email}
+              disabled
+              className="bg-muted"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Tidak bisa diubah
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
             <Label htmlFor="nama">
-              Nama Lengkap <span className="text-destructive">*</span>
+              {user.tipeUser === "store"
+                ? "Nama Toko"
+                : user.tipeUser === "department"
+                ? "Nama Departemen"
+                : "Nama"}{" "}
+              <span className="text-destructive">*</span>
             </Label>
             <Input
               id="nama"
@@ -155,27 +178,21 @@ export default function ProfileSettingsForm({ user }: { user: UserData }) {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="unit">Unit</Label>
-              <Input
-                id="unit"
-                value={unit}
-                onChange={(e) => setUnit(e.target.value)}
-                placeholder="Mis: SMO, IT, Finance"
-                disabled={profileSaving}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="jabatan">Jabatan</Label>
-              <Input
-                id="jabatan"
-                value={jabatan}
-                onChange={(e) => setJabatan(e.target.value)}
-                placeholder="Mis: Integration Officer"
-                disabled={profileSaving}
-              />
-            </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="unit">Unit / Kategori</Label>
+            <Input
+              id="unit"
+              value={unit}
+              onChange={(e) => setUnit(e.target.value)}
+              placeholder={
+                user.tipeUser === "store"
+                  ? "Store Operations"
+                  : user.tipeUser === "department"
+                  ? "Finance / HR / IT"
+                  : "Unit"
+              }
+              disabled={profileSaving}
+            />
           </div>
 
           {profileMsg && (

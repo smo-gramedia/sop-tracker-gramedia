@@ -1,31 +1,33 @@
 // src/lib/ranking.ts
 // ═══════════════════════════════════════════════════════════════════
-// Individual User Ranking
+// Unit Kerja Ranking (Top Learners)
 // ───────────────────────────────────────────────────────────────────
-// Ranking berdasarkan jumlah SOP yang selesai (status="selesai" + step=6)
-// Tie-breaker: user yang complete-nya paling awal (first_completed ASC)
+// Ranking berdasarkan jumlah SOP yang selesai oleh unit kerja
+// (status="selesai" + step=6).
+// Tie-breaker: unit yang complete-nya paling awal (first_completed ASC)
 // Hanya user dengan role="user" dan status="aktif" yang masuk ranking.
+// User dengan role admin/superadmin TIDAK masuk ranking.
 // ═══════════════════════════════════════════════════════════════════
 
 import { prisma } from "@/lib/prisma";
+import type { TipeUser } from "@prisma/client";
 
 export type RankingEntry = {
   rank: number;
   userId: string;
   nama: string;
+  kodeUser: string;
+  tipeUser: TipeUser | null;
   unit: string | null;
-  jabatan: string | null;
   selesaiCount: number;
 };
 
 /**
- * Get ranked list of all aktif users by SOP completion count.
- * Returns full ranking (not paginated). Use this output to slice top N
- * and find current user's position.
+ * Get ranked list of all aktif unit kerja by SOP completion count.
+ * Returns full ranking (not paginated).
  */
 export async function getFullRanking(): Promise<RankingEntry[]> {
   // Aggregate: jumlah SOP selesai per user
-  // (status="selesai" AND step_current=6 → benar-benar selesai 100%)
   const grouped = await prisma.learningProgress.groupBy({
     by: ["userId"],
     where: {
@@ -40,14 +42,19 @@ export async function getFullRanking(): Promise<RankingEntry[]> {
     _min: { completedAt: true },
   });
 
-  // Tidak ada hasil
   if (grouped.length === 0) return [];
 
   // Get user metadata
   const userIds = grouped.map((g) => g.userId);
   const users = await prisma.user.findMany({
     where: { id: { in: userIds } },
-    select: { id: true, nama: true, unit: true, jabatan: true },
+    select: {
+      id: true,
+      nama: true,
+      kodeUser: true,
+      tipeUser: true,
+      unit: true,
+    },
   });
   const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
 
@@ -71,8 +78,9 @@ export async function getFullRanking(): Promise<RankingEntry[]> {
         rank: idx + 1,
         userId: g.userId,
         nama: u.nama,
+        kodeUser: u.kodeUser,
+        tipeUser: u.tipeUser,
         unit: u.unit,
-        jabatan: u.jabatan,
         selesaiCount: g._count._all,
       };
     })

@@ -1,4 +1,7 @@
 // src/actions/user-profile.ts
+// NOTE: File ini legacy/duplicate dengan profile-actions.ts.
+// Aman dihapus kalau memang tidak dipanggil dari mana-mana.
+// Untuk sekarang di-clean dari reference jabatan/section.
 "use server";
 
 import { prisma } from "@/lib/prisma";
@@ -10,8 +13,6 @@ import bcrypt from "bcryptjs";
 const ProfileSchema = z.object({
   nama: z.string().min(1, "Nama wajib diisi").max(100),
   unit: z.string().max(100).optional().nullable(),
-  jabatan: z.string().max(100).optional().nullable(),
-  section: z.string().max(100).optional().nullable(),
 });
 
 const PasswordSchema = z
@@ -30,7 +31,7 @@ export async function updateMyProfile(formData: FormData) {
   if (!session?.user) throw new Error("Unauthorized");
 
   const raw = Object.fromEntries(formData);
-  // Bersihkan empty string → undefined biar tidak overwrite jadi string kosong yang aneh
+  // Bersihkan empty string → null
   const cleaned = Object.fromEntries(
     Object.entries(raw).map(([k, v]) => [k, v === "" ? null : v])
   );
