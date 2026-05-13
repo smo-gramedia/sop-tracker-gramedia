@@ -5,16 +5,23 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import TambahDokumenModal from "./TambahDokumenModal";
-import EditDokumenModal  from "./EditDokumenModal";
+import EditDokumenModal from "./EditDokumenModal";
 import { deleteSopDocument } from "@/actions/sop-document";
 
+// Extended Doc type — include all fields yang EditDokumenModal butuhkan
 type Doc = {
   id: string;
   kode: string;
   judul: string;
+  deskripsi: string | null;
   kategori: string;
   tipe: string;
   status: string;
+  versi: string;
+  permittedAccess: string | null;
+  subcategoryId: string | null;
+  departmentId: string | null;
+  tanggalBerlaku: Date | string | null;
   createdAt: Date;
   department: { nama: string } | null;
 };
@@ -56,7 +63,22 @@ export default function UploadDokumenClient({
   const [deptFilter, setDeptFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
-  // ─── Dynamic department list (from current docs) ────────────────────
+  // ─── Extract departments flat (untuk EditDokumenModal) ──────────────
+  // EditDokumenModal butuh array departments flat, sedangkan kita terima
+  // directorates yang nested (directorate → division → department).
+  const allDepartments = useMemo(() => {
+    return directorates.flatMap((dir) =>
+      dir.divisions.flatMap((div) =>
+        div.departments.map((dept) => ({
+          id: dept.id,
+          nama: dept.nama,
+          kode: dept.kode,
+        }))
+      )
+    );
+  }, [directorates]);
+
+  // ─── Dynamic department list (from current docs, untuk filter) ──────
   const departmentOptions = useMemo(() => {
     const set = new Set<string>();
     docs.forEach((d) => {
@@ -84,7 +106,8 @@ export default function UploadDokumenClient({
   }, [docs, search, kategoriFilter, deptFilter, statusFilter]);
 
   async function handleDelete(id: string) {
-    if (!confirm("Hapus dokumen ini? Semua lampiran juga akan terhapus.")) return;
+    if (!confirm("Hapus dokumen ini? Semua lampiran juga akan terhapus."))
+      return;
     setDeleting(id);
     try {
       await deleteSopDocument(id);
@@ -262,8 +285,8 @@ export default function UploadDokumenClient({
         <EditDokumenModal
           open={!!editingDoc}
           onClose={() => setEditingDoc(null)}
-          doc={editingDoc}
-          directorates={directorates}
+          sop={editingDoc}
+          departments={allDepartments}
           subcategories={subcategories}
         />
       )}

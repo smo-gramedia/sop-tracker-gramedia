@@ -74,7 +74,9 @@ export async function GET(
     const zip = new JSZip();
 
     // Helper: download file dari Supabase signed URL → arraybuffer
-    async function fetchFile(path: string): Promise<ArrayBuffer> {
+    // FIX: Pakai const arrow function (function declaration di dalam block
+    // tidak diizinkan di TypeScript strict mode ES5)
+    const fetchFile = async (path: string): Promise<ArrayBuffer> => {
       const url = await getSignedUrl({
         bucket: BUCKETS.ATTACHMENTS,
         path,
@@ -85,7 +87,7 @@ export async function GET(
         throw new Error(`Gagal fetch ${path}: ${res.status}`);
       }
       return res.arrayBuffer();
-    }
+    };
 
     // Add files ke ZIP
     for (const att of sop.sopAttachments) {
