@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Plus, Search, FileText } from "lucide-react";
 import TambahPostTestModal from "./TambahPostTestModal";
+import { deletePostTest } from "@/actions/post-test-actions";
 
 type PostTest = {
   id: string;
@@ -24,6 +25,7 @@ type Props = { postTests: PostTest[]; sopOptions: SopOption[] };
 export default function PostTestAdminClient({ postTests, sopOptions }: Props) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   // ─── Filter state ───────────────────────────────────────────────────
   const [search, setSearch] = useState("");
@@ -46,10 +48,22 @@ export default function PostTestAdminClient({ postTests, sopOptions }: Props) {
   }, [postTests, search, kategoriFilter]);
 
   async function handleDelete(id: string) {
-    if (!confirm("Hapus post test ini? Semua hasil pengerjaan user juga akan terhapus."))
+    if (
+      !confirm(
+        "Hapus post test ini? Semua soal dan hasil pengerjaan user juga akan terhapus."
+      )
+    )
       return;
-    await fetch(`/api/post-test/create?id=${id}`, { method: "DELETE" });
-    router.refresh();
+
+    setDeleting(id);
+    try {
+      await deletePostTest(id);
+      router.refresh();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Gagal hapus post test");
+    } finally {
+      setDeleting(null);
+    }
   }
 
   return (
@@ -144,8 +158,9 @@ export default function PostTestAdminClient({ postTests, sopOptions }: Props) {
                       size="sm"
                       className="h-7 px-2.5 text-xs text-destructive border-destructive/30 hover:bg-destructive/10"
                       onClick={() => handleDelete(pt.id)}
+                      disabled={deleting === pt.id}
                     >
-                      Hapus
+                      {deleting === pt.id ? "..." : "Hapus"}
                     </Button>
                   </div>
                 </div>
