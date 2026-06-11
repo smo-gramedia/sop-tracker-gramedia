@@ -42,7 +42,7 @@ export default function KategoriClient({ subcategories }: { subcategories: Sub[]
 
   return (
     <>
-      <div className="p-8 max-w-4xl mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
         <div className="mb-6 flex items-end justify-between">
           <div>
             <p className="text-sm text-muted-foreground">Manajemen Dokumen</p>
@@ -57,7 +57,7 @@ export default function KategoriClient({ subcategories }: { subcategories: Sub[]
         </div>
 
         <div className="bg-background rounded-xl border overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full text-sm min-w-[640px]">
             <thead>
               <tr className="border-b bg-muted/40">
                 <th className="text-left px-5 py-3 font-medium text-muted-foreground w-28">Kode</th>
@@ -88,7 +88,7 @@ export default function KategoriClient({ subcategories }: { subcategories: Sub[]
                 <tr><td colSpan={5} className="px-5 py-12 text-center text-muted-foreground">Belum ada kategori</td></tr>
               )}
             </tbody>
-          </table>
+          </table></div>
         </div>
       </div>
 

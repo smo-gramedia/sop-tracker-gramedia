@@ -59,7 +59,7 @@ export default function DirectorateClient({ items }: Props) {
 
   return (
     <>
-      <div className="p-8 max-w-6xl mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
         <div className="mb-2">
           <p className="text-sm text-muted-foreground">Struktur Organisasi</p>
           <h1 className="font-display font-bold text-3xl mt-1">
@@ -85,7 +85,7 @@ export default function DirectorateClient({ items }: Props) {
         </div>
 
         <div className="bg-background rounded-xl border overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full text-sm min-w-[640px]">
             <thead>
               <tr className="border-b bg-muted/40">
                 <th className="text-left px-5 py-3 font-medium text-muted-foreground w-28">
@@ -166,7 +166,7 @@ export default function DirectorateClient({ items }: Props) {
                 ))
               )}
             </tbody>
-          </table>
+          </table></div>
         </div>
       </div>
 

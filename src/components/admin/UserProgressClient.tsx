@@ -74,7 +74,7 @@ export default function UserProgressClient({
   }, [progressList, search, statusFilter, tipeFilter]);
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
       <div className="mb-6">
         <p className="text-sm text-muted-foreground">Monitoring</p>
         <h1 className="font-display font-bold text-3xl mt-1">User Progress</h1>
@@ -85,7 +85,7 @@ export default function UserProgressClient({
       </div>
 
       {/* Stats Summary */}
-      <div className="grid grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <StatCard
           icon={TrendingUp}
           iconColor="text-foreground"
@@ -159,7 +159,7 @@ export default function UserProgressClient({
           </span>
         </div>
         <div className="max-h-[600px] overflow-y-auto">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full text-sm min-w-[640px]">
             <thead className="sticky top-0 bg-muted/40 z-10">
               <tr className="border-b">
                 <th className="text-left px-5 py-3 font-medium text-muted-foreground">
@@ -255,7 +255,7 @@ export default function UserProgressClient({
                 ))
               )}
             </tbody>
-          </table>
+          </table></div>
         </div>
       </div>
     </div>

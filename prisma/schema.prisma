@@ -1,8 +1,3 @@
-// ============================================================
-// Gramedia SOP Tracker — Prisma Schema
-// Stack: Next.js 14 · Supabase PostgreSQL · Prisma 6
-// ============================================================
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,9 +8,321 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// ─────────────────────────────────────────────
-// ENUMS
-// ─────────────────────────────────────────────
+model User {
+  id                     String                  @id @default(uuid())
+  kodeUser               String                  @unique @map("kode_user")
+  tipeUser               TipeUser?               @map("tipe_user")
+  nama                   String
+  email                  String                  @unique
+  passwordHash           String                  @map("password_hash")
+  unit                   String?
+  role                   Role                    @default(user)
+  status                 UserStatus              @default(aktif)
+  joinedAt               DateTime?               @map("joined_at") @db.Date
+  createdAt              DateTime                @default(now()) @map("created_at")
+  activityLogs           ActivityLog[]
+  faqEntries             FaqEntry[]
+  glossaryEntries        GlossaryEntry[]
+  learningNotes          LearningNote[]
+  learningProgress       LearningProgress[]
+  notifications          Notification[]
+  postTestResults        PostTestResult[]
+  postTestsCreated       PostTest[]
+  uploadedRawDocuments   RawDocument[]
+  uploadedSopAttachments SopAttachment[]
+  updatedDocuments       SopDocument[]           @relation("UpdatedBy")
+  uploadedDocuments      SopDocument[]           @relation("UploadedBy")
+  reviewedAttachments    SosialisasiAttachment[] @relation("ReviewedByAdmin")
+  sosialisasiAttachments SosialisasiAttachment[] @relation("UploadedByUser")
+
+  @@map("users")
+}
+
+model Directorate {
+  id           String     @id @default(uuid())
+  kode         String     @unique
+  singkatan    String?
+  nama         String
+  companyGroup String?    @map("company_group")
+  deskripsi    String?
+  divisions    Division[]
+
+  @@map("directorates")
+}
+
+model Division {
+  id            String       @id @default(uuid())
+  kode          String       @unique
+  nama          String
+  deskripsi     String?
+  directorateId String       @map("directorate_id")
+  departments   Department[]
+  directorate   Directorate  @relation(fields: [directorateId], references: [id])
+
+  @@map("divisions")
+}
+
+model Department {
+  id           String        @id @default(uuid())
+  kode         String        @unique
+  nama         String
+  deskripsi    String?
+  divisionId   String        @map("division_id")
+  division     Division      @relation(fields: [divisionId], references: [id])
+  sopDocuments SopDocument[]
+
+  @@map("departments")
+}
+
+model SopSubcategory {
+  id           String        @id @default(uuid())
+  kode         String        @unique
+  nama         String
+  deskripsi    String?
+  sopDocuments SopDocument[]
+
+  @@map("sop_subcategories")
+}
+
+model SopDocument {
+  id                     String                  @id @default(uuid())
+  kode                   String                  @unique
+  judul                  String
+  deskripsi              String?
+  kategori               SopKategori
+  tipe                   SopTipe
+  permittedAccess        String?                 @map("permitted_access")
+  subcategoryId          String?                 @map("subcategory_id")
+  departmentId           String?                 @map("department_id")
+  versi                  String                  @default("Original")
+  tanggalBerlaku         DateTime?               @map("tanggal_berlaku") @db.Date
+  status                 SopStatus               @default(draft)
+  uploadedById           String                  @map("uploaded_by")
+  updatedById            String?                 @map("updated_by")
+  createdAt              DateTime                @default(now()) @map("created_at")
+  updatedAt              DateTime?               @updatedAt @map("updated_at")
+  activityLogs           ActivityLog[]
+  learningNotes          LearningNote[]
+  learningProgress       LearningProgress[]
+  notifications          Notification[]
+  postTest               PostTest?
+  rawDocuments           RawDocument[]
+  sopAttachments         SopAttachment[]
+  department             Department?             @relation(fields: [departmentId], references: [id])
+  subcategory            SopSubcategory?         @relation(fields: [subcategoryId], references: [id])
+  updatedBy              User?                   @relation("UpdatedBy", fields: [updatedById], references: [id])
+  uploadedBy             User                    @relation("UploadedBy", fields: [uploadedById], references: [id])
+  sosialisasiAttachments SosialisasiAttachment[]
+
+  @@map("sop_documents")
+}
+
+model RawDocument {
+  id            String      @id @default(uuid())
+  sopDocumentId String      @map("sop_document_id")
+  filename      String
+  mimeType      String      @map("mime_type")
+  ukuranKb      Int         @map("ukuran_kb")
+  uploadedById  String      @map("uploaded_by")
+  uploadedAt    DateTime    @default(now()) @map("uploaded_at")
+  sopDocument   SopDocument @relation(fields: [sopDocumentId], references: [id], onDelete: Cascade)
+  uploadedBy    User        @relation(fields: [uploadedById], references: [id])
+
+  @@map("raw_documents")
+}
+
+model SopAttachment {
+  id            String      @id @default(uuid())
+  sopDocumentId String      @map("sop_document_id")
+  filename      String
+  mimeType      String      @map("mime_type")
+  ukuranKb      Int         @map("ukuran_kb")
+  uploadedById  String      @map("uploaded_by")
+  uploadedAt    DateTime    @default(now()) @map("uploaded_at")
+  tipe          String      @default("lampiran")
+  sopDocument   SopDocument @relation(fields: [sopDocumentId], references: [id], onDelete: Cascade)
+  uploadedBy    User        @relation(fields: [uploadedById], references: [id])
+
+  @@map("sop_attachments")
+}
+
+model GlossaryEntry {
+  id          String   @id @default(uuid())
+  kata        String   @unique
+  deskripsi   String
+  createdById String   @map("created_by")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdBy   User     @relation(fields: [createdById], references: [id])
+
+  @@map("glossary")
+}
+
+model FaqEntry {
+  id          String   @id @default(uuid())
+  pertanyaan  String
+  jawaban     String
+  urutan      Int      @default(0)
+  createdById String   @map("created_by")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdBy   User     @relation(fields: [createdById], references: [id])
+
+  @@map("faqs")
+}
+
+model Store {
+  id         String         @id @default(uuid())
+  kode       String         @unique
+  nama       String
+  wilayah    String?
+  kota       String?
+  departemen String?
+  status     StoreStatus    @default(aktif)
+  rankings   StoreRanking[]
+
+  @@map("stores")
+}
+
+model StoreRanking {
+  id              String            @id @default(uuid())
+  storeId         String            @map("store_id")
+  periode         String
+  sopSelesai      Int               @map("sop_selesai")
+  totalSop        Int               @map("total_sop")
+  persenKepatuhan Decimal           @map("persen_kepatuhan") @db.Decimal(5, 2)
+  trendDirection  TrendDirection    @default(tetap) @map("trend_direction")
+  trendDelta      Decimal           @default(0) @map("trend_delta") @db.Decimal(5, 2)
+  label           StoreRankingLabel @default(cukup)
+  calculatedAt    DateTime          @default(now()) @map("calculated_at")
+  store           Store             @relation(fields: [storeId], references: [id])
+
+  @@unique([storeId, periode])
+  @@map("store_rankings")
+}
+
+model LearningProgress {
+  id             String         @id @default(uuid())
+  userId         String         @map("user_id")
+  sopDocumentId  String         @map("sop_document_id")
+  stepCurrent    Int            @default(0) @map("step_current")
+  status         LearningStatus @default(belum)
+  lastAccessedAt DateTime?      @map("last_accessed_at")
+  startedAt      DateTime?      @map("started_at")
+  completedAt    DateTime?      @map("completed_at")
+  sopDocument    SopDocument    @relation(fields: [sopDocumentId], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [userId], references: [id])
+
+  @@unique([userId, sopDocumentId])
+  @@map("learning_progress")
+}
+
+model LearningNote {
+  id            String      @id @default(uuid())
+  userId        String      @map("user_id")
+  sopDocumentId String      @map("sop_document_id")
+  konten        String
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  sopDocument   SopDocument @relation(fields: [sopDocumentId], references: [id])
+  user          User        @relation(fields: [userId], references: [id])
+
+  @@unique([userId, sopDocumentId])
+  @@map("learning_notes")
+}
+
+model ActivityLog {
+  id            String       @id @default(uuid())
+  userId        String       @map("user_id")
+  sopDocumentId String?      @map("sop_document_id")
+  action        String
+  deskripsi     String
+  createdAt     DateTime     @default(now()) @map("created_at")
+  sopDocument   SopDocument? @relation(fields: [sopDocumentId], references: [id])
+  user          User         @relation(fields: [userId], references: [id])
+
+  @@map("activity_logs")
+}
+
+model SosialisasiAttachment {
+  id            String           @id @default(uuid())
+  userId        String           @map("user_id")
+  sopDocumentId String           @map("sop_document_id")
+  filename      String
+  mimeType      String           @map("mime_type")
+  ukuranKb      Int              @map("ukuran_kb")
+  uploadKe      Int              @default(1) @map("upload_ke")
+  status        AttachmentStatus @default(menunggu)
+  alasanTolak   String?          @map("alasan_tolak")
+  reviewedById  String?          @map("reviewed_by")
+  uploadedAt    DateTime         @default(now()) @map("uploaded_at")
+  reviewedAt    DateTime?        @map("reviewed_at")
+  reviewedBy    User?            @relation("ReviewedByAdmin", fields: [reviewedById], references: [id])
+  sopDocument   SopDocument      @relation(fields: [sopDocumentId], references: [id], onDelete: Cascade)
+  user          User             @relation("UploadedByUser", fields: [userId], references: [id])
+
+  @@map("sosialisasi_attachments")
+}
+
+model PostTest {
+  id            String             @id @default(uuid())
+  sopDocumentId String             @unique @map("sop_document_id")
+  passingGrade  Int                @default(70) @map("passing_grade")
+  durasiMenit   Int                @default(10) @map("durasi_menit")
+  jumlahSoal    Int                @default(10) @map("jumlah_soal")
+  createdById   String             @map("created_by")
+  createdAt     DateTime           @default(now()) @map("created_at")
+  questions     PostTestQuestion[]
+  results       PostTestResult[]
+  createdBy     User               @relation(fields: [createdById], references: [id])
+  sopDocument   SopDocument        @relation(fields: [sopDocumentId], references: [id], onDelete: Cascade)
+
+  @@map("post_tests")
+}
+
+model PostTestQuestion {
+  id           String   @id @default(uuid())
+  postTestId   String   @map("post_test_id")
+  pertanyaan   String
+  opsiA        String   @map("opsi_a")
+  opsiB        String   @map("opsi_b")
+  opsiC        String   @map("opsi_c")
+  opsiD        String   @map("opsi_d")
+  jawabanBenar String   @map("jawaban_benar")
+  postTest     PostTest @relation(fields: [postTestId], references: [id], onDelete: Cascade)
+
+  @@map("post_test_questions")
+}
+
+model PostTestResult {
+  id            String               @id @default(uuid())
+  userId        String               @map("user_id")
+  postTestId    String               @map("post_test_id")
+  attemptNumber Int                  @default(1) @map("attempt_number")
+  skor          Int
+  jumlahBenar   Int                  @map("jumlah_benar")
+  jumlahSalah   Int                  @map("jumlah_salah")
+  status        PostTestResultStatus
+  jawaban       Json
+  dikerjakanAt  DateTime             @default(now()) @map("dikerjakan_at")
+  selesaiAt     DateTime?            @map("selesai_at")
+  postTest      PostTest             @relation(fields: [postTestId], references: [id], onDelete: Cascade)
+  user          User                 @relation(fields: [userId], references: [id])
+
+  @@map("post_test_results")
+}
+
+model Notification {
+  id            String           @id @default(uuid())
+  userId        String           @map("user_id")
+  sopDocumentId String?          @map("sop_document_id")
+  tipe          NotificationTipe
+  judul         String
+  pesan         String
+  isRead        Boolean          @default(false) @map("is_read")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  sopDocument   SopDocument?     @relation(fields: [sopDocumentId], references: [id])
+  user          User             @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
 
 enum Role {
   user
@@ -34,18 +341,18 @@ enum TipeUser {
 }
 
 enum SopKategori {
-  sr  // SOP Operation
-  ss  // SOP Supporting Unit
-  sp  // SOP Publishing & Education
-  sg  // SOP General
-  petunjuk // Petunjuk Pelaksanaan
+  sr
+  ss
+  sp
+  sg
+  petunjuk
 }
 
 enum SopTipe {
-  MP       // Manual Prosedur
-  PS       // Panduan / Standar
-  IK       // Instruksi Kerja
-  petunjuk // Petunjuk Pelaksanaan
+  MP
+  PS
+  IK
+  petunjuk
 }
 
 enum SopStatus {
@@ -94,414 +401,4 @@ enum StoreRankingLabel {
 enum StoreStatus {
   aktif
   nonaktif
-}
-
-// ─────────────────────────────────────────────
-// 1. USERS
-// ─────────────────────────────────────────────
-
-model User {
-  id            String     @id @default(uuid())
-  kodeUser      String     @unique @map("kode_user")
-  tipeUser      TipeUser? @map("tipe_user")
-  nama          String
-  email         String     @unique
-  passwordHash  String     @map("password_hash")
-  unit          String?
-  role          Role       @default(user)
-  status        UserStatus @default(aktif)
-  joinedAt      DateTime?  @map("joined_at") @db.Date
-  createdAt     DateTime   @default(now()) @map("created_at")
-
-  // Relations
-  uploadedDocuments        SopDocument[]             @relation("UploadedBy")
-  updatedDocuments         SopDocument[]             @relation("UpdatedBy")
-  uploadedRawDocuments     RawDocument[]
-  uploadedSopAttachments   SopAttachment[]
-  glossaryEntries          GlossaryEntry[]
-  faqEntries               FaqEntry[]
-  learningProgress         LearningProgress[]
-  learningNotes            LearningNote[]
-  activityLogs             ActivityLog[]
-  sosialisasiAttachments   SosialisasiAttachment[]   @relation("UploadedByUser")
-  reviewedAttachments      SosialisasiAttachment[]   @relation("ReviewedByAdmin")
-  postTestsCreated         PostTest[]
-  postTestResults          PostTestResult[]
-  notifications            Notification[]
-
-  @@map("users")
-}
-
-// ─────────────────────────────────────────────
-// 2. STRUKTUR ORGANISASI
-// ─────────────────────────────────────────────
-
-model Directorate {
-  id           String    @id @default(uuid())
-  kode         String    @unique
-  singkatan    String?
-  nama         String
-  companyGroup String?   @map("company_group")
-  deskripsi    String?   @db.Text
-
-  divisions    Division[]
-
-  @@map("directorates")
-}
-
-model Division {
-  id             String      @id @default(uuid())
-  kode           String      @unique
-  nama           String
-  deskripsi      String?     @db.Text
-  directorateId  String      @map("directorate_id")
-
-  directorate    Directorate @relation(fields: [directorateId], references: [id])
-  departments    Department[]
-
-  @@map("divisions")
-}
-
-model Department {
-  id          String     @id @default(uuid())
-  kode        String     @unique
-  nama        String
-  deskripsi   String?    @db.Text
-  divisionId  String     @map("division_id")
-
-  division     Division    @relation(fields: [divisionId], references: [id])
-  sopDocuments SopDocument[]
-
-  @@map("departments")
-}
-
-// ─────────────────────────────────────────────
-// 3. SOP SUBCATEGORIES (for sg / SOP General)
-// ─────────────────────────────────────────────
-
-model SopSubcategory {
-  id        String  @id @default(uuid())
-  kode      String  @unique
-  nama      String
-  deskripsi String? @db.Text
-
-  sopDocuments SopDocument[]
-
-  @@map("sop_subcategories")
-}
-
-// ─────────────────────────────────────────────
-// 4. SOP DOCUMENTS
-// ─────────────────────────────────────────────
-
-model SopDocument {
-  id              String      @id @default(uuid())
-  kode            String      @unique
-  judul           String
-  deskripsi       String?     @db.Text
-  kategori        SopKategori
-  tipe            SopTipe
-  permittedAccess String?     @map("permitted_access")
-  subcategoryId   String?     @map("subcategory_id")
-  departmentId    String?     @map("department_id")
-  versi           String      @default("Original")
-  tanggalBerlaku  DateTime?   @map("tanggal_berlaku") @db.Date
-  status          SopStatus   @default(draft)
-  uploadedById    String      @map("uploaded_by")
-  updatedById     String?     @map("updated_by")
-  createdAt       DateTime    @default(now()) @map("created_at")
-  updatedAt       DateTime?   @map("updated_at") @updatedAt
-
-  // Relations
-  subcategory            SopSubcategory?         @relation(fields: [subcategoryId], references: [id])
-  department             Department?             @relation(fields: [departmentId], references: [id])
-  uploadedBy             User                    @relation("UploadedBy", fields: [uploadedById], references: [id])
-  updatedBy              User?                   @relation("UpdatedBy", fields: [updatedById], references: [id])
-  rawDocuments           RawDocument[]
-  sopAttachments         SopAttachment[]
-  learningProgress       LearningProgress[]
-  learningNotes          LearningNote[]
-  activityLogs           ActivityLog[]
-  sosialisasiAttachments SosialisasiAttachment[]
-  postTest               PostTest?
-  notifications          Notification[]
-
-  @@map("sop_documents")
-}
-
-// ─────────────────────────────────────────────
-// 5. RAW DOCUMENTS (.docx)
-// ─────────────────────────────────────────────
-
-model RawDocument {
-  id            String   @id @default(uuid())
-  sopDocumentId String   @map("sop_document_id")
-  filename      String
-  mimeType      String   @map("mime_type")
-  ukuranKb      Int      @map("ukuran_kb")
-  uploadedById  String   @map("uploaded_by")
-  uploadedAt    DateTime @default(now()) @map("uploaded_at")
-
-  sopDocument SopDocument @relation(fields: [sopDocumentId], references: [id], onDelete: Cascade)
-  uploadedBy  User        @relation(fields: [uploadedById], references: [id])
-
-  @@map("raw_documents")
-}
-
-// ─────────────────────────────────────────────
-// 6. SOP ATTACHMENTS (PDF utama + lampiran)
-// ─────────────────────────────────────────────
-
-model SopAttachment {
-  id            String   @id @default(uuid())
-  sopDocumentId String   @map("sop_document_id")
-  filename      String
-  mimeType      String   @map("mime_type")
-  ukuranKb      Int      @map("ukuran_kb")
-  uploadedById  String   @map("uploaded_by")
-  uploadedAt    DateTime @default(now()) @map("uploaded_at")
-  tipe          String   @default("lampiran")
-
-  sopDocument SopDocument @relation(fields: [sopDocumentId], references: [id], onDelete: Cascade)
-  uploadedBy  User        @relation(fields: [uploadedById], references: [id])
-
-  @@map("sop_attachments")
-}
-
-// ─────────────────────────────────────────────
-// 7. GLOSSARY
-// ─────────────────────────────────────────────
-
-model GlossaryEntry {
-  id          String   @id @default(uuid())
-  kata        String   @unique
-  deskripsi   String   @db.Text
-  createdById String   @map("created_by")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  createdBy User @relation(fields: [createdById], references: [id])
-
-  @@map("glossary")
-}
-
-// ─────────────────────────────────────────────
-// 8. FAQs
-// ─────────────────────────────────────────────
-
-model FaqEntry {
-  id          String   @id @default(uuid())
-  pertanyaan  String
-  jawaban     String   @db.Text
-  urutan      Int      @default(0)
-  createdById String   @map("created_by")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  createdBy User @relation(fields: [createdById], references: [id])
-
-  @@map("faqs")
-}
-
-// ─────────────────────────────────────────────
-// 9. STORES
-// ─────────────────────────────────────────────
-
-model Store {
-  id          String      @id @default(uuid())
-  kode        String      @unique
-  nama        String
-  wilayah     String?
-  kota        String?
-  departemen  String?
-  status      StoreStatus @default(aktif)
-
-  rankings StoreRanking[]
-
-  @@map("stores")
-}
-
-// ─────────────────────────────────────────────
-// 10. STORE RANKINGS
-// ─────────────────────────────────────────────
-
-model StoreRanking {
-  id               String            @id @default(uuid())
-  storeId          String            @map("store_id")
-  periode          String            // e.g. "April 2026"
-  sopSelesai       Int               @map("sop_selesai")
-  totalSop         Int               @map("total_sop")
-  persenKepatuhan  Decimal           @map("persen_kepatuhan") @db.Decimal(5, 2)
-  trendDirection   TrendDirection    @map("trend_direction") @default(tetap)
-  trendDelta       Decimal           @map("trend_delta")     @default(0) @db.Decimal(5, 2)
-  label            StoreRankingLabel @default(cukup)
-  calculatedAt     DateTime          @default(now()) @map("calculated_at")
-
-  store Store @relation(fields: [storeId], references: [id])
-
-  @@unique([storeId, periode])
-  @@map("store_rankings")
-}
-
-// ─────────────────────────────────────────────
-// 11. LEARNING PROGRESS
-// ─────────────────────────────────────────────
-
-model LearningProgress {
-  id            String         @id @default(uuid())
-  userId        String         @map("user_id")
-  sopDocumentId String         @map("sop_document_id")
-  stepCurrent   Int            @default(0) @map("step_current") // 0-6
-  status        LearningStatus @default(belum)
-  lastAccessedAt DateTime?     @map("last_accessed_at")
-  startedAt     DateTime?      @map("started_at")
-  completedAt   DateTime?      @map("completed_at")
-
-  user        User        @relation(fields: [userId], references: [id])
-  sopDocument SopDocument @relation(fields: [sopDocumentId], references: [id])
-
-  @@unique([userId, sopDocumentId])
-  @@map("learning_progress")
-}
-
-// ─────────────────────────────────────────────
-// 12. LEARNING NOTES (catatan per user per SOP)
-// ─────────────────────────────────────────────
-
-model LearningNote {
-  id            String   @id @default(uuid())
-  userId        String   @map("user_id")
-  sopDocumentId String   @map("sop_document_id")
-  konten        String   @db.Text
-  updatedAt     DateTime @updatedAt @map("updated_at")
-
-  user        User        @relation(fields: [userId], references: [id])
-  sopDocument SopDocument @relation(fields: [sopDocumentId], references: [id])
-
-  @@unique([userId, sopDocumentId])
-  @@map("learning_notes")
-}
-
-// ─────────────────────────────────────────────
-// 13. ACTIVITY LOGS (riwayat aktivitas profil)
-// ─────────────────────────────────────────────
-
-model ActivityLog {
-  id            String   @id @default(uuid())
-  userId        String   @map("user_id")
-  sopDocumentId String?  @map("sop_document_id")
-  action        String
-  deskripsi     String   @db.Text
-  createdAt     DateTime @default(now()) @map("created_at")
-
-  user        User         @relation(fields: [userId], references: [id])
-  sopDocument SopDocument? @relation(fields: [sopDocumentId], references: [id])
-
-  @@map("activity_logs")
-}
-
-// ─────────────────────────────────────────────
-// 14. SOSIALISASI ATTACHMENTS (bukti user → admin verifikasi)
-// ─────────────────────────────────────────────
-
-model SosialisasiAttachment {
-  id            String           @id @default(uuid())
-  userId        String           @map("user_id")
-  sopDocumentId String           @map("sop_document_id")
-  filename      String
-  mimeType      String           @map("mime_type")
-  ukuranKb      Int              @map("ukuran_kb")
-  uploadKe      Int              @default(1) @map("upload_ke")
-  status        AttachmentStatus @default(menunggu)
-  alasanTolak   String?          @db.Text @map("alasan_tolak")
-  reviewedById  String?          @map("reviewed_by")
-  uploadedAt    DateTime         @default(now()) @map("uploaded_at")
-  reviewedAt    DateTime?        @map("reviewed_at")
-
-  user        User        @relation("UploadedByUser", fields: [userId], references: [id])
-  sopDocument SopDocument @relation(fields: [sopDocumentId], references: [id])
-  reviewedBy  User?       @relation("ReviewedByAdmin", fields: [reviewedById], references: [id])
-
-  @@map("sosialisasi_attachments")
-}
-
-// ─────────────────────────────────────────────
-// 15. POST TESTS
-// ─────────────────────────────────────────────
-
-model PostTest {
-  id            String   @id @default(uuid())
-  sopDocumentId String   @unique @map("sop_document_id")
-  passingGrade  Int      @default(70) @map("passing_grade")
-  durasiMenit   Int      @default(10) @map("durasi_menit")
-  jumlahSoal    Int      @default(10) @map("jumlah_soal")
-  createdById   String   @map("created_by")
-  createdAt     DateTime @default(now()) @map("created_at")
-
-  sopDocument SopDocument      @relation(fields: [sopDocumentId], references: [id])
-  createdBy   User             @relation(fields: [createdById], references: [id])
-  questions   PostTestQuestion[]
-  results     PostTestResult[]
-
-  @@map("post_tests")
-}
-
-// ─────────────────────────────────────────────
-// 16. POST TEST QUESTIONS
-// ─────────────────────────────────────────────
-
-model PostTestQuestion {
-  id           String @id @default(uuid())
-  postTestId   String @map("post_test_id")
-  pertanyaan   String @db.Text
-  opsiA        String @map("opsi_a")
-  opsiB        String @map("opsi_b")
-  opsiC        String @map("opsi_c")
-  opsiD        String @map("opsi_d")
-  jawabanBenar String @map("jawaban_benar")
-
-  postTest PostTest @relation(fields: [postTestId], references: [id], onDelete: Cascade)
-
-  @@map("post_test_questions")
-}
-
-// ─────────────────────────────────────────────
-// 17. POST TEST RESULTS
-// ─────────────────────────────────────────────
-
-model PostTestResult {
-  id             String               @id @default(uuid())
-  userId         String               @map("user_id")
-  postTestId     String               @map("post_test_id")
-  attemptNumber  Int                  @default(1) @map("attempt_number")
-  skor           Int
-  jumlahBenar    Int                  @map("jumlah_benar")
-  jumlahSalah    Int                  @map("jumlah_salah")
-  status         PostTestResultStatus
-  jawaban        Json
-  dikerjakanAt   DateTime             @default(now()) @map("dikerjakan_at")
-  selesaiAt      DateTime?            @map("selesai_at")
-
-  user     User     @relation(fields: [userId], references: [id])
-  postTest PostTest @relation(fields: [postTestId], references: [id])
-
-  @@map("post_test_results")
-}
-
-// ─────────────────────────────────────────────
-// 18. NOTIFICATIONS
-// ─────────────────────────────────────────────
-
-model Notification {
-  id            String           @id @default(uuid())
-  userId        String           @map("user_id")
-  sopDocumentId String?          @map("sop_document_id")
-  tipe          NotificationTipe
-  judul         String
-  pesan         String           @db.Text
-  isRead        Boolean          @default(false) @map("is_read")
-  createdAt     DateTime         @default(now()) @map("created_at")
-
-  user        User         @relation(fields: [userId], references: [id])
-  sopDocument SopDocument? @relation(fields: [sopDocumentId], references: [id])
-
-  @@map("notifications")
 }

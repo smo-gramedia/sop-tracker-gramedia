@@ -47,7 +47,7 @@ export default async function ProfilPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-8 space-y-6">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
       {/* Profile header */}
       <div className="bg-background rounded-2xl border p-6 flex items-start gap-6">
         <ProfileAvatar tipeUser={user?.tipeUser ?? null} nama={user?.nama ?? ""} />
@@ -93,38 +93,38 @@ export default async function ProfilPage() {
       </div>
 
       {/* Stats cards */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-background rounded-xl border p-5">
-          <div className="text-3xl font-display font-bold text-green-600">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
+        <div className="bg-background rounded-xl border p-3 sm:p-5">
+          <div className="text-2xl sm:text-3xl font-display font-bold text-green-600">
             {selesai}
           </div>
-          <div className="text-sm text-muted-foreground mt-1">SOP Selesai</div>
+          <div className="text-xs sm:text-sm text-muted-foreground mt-1">SOP Selesai</div>
         </div>
-        <div className="bg-background rounded-xl border p-5">
-          <div className="text-3xl font-display font-bold text-amber-600">
+        <div className="bg-background rounded-xl border p-3 sm:p-5">
+          <div className="text-2xl sm:text-3xl font-display font-bold text-amber-600">
             {dipelajari}
           </div>
-          <div className="text-sm text-muted-foreground mt-1">
+          <div className="text-xs sm:text-sm text-muted-foreground mt-1">
             Sedang Dipelajari
           </div>
         </div>
         <Link
           href="/notifikasi"
-          className="bg-background rounded-xl border p-5 relative hover:shadow-sm transition-shadow"
+          className="bg-background rounded-xl border p-3 sm:p-5 relative hover:shadow-sm transition-shadow"
         >
           {unreadNotif > 0 && (
             <span className="absolute top-4 right-4 bg-destructive text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
               {unreadNotif}
             </span>
           )}
-          <div className="text-3xl font-display font-bold">
+          <div className="text-2xl sm:text-3xl font-display font-bold">
             {notifications.length}
           </div>
-          <div className="text-sm text-muted-foreground mt-1">Notifikasi</div>
+          <div className="text-xs sm:text-sm text-muted-foreground mt-1">Notifikasi</div>
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Learning progress */}
         <div className="bg-background rounded-xl border">
           <div className="p-5 border-b font-display font-semibold">

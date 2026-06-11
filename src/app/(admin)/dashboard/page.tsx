@@ -21,10 +21,10 @@ export default async function DashboardPage() {
   });
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      <div className="mb-8">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+      <div className="mb-6 sm:mb-8">
         <p className="text-sm text-muted-foreground">Dashboard</p>
-        <h1 className="font-display font-bold text-3xl mt-1">
+        <h1 className="font-display font-bold text-2xl sm:text-3xl mt-1">
           Selamat datang, {session?.user.name}
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -33,7 +33,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <StatCard
           icon={Users}
           label="Total User Aktif"
@@ -61,66 +61,68 @@ export default async function DashboardPage() {
       </div>
 
       {/* Recent documents */}
-      <div className="bg-background rounded-xl border">
-        <div className="p-5 border-b">
-          <h2 className="font-display font-semibold text-lg">
+      <div className="bg-background rounded-xl border overflow-hidden">
+        <div className="p-4 sm:p-5 border-b">
+          <h2 className="font-display font-semibold text-base sm:text-lg">
             Dokumen SOP Terbaru
           </h2>
         </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b bg-muted/40">
-              <th className="text-left px-5 py-3 font-medium text-muted-foreground">
-                Kode
-              </th>
-              <th className="text-left px-5 py-3 font-medium text-muted-foreground">
-                Judul SOP
-              </th>
-              <th className="text-left px-5 py-3 font-medium text-muted-foreground">
-                Departemen
-              </th>
-              <th className="text-left px-5 py-3 font-medium text-muted-foreground">
-                Tanggal
-              </th>
-              <th className="text-left px-5 py-3 font-medium text-muted-foreground">
-                Status
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {recentDokumen.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={5}
-                  className="px-5 py-12 text-center text-muted-foreground"
-                >
-                  Belum ada dokumen SOP.
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[640px]">
+            <thead>
+              <tr className="border-b bg-muted/40">
+                <th className="text-left px-4 sm:px-5 py-3 font-medium text-muted-foreground">
+                  Kode
+                </th>
+                <th className="text-left px-4 sm:px-5 py-3 font-medium text-muted-foreground">
+                  Judul SOP
+                </th>
+                <th className="text-left px-4 sm:px-5 py-3 font-medium text-muted-foreground">
+                  Departemen
+                </th>
+                <th className="text-left px-4 sm:px-5 py-3 font-medium text-muted-foreground">
+                  Tanggal
+                </th>
+                <th className="text-left px-4 sm:px-5 py-3 font-medium text-muted-foreground">
+                  Status
+                </th>
               </tr>
-            ) : (
-              recentDokumen.map((doc) => (
-                <tr
-                  key={doc.id}
-                  className="border-b last:border-0 hover:bg-muted/20 transition-colors"
-                >
-                  <td className="px-5 py-3 font-mono text-xs text-muted-foreground">
-                    {doc.kode}
-                  </td>
-                  <td className="px-5 py-3 font-medium">{doc.judul}</td>
-                  <td className="px-5 py-3 text-muted-foreground">
-                    {doc.department?.nama ?? "—"}
-                  </td>
-                  <td className="px-5 py-3 text-muted-foreground">
-                    {formatTanggal(doc.createdAt)}
-                  </td>
-                  <td className="px-5 py-3">
-                    <StatusBadge status={doc.status} />
+            </thead>
+            <tbody>
+              {recentDokumen.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="px-5 py-12 text-center text-muted-foreground"
+                  >
+                    Belum ada dokumen SOP.
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                recentDokumen.map((doc) => (
+                  <tr
+                    key={doc.id}
+                    className="border-b last:border-0 hover:bg-muted/20 transition-colors"
+                  >
+                    <td className="px-4 sm:px-5 py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">
+                      {doc.kode}
+                    </td>
+                    <td className="px-4 sm:px-5 py-3 font-medium">{doc.judul}</td>
+                    <td className="px-4 sm:px-5 py-3 text-muted-foreground">
+                      {doc.department?.nama ?? "—"}
+                    </td>
+                    <td className="px-4 sm:px-5 py-3 text-muted-foreground whitespace-nowrap">
+                      {formatTanggal(doc.createdAt)}
+                    </td>
+                    <td className="px-4 sm:px-5 py-3">
+                      <StatusBadge status={doc.status} />
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

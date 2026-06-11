@@ -75,15 +75,16 @@ async function generateKodeUser(
 }
 
 // ═════════════════════════════════════════════════════════════════════
-// GET — List users
+// GET — List users (TERMASUK admin & superadmin)
 // ═════════════════════════════════════════════════════════════════════
 export async function GET() {
   const session = await auth();
   if (!session || session.user.role === "user") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  // ─── Ambil SEMUA user (admin, superadmin, dan user)
+  // (Sebelumnya filter `role: "user"` → admin tidak muncul di list)
   const users = await prisma.user.findMany({
-    where: { role: "user" },
     select: {
       id: true,
       kodeUser: true,
@@ -92,6 +93,7 @@ export async function GET() {
       email: true,
       unit: true,
       status: true,
+      role: true,
       joinedAt: true,
       createdAt: true,
     },

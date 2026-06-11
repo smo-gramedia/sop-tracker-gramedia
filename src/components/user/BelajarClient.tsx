@@ -157,7 +157,13 @@ export default function BelajarClient({
   }
 
   function handlePostTestCompleted(result: any) {
-    setResults((prev) => [...prev, result]);
+    // ─── Normalisasi: API submit return `resultId`, tabel riwayat butuh `id`
+    // Tanpa normalisasi ini, tombol "Lihat Detail" hasil submit terbaru kirim `undefined` ke API
+    const normalized = {
+      ...result,
+      id: result.id ?? result.resultId,
+    };
+    setResults((prev) => [...prev, normalized]);
     if (result.status === "lulus") {
       setHighestStep(6);
       setCurrentStep(6);
@@ -290,11 +296,17 @@ export default function BelajarClient({
                 <Step2
                   doc={doc}
                   pdfUtama={pdfUtama}
-                  highestStep={highestStep}
+                  hasPassedPostTest={hasPassedPostTest}
                   theme={theme}
                 />
               )}
-              {currentStep === 3 && <Step3 lampiran={lampiran} theme={theme} />}
+              {currentStep === 3 && (
+                <Step3
+                  lampiran={lampiran}
+                  hasPassedPostTest={hasPassedPostTest}
+                  theme={theme}
+                />
+              )}
               {currentStep === 4 && (
                 <Step4
                   docId={doc.id}
@@ -474,27 +486,40 @@ function Step1() {
 function Step2({
   doc,
   pdfUtama,
-  highestStep,
+  hasPassedPostTest,
   theme,
 }: {
   doc: any;
   pdfUtama: any | null;
-  highestStep: number;
+  hasPassedPostTest: boolean;
   theme: { gradient: string };
 }) {
-  const fileUrl = pdfUtama
+  const baseFileUrl = pdfUtama
     ? `/api/files/sop-attachments/${pdfUtama.filename}`
     : null;
-  const canDownload = highestStep >= 2;
+  // ─── Gating: hanya boleh download SETELAH lulus post test ───────────
+  // (Sebelumnya pakai highestStep >= 2 → user bisa download di Step 2 langsung)
+  const canDownload = hasPassedPostTest;
+
+  // ─── PDF viewer URL: tambahkan #toolbar=0&navpanes=0 untuk hide Chrome PDF toolbar
+  // sehingga tombol download bawaan browser tidak muncul. Sebagian browser
+  // (Firefox, mobile) tetap menampilkan toolbar; pastikan content tidak
+  // mengandung URL absolut yang bisa di-share langsung.
+  const viewerUrl = baseFileUrl
+    ? `${baseFileUrl}#toolbar=0&navpanes=0&scrollbar=1`
+    : null;
 
   return (
     <div>
       <p className="text-muted-foreground text-sm mb-5">
-        Baca dan pelajari dokumen SOP berikut dengan seksama. Dokumen dapat
-        diunduh setelah Anda menyelesaikan tahap pembelajaran ini.
+        Baca dan pelajari dokumen SOP berikut dengan seksama.{" "}
+        <span className="font-medium">
+          Dokumen dapat diunduh setelah Anda menyelesaikan seluruh
+          pembelajaran dan lulus post test.
+        </span>
       </p>
 
-      {fileUrl && pdfUtama ? (
+      {viewerUrl && pdfUtama ? (
         <div className="border rounded-xl overflow-hidden bg-background">
           <div
             className={`flex items-center gap-3 px-4 py-2.5 bg-gradient-to-r ${theme.gradient} text-white`}
@@ -505,13 +530,16 @@ function Step2({
                 {doc.judul}.pdf
               </div>
               <div className="text-[11px] opacity-80">
-                Preview dokumen pembelajaran
+                {canDownload
+                  ? "Anda dapat mengunduh dokumen ini"
+                  : "Preview dokumen pembelajaran"}
               </div>
             </div>
             <a
-              href={canDownload ? fileUrl : undefined}
+              href={canDownload ? baseFileUrl! : undefined}
               download={canDownload ? `${doc.kode}.pdf` : undefined}
               onClick={(e) => !canDownload && e.preventDefault()}
+              aria-disabled={!canDownload}
               className={`text-xs font-medium px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-colors ${
                 canDownload
                   ? "bg-white text-foreground hover:bg-white/90 cursor-pointer"
@@ -520,28 +548,30 @@ function Step2({
               title={
                 canDownload
                   ? "Download dokumen"
-                  : "Selesaikan langkah ini untuk dapat mengunduh"
+                  : "Selesaikan dan lulus post test untuk dapat mengunduh"
               }
             >
-              <Download size={12} /> Download
+              {canDownload ? (
+                <>
+                  <Download size={12} /> Download
+                </>
+              ) : (
+                <>
+                  <Lock size={12} /> Terkunci
+                </>
+              )}
             </a>
           </div>
           <iframe
-            src={fileUrl}
+            src={viewerUrl}
             className="w-full h-[600px] bg-muted"
             title={doc.judul}
           />
+          {/* Footer info — tidak menampilkan link "buka di tab baru" supaya tidak bypass gating */}
           <div className="px-4 py-2 bg-muted/40 text-[11px] text-muted-foreground border-t">
-            Jika preview tidak tampil,{" "}
-            <a
-              href={fileUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary underline"
-            >
-              buka di tab baru
-            </a>
-            .
+            {canDownload
+              ? "Anda telah menyelesaikan pembelajaran. Klik tombol Download di atas untuk mengunduh dokumen."
+              : "Dokumen tersedia untuk dibaca. Tombol Download akan terbuka setelah Anda lulus post test."}
           </div>
         </div>
       ) : (
@@ -562,16 +592,23 @@ function Step2({
 // ═════════════════════════════════════════════════════════════════════
 function Step3({
   lampiran,
+  hasPassedPostTest,
   theme,
 }: {
   lampiran: any[];
+  hasPassedPostTest: boolean;
   theme: { gradient: string };
 }) {
+  // Gating: download lampiran juga hanya boleh setelah lulus post test
+  const canDownload = hasPassedPostTest;
+
   return (
     <div>
       <p className="text-muted-foreground text-sm mb-5">
-        Unduh lampiran pendukung dokumen SOP berikut sebelum melanjutkan ke
-        tahap upload bukti sosialisasi.
+        Lihat daftar lampiran pendukung dokumen SOP berikut.{" "}
+        <span className="font-medium">
+          Lampiran dapat diunduh setelah Anda lulus post test.
+        </span>
       </p>
       {lampiran.length > 0 ? (
         <div className="space-y-2.5">
@@ -597,15 +634,27 @@ function Step3({
                     </div>
                   </div>
                 </div>
-                <a
-                  href={`/api/files/sop-attachments/${a.filename}`}
-                  download
-                  className="flex-shrink-0"
-                >
-                  <Button size="sm" className="gap-1.5">
-                    <Download size={12} /> Download
+                {canDownload ? (
+                  <a
+                    href={`/api/files/sop-attachments/${a.filename}`}
+                    download
+                    className="flex-shrink-0"
+                  >
+                    <Button size="sm" className="gap-1.5">
+                      <Download size={12} /> Download
+                    </Button>
+                  </a>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled
+                    className="gap-1.5 flex-shrink-0 cursor-not-allowed"
+                    title="Selesaikan dan lulus post test untuk dapat mengunduh"
+                  >
+                    <Lock size={12} /> Terkunci
                   </Button>
-                </a>
+                )}
               </div>
             );
           })}

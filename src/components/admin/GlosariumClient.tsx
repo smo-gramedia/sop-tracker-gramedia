@@ -68,7 +68,7 @@ export default function GlosariumClient({ entries }: { entries: Entry[] }) {
 
   return (
     <>
-      <div className="p-8 max-w-5xl mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
         <div className="mb-6 flex items-end justify-between">
           <div>
             <p className="text-sm text-muted-foreground">Manajemen Dokumen</p>
@@ -92,7 +92,7 @@ export default function GlosariumClient({ entries }: { entries: Entry[] }) {
         </div>
 
         <div className="bg-background rounded-xl border overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full text-sm min-w-[640px]">
             <thead>
               <tr className="border-b bg-muted/40">
                 <th className="text-left px-5 py-3 font-medium text-muted-foreground w-40">Kata / Istilah</th>
@@ -119,7 +119,7 @@ export default function GlosariumClient({ entries }: { entries: Entry[] }) {
                 <tr><td colSpan={4} className="px-5 py-12 text-center text-muted-foreground">Tidak ada kata</td></tr>
               )}
             </tbody>
-          </table>
+          </table></div>
         </div>
       </div>
 
