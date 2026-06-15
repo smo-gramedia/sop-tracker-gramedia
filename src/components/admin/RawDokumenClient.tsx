@@ -84,10 +84,10 @@ export default function RawDokumenClient({ rawDocs }: { rawDocs: RawDoc[] }) {
   }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
       <div className="mb-6">
         <p className="text-sm text-muted-foreground">Manajemen Dokumen</p>
-        <h1 className="font-display font-bold text-3xl mt-1">Raw Dokumen</h1>
+        <h1 className="font-display font-bold text-2xl sm:text-3xl mt-1">Raw Dokumen</h1>
       </div>
 
       <div className="bg-muted/30 rounded-xl border p-4 mb-6 text-sm text-muted-foreground flex gap-2">
@@ -149,88 +149,96 @@ export default function RawDokumenClient({ rawDocs }: { rawDocs: RawDoc[] }) {
       </div>
 
       <div className="bg-background rounded-xl border overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b bg-muted/40">
-              <th className="text-left px-5 py-3 font-medium text-muted-foreground">
-                Judul Dokumen
-              </th>
-              <th className="text-left px-5 py-3 font-medium text-muted-foreground">
-                Jenis Dokumen
-              </th>
-              <th className="text-left px-5 py-3 font-medium text-muted-foreground">
-                Departemen
-              </th>
-              <th className="text-left px-5 py-3 font-medium text-muted-foreground">
-                Tanggal Upload
-              </th>
-              <th className="text-left px-5 py-3 font-medium text-muted-foreground">
-                Ukuran
-              </th>
-              <th className="text-right px-5 py-3 font-medium text-muted-foreground">
-                Aksi
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredRawDocs.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={6}
-                  className="px-5 py-12 text-center text-muted-foreground"
-                >
-                  {rawDocs.length === 0
-                    ? "Belum ada raw dokumen"
-                    : "Tidak ada dokumen yang sesuai filter"}
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[900px]">
+            <thead>
+              <tr className="border-b bg-muted/40">
+                <th className="text-left px-5 py-3 font-medium text-muted-foreground">
+                  Judul Dokumen
+                </th>
+                <th className="text-left px-5 py-3 font-medium text-muted-foreground">
+                  Jenis Dokumen
+                </th>
+                <th className="text-left px-5 py-3 font-medium text-muted-foreground">
+                  Departemen
+                </th>
+                <th className="text-left px-5 py-3 font-medium text-muted-foreground">
+                  Status
+                </th>
+                <th className="text-left px-5 py-3 font-medium text-muted-foreground">
+                  Tanggal Upload
+                </th>
+                <th className="text-left px-5 py-3 font-medium text-muted-foreground">
+                  Ukuran
+                </th>
+                <th className="text-right px-5 py-3 font-medium text-muted-foreground">
+                  Aksi
+                </th>
               </tr>
-            ) : (
-              filteredRawDocs.map((r) => (
-                <tr
-                  key={r.id}
-                  className="border-b last:border-0 hover:bg-muted/20 transition-colors"
-                >
-                  <td className="px-5 py-3">
-                    <div className="font-medium">{r.sopDocument.judul}</div>
-                    <div className="text-xs font-mono text-muted-foreground">
-                      {r.sopDocument.kode}
-                    </div>
-                  </td>
-                  <td className="px-5 py-3">
-                    <KategoriBadge kategori={r.sopDocument.kategori} />
-                  </td>
-                  <td className="px-5 py-3 text-muted-foreground text-sm">
-                    {r.sopDocument.department?.nama ?? "—"}
-                  </td>
-                  <td className="px-5 py-3 text-xs text-muted-foreground">
-                    {formatTanggal(r.uploadedAt)}
-                  </td>
-                  <td className="px-5 py-3 text-xs text-muted-foreground">
-                    {formatFileSize(r.ukuranKb)}
-                  </td>
-                  <td className="px-5 py-3">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <button
-                        onClick={() => handleView(r)}
-                        className="text-xs border rounded-lg px-3 py-1.5 hover:bg-muted transition-colors font-medium flex items-center gap-1.5"
-                      >
-                        <Eye size={12} /> View
-                      </button>
-                      <button
-                        onClick={() => handleDownload(r)}
-                        disabled={downloading === r.id}
-                        className="text-xs bg-foreground text-background rounded-lg px-3 py-1.5 hover:bg-foreground/90 transition-colors font-medium flex items-center gap-1.5 disabled:opacity-50"
-                      >
-                        <Download size={12} />{" "}
-                        {downloading === r.id ? "..." : "Download"}
-                      </button>
-                    </div>
+            </thead>
+            <tbody>
+              {filteredRawDocs.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="px-5 py-12 text-center text-muted-foreground"
+                  >
+                    {rawDocs.length === 0
+                      ? "Belum ada raw dokumen"
+                      : "Tidak ada dokumen yang sesuai filter"}
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                filteredRawDocs.map((r) => (
+                  <tr
+                    key={r.id}
+                    className="border-b last:border-0 hover:bg-muted/20 transition-colors"
+                  >
+                    <td className="px-5 py-3">
+                      <div className="font-medium">{r.sopDocument.judul}</div>
+                      <div className="text-xs font-mono text-muted-foreground">
+                        {r.sopDocument.kode}
+                      </div>
+                    </td>
+                    <td className="px-5 py-3">
+                      <KategoriBadge kategori={r.sopDocument.kategori} />
+                    </td>
+                    <td className="px-5 py-3 text-muted-foreground text-sm">
+                      {r.sopDocument.department?.nama ?? "—"}
+                    </td>
+                    <td className="px-5 py-3">
+                      <StatusBadge status={r.sopDocument.status} />
+                    </td>
+                    <td className="px-5 py-3 text-xs text-muted-foreground">
+                      {formatTanggal(r.uploadedAt)}
+                    </td>
+                    <td className="px-5 py-3 text-xs text-muted-foreground">
+                      {formatFileSize(r.ukuranKb)}
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => handleView(r)}
+                          className="text-xs border rounded-lg px-3 py-1.5 hover:bg-muted transition-colors font-medium flex items-center gap-1.5"
+                        >
+                          <Eye size={12} /> View
+                        </button>
+                        <button
+                          onClick={() => handleDownload(r)}
+                          disabled={downloading === r.id}
+                          className="text-xs bg-foreground text-background rounded-lg px-3 py-1.5 hover:bg-foreground/90 transition-colors font-medium flex items-center gap-1.5 disabled:opacity-50"
+                        >
+                          <Download size={12} />{" "}
+                          {downloading === r.id ? "..." : "Download"}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
         {filteredRawDocs.length > 0 && (
           <div className="px-5 py-3 border-t bg-muted/20 text-xs text-muted-foreground text-right">
             Menampilkan {filteredRawDocs.length} dari {rawDocs.length} dokumen
@@ -263,6 +271,27 @@ function KategoriBadge({ kategori }: { kategori: string }) {
       }`}
     >
       {labels[kategori] ?? kategori}
+    </span>
+  );
+}
+
+// ─── Status Badge: Aktif (hijau) / Draft (kuning) / Obsolete (merah) ──
+function StatusBadge({ status }: { status?: string }) {
+  if (!status) {
+    return <span className="text-xs text-muted-foreground">—</span>;
+  }
+  const config: Record<string, { color: string; label: string }> = {
+    aktif: { color: "bg-green-50 text-green-700 border-green-200", label: "Aktif" },
+    draft: { color: "bg-amber-50 text-amber-700 border-amber-200", label: "Draft" },
+    obsolete: { color: "bg-red-50 text-red-700 border-red-200", label: "Obsolete" },
+  };
+  const c = config[status] ?? {
+    color: "bg-muted text-muted-foreground border-border",
+    label: status,
+  };
+  return (
+    <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${c.color}`}>
+      {c.label}
     </span>
   );
 }

@@ -27,7 +27,11 @@ export default function TambahUserModal({ open, onClose }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [unit, setUnit] = useState("");
-  const [joinedAt, setJoinedAt] = useState("");
+  // ─── Tanggal bergabung: auto-fill hari ini (read-only, tidak bisa diubah) ──
+  // Format: YYYY-MM-DD untuk input type="date"
+  // Setter tetap ada supaya bisa di-refresh saat modal dibuka ulang (besoknya tanggal baru)
+  const todayISO = () => new Date().toISOString().split("T")[0];
+  const [joinedAt, setJoinedAt] = useState<string>(todayISO);
 
   // ─── Preview kode (calculated) ────────────────────────────────────
   const [previewKode, setPreviewKode] = useState("");
@@ -66,7 +70,8 @@ export default function TambahUserModal({ open, onClose }: Props) {
       setEmail("");
       setPassword("");
       setUnit("");
-      setJoinedAt("");
+      // Refresh ke tanggal hari ini setiap modal dibuka (penting kalau besok dibuka, dapat tanggal baru)
+      setJoinedAt(todayISO());
       setError("");
     }
   }, [open]);
@@ -378,9 +383,12 @@ export default function TambahUserModal({ open, onClose }: Props) {
                 id="joinedAt"
                 type="date"
                 value={joinedAt}
-                onChange={(e) => setJoinedAt(e.target.value)}
-                disabled={saving}
+                disabled
+                className="bg-muted/40 cursor-not-allowed"
               />
+              <p className="text-xs text-muted-foreground">
+                Otomatis diisi tanggal hari ini
+              </p>
             </div>
           </div>
 

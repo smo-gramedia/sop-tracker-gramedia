@@ -156,6 +156,11 @@ export default function TambahDokumenModal({
         throw new Error("PDF utama wajib di-upload.");
       }
 
+      // Validasi: Raw Dokumen (.doc / .docx) wajib (kalau kategori bukan petunjuk)
+      if (kategori !== "petunjuk" && !rawDoc) {
+        throw new Error("Raw Dokumen (.doc / .docx) wajib di-upload.");
+      }
+
       // STEP 1: Create SOP document
       const totalFiles =
         (pdfUtama ? 1 : 0) + (rawDoc ? 1 : 0) + lampiran.length;
@@ -489,14 +494,19 @@ export default function TambahDokumenModal({
               maxSizeMb={50}
             />
 
-            {/* Raw Doc */}
+            {/* Raw Doc — sekarang wajib (sama seperti PDF utama, kecuali untuk kategori petunjuk) */}
             <FileUploadZone
               icon={FileBox}
               label="Raw Dokumen (Editable)"
-              hint=".docx — file sumber editable, hanya admin"
-              accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              hint={
+                kategori === "petunjuk"
+                  ? ".doc / .docx — file sumber editable, opsional"
+                  : ".doc / .docx — file sumber editable, hanya admin (wajib)"
+              }
+              accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
               file={rawDoc}
               onChange={setRawDoc}
+              required={kategori !== "petunjuk"}
               maxSizeMb={50}
             />
 

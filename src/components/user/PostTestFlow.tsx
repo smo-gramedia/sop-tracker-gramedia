@@ -652,38 +652,45 @@ function ResultScreen({
                     {OPT_KEYS.map((opt, j) => {
                       const text = r[`opsi${OPT_LABELS[j]}` as `opsiA`];
                       const isUserPick = r.jawabanUser === opt;
-                      const isCorrectAns = r.jawabanBenar === opt;
+                      // ─── Item 1: HIDE kunci jawaban ────────────────────
+                      // Hanya highlight pilihan USER:
+                      //   - hijau kalau user benar
+                      //   - merah kalau user salah
+                      // Opsi lain (termasuk jawaban benar) ditampilkan netral
+                      // tanpa mengungkap mana yang sebenarnya benar.
+                      const highlight = isUserPick
+                        ? isCorrect
+                          ? "correct"
+                          : "wrong"
+                        : "neutral";
                       return (
                         <div
                           key={opt}
                           className={cn(
                             "flex items-center gap-2.5 px-3.5 py-2.5 rounded-md border-2 text-sm",
-                            isCorrectAns
-                              ? "border-green-500 bg-green-50 text-green-800"
-                              : isUserPick && !isCorrectAns
-                              ? "border-destructive bg-red-50 text-destructive"
-                              : "border-transparent bg-muted/30 text-foreground"
+                            highlight === "correct" &&
+                              "border-green-500 bg-green-50 text-green-800",
+                            highlight === "wrong" &&
+                              "border-destructive bg-red-50 text-destructive",
+                            highlight === "neutral" &&
+                              "border-transparent bg-muted/30 text-foreground"
                           )}
                         >
                           <div
                             className={cn(
                               "w-6 h-6 rounded flex items-center justify-center text-xs font-bold flex-shrink-0",
-                              isCorrectAns
-                                ? "bg-green-500/20 text-green-700"
-                                : isUserPick && !isCorrectAns
-                                ? "bg-destructive/20 text-destructive"
-                                : "bg-foreground/10 text-foreground"
+                              highlight === "correct" &&
+                                "bg-green-500/20 text-green-700",
+                              highlight === "wrong" &&
+                                "bg-destructive/20 text-destructive",
+                              highlight === "neutral" &&
+                                "bg-foreground/10 text-foreground"
                             )}
                           >
                             {OPT_LABELS[j]}
                           </div>
                           <span className="flex-1">{text}</span>
-                          {isCorrectAns && (
-                            <span className="text-[11px] font-semibold flex-shrink-0">
-                              (Jawaban Benar)
-                            </span>
-                          )}
-                          {isUserPick && !isCorrectAns && (
+                          {isUserPick && (
                             <span className="text-[11px] font-semibold flex-shrink-0">
                               (Jawaban Anda)
                             </span>
@@ -692,6 +699,12 @@ function ResultScreen({
                       );
                     })}
                   </div>
+                  {!isCorrect && (
+                    <p className="text-xs text-muted-foreground mt-3 italic">
+                      Pelajari kembali dokumen SOP untuk memahami jawaban yang
+                      tepat.
+                    </p>
+                  )}
                 </div>
               );
             })}

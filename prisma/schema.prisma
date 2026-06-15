@@ -86,7 +86,7 @@ model SopSubcategory {
 
 model SopDocument {
   id                     String                  @id @default(uuid())
-  kode                   String                  @unique
+  kode                   String
   judul                  String
   deskripsi              String?
   kategori               SopKategori
@@ -114,6 +114,10 @@ model SopDocument {
   uploadedBy             User                    @relation("UploadedBy", fields: [uploadedById], references: [id])
   sosialisasiAttachments SosialisasiAttachment[]
 
+  // ─── Versioning: kode boleh duplicate selama versi-nya berbeda ──
+  // (Sebelumnya `kode @unique` → tidak bisa multi-versi)
+  @@unique([kode, versi], name: "kode_versi")
+  @@index([kode])
   @@map("sop_documents")
 }
 
