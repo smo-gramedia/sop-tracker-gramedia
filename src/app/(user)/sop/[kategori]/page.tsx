@@ -8,10 +8,11 @@ import SopKategoriClient from "@/components/user/SopKategoriClient";
 
 const VALID_KATEGORI = ["sr", "ss", "sp", "sg", "petunjuk"] as const;
 
-type Props = { params: { kategori: string } };
+// ─── Next.js 16: params sekarang Promise ───────────────────────────
+type Props = { params: Promise<{ kategori: string }> };
 
 export default async function SopKategoriPage({ params }: Props) {
-  const { kategori } = params;
+  const { kategori } = await params;
 
   // Redirect: /sop/petunjuk → /juklak (halaman juklak yang utama)
   // Backward compat untuk bookmark/link lama

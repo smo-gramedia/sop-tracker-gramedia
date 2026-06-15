@@ -14,19 +14,20 @@ import { BUCKETS, getSignedUrl, type BucketName } from "@/lib/storage";
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { bucket: string; path: string[] } }
+  { params }: { params: Promise<{ bucket: string; path: string[] }> }
 ) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const bucket = params.bucket as BucketName;
+  const { bucket: bucketParam, path: pathParts } = await params;
+  const bucket = bucketParam as BucketName;
   if (!Object.values(BUCKETS).includes(bucket)) {
     return NextResponse.json({ error: "Invalid bucket" }, { status: 400 });
   }
 
-  const path = params.path.join("/");
+  const path = pathParts.join("/");
   if (!path) {
     return NextResponse.json({ error: "Path required" }, { status: 400 });
   }

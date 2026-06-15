@@ -5,14 +5,15 @@ import { NextResponse } from "next/server";
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const { id } = await params;
   const result = await prisma.postTestResult.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       postTest: {
         include: {

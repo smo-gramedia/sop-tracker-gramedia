@@ -3,11 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import PostTestDetailClient from "@/components/admin/PostTestDetailClient";
 
-type Props = { params: { id: string } };
+// ─── Next.js 16: params sekarang Promise ───────────────────────────
+type Props = { params: Promise<{ id: string }> };
 
 export default async function PostTestDetailPage({ params }: Props) {
+  const { id } = await params;
   const postTest = await prisma.postTest.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       sopDocument: {
         select: {

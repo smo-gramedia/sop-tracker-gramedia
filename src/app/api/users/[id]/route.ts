@@ -25,15 +25,16 @@ const UpdateUserSchema = z.object({
 // ═════════════════════════════════════════════════════════════════════
 export async function GET(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session || session.user.role === "user") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { id } = await params;
   const user = await prisma.user.findUnique({
-    where: { id: params.id },
+    where: { id },
     select: {
       id: true,
       kodeUser: true,
@@ -67,7 +68,7 @@ export async function GET(
 // ═════════════════════════════════════════════════════════════════════
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session || session.user.role !== "superadmin") {
@@ -77,6 +78,7 @@ export async function PUT(
     );
   }
 
+  const { id } = await params;
   const body = await req.json();
   const parsed = UpdateUserSchema.safeParse(body);
   if (!parsed.success) {
@@ -89,7 +91,7 @@ export async function PUT(
   const data = parsed.data;
 
   // Pastikan user ada
-  const existing = await prisma.user.findUnique({ where: { id: params.id } });
+  const existing = await prisma.user.findUnique({ where: { id } });
   if (!existing) {
     return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 });
   }
@@ -122,7 +124,7 @@ export async function PUT(
   }
 
   const updated = await prisma.user.update({
-    where: { id: params.id },
+    where: { id },
     data: updateData,
     select: {
       id: true,
@@ -142,7 +144,7 @@ export async function PUT(
 // ═════════════════════════════════════════════════════════════════════
 export async function DELETE(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session || session.user.role !== "superadmin") {
@@ -152,8 +154,10 @@ export async function DELETE(
     );
   }
 
+  const { id } = await params;
+
   // Jangan biarkan superadmin hapus diri sendiri
-  if (session.user.id === params.id) {
+  if (session.user.id === id) {
     return NextResponse.json(
       { error: "Tidak bisa menghapus akun Anda sendiri" },
       { status: 400 }
@@ -161,7 +165,7 @@ export async function DELETE(
   }
 
   try {
-    await prisma.user.delete({ where: { id: params.id } });
+    await prisma.user.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (err: any) {
     // Foreign key constraint (user punya learning progress, dll)

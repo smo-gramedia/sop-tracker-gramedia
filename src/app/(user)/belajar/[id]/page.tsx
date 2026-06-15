@@ -4,14 +4,16 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import BelajarClient from "@/components/user/BelajarClient";
 
-type Props = { params: { id: string } };
+// ─── Next.js 16: params sekarang Promise, harus di-await ──────────
+type Props = { params: Promise<{ id: string }> };
 
 export default async function BelajarPage({ params }: Props) {
+  const { id } = await params;
   const session = await auth();
 
   const [doc, progress, postTest, latestAttachment, note] = await Promise.all([
     prisma.sopDocument.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         department: { select: { nama: true } },
         subcategory: { select: { nama: true } },
@@ -34,23 +36,23 @@ export default async function BelajarPage({ params }: Props) {
       where: {
         userId_sopDocumentId: {
           userId: session!.user.id,
-          sopDocumentId: params.id,
+          sopDocumentId: id,
         },
       },
     }),
     prisma.postTest.findUnique({
-      where: { sopDocumentId: params.id },
+      where: { sopDocumentId: id },
       include: { questions: { orderBy: { id: "asc" } } },
     }),
     prisma.sosialisasiAttachment.findFirst({
-      where: { userId: session!.user.id, sopDocumentId: params.id },
+      where: { userId: session!.user.id, sopDocumentId: id },
       orderBy: { uploadedAt: "desc" },
     }),
     prisma.learningNote.findUnique({
       where: {
         userId_sopDocumentId: {
           userId: session!.user.id,
-          sopDocumentId: params.id,
+          sopDocumentId: id,
         },
       },
     }),

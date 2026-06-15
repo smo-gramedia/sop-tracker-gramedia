@@ -6,7 +6,7 @@ import ExcelJS from "exceljs";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   // Auth check
   const session = await auth();
@@ -17,10 +17,12 @@ export async function POST(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const { id } = await params;
+
   try {
     // Fetch post test + all results
     const postTest = await prisma.postTest.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         sopDocument: {
           select: {
