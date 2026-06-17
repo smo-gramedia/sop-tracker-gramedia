@@ -282,8 +282,11 @@ async function main() {
   console.log("   Department (7): DEPT-SMO/FIN/HR/IT/ACC/EDIT/AUDIT-001");
 
   // ── Sample SOP Documents ──────────────────────────────────────────────
+  // Schema baru: kode @unique diganti @@unique([kode, versi])
+  // Composite unique name: "kode_versi"
   const sop1 = await prisma.sopDocument.upsert({
-    where: { kode: "MP/FIN/01" }, update: {},
+    where: { kode_versi: { kode: "MP/FIN/01", versi: "Original" } },
+    update: {},
     create: {
       kode:"MP/FIN/01", judul:"Pembayaran Tagihan PO",
       deskripsi:"Prosedur pembayaran tagihan purchase order kepada vendor sesuai ketentuan yang berlaku.",
@@ -293,7 +296,8 @@ async function main() {
     },
   });
   const sop2 = await prisma.sopDocument.upsert({
-    where: { kode: "MP/STOR/01" }, update: {},
+    where: { kode_versi: { kode: "MP/STOR/01", versi: "Revisi-2" } },
+    update: {},
     create: {
       kode:"MP/STOR/01", judul:"Pick Up In Store",
       deskripsi:"Prosedur pelayanan pick up pesanan online di toko Gramedia.",
@@ -303,7 +307,8 @@ async function main() {
     },
   });
   const sop3 = await prisma.sopDocument.upsert({
-    where: { kode: "PS/SMO/01" }, update: {},
+    where: { kode_versi: { kode: "PS/SMO/01", versi: "Revisi-2" } },
+    update: {},
     create: {
       kode:"PS/SMO/01", judul:"Champion Team (Rev-2)",
       deskripsi:"Panduan pelaksanaan program Champion Team di seluruh unit bisnis Gramedia.",

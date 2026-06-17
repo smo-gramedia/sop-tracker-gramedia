@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
+import GlobalSearch from "@/components/user/GlobalSearch";
 
 type Props = {
   userName?: string | null;
@@ -93,8 +94,12 @@ export default function UserNavbar({ userName, unreadCount = 0 }: Props) {
           {/* ─── Left: Logo + Desktop Nav ─────────────────────────── */}
           <div className="flex items-center gap-6 min-w-0 flex-shrink">
             {/* Logo sudah punya <Link href="/home"> internal — jangan dibungkus Link lagi */}
+            {/* Mobile: hanya icon (hide text), tablet+ : icon + text */}
             <div className="flex-shrink-0">
-              <Logo size={38} textClassName="text-base" />
+              <Logo
+                size={38}
+                textClassName="text-base hidden sm:inline-block"
+              />
             </div>
 
             {/* Desktop nav links — hide di mobile */}
@@ -154,8 +159,11 @@ export default function UserNavbar({ userName, unreadCount = 0 }: Props) {
             </div>
           </div>
 
-          {/* ─── Right: Notif + Profile + Hamburger ─────────────── */}
+          {/* ─── Right: Search + Notif + Profile + Hamburger ───── */}
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            {/* Global Search: desktop inline, mobile icon-modal */}
+            <GlobalSearch />
+
             <Link
               href="/notifikasi"
               className="relative p-1.5 rounded-lg hover:bg-muted transition-colors"

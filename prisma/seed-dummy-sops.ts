@@ -37,7 +37,9 @@ async function main() {
   const allDepts = await prisma.department.findMany({
     select: { id: true, kode: true, nama: true },
   });
-  const deptMap = Object.fromEntries(allDepts.map((d) => [d.kode, d]));
+  const deptMap = Object.fromEntries(
+    allDepts.map((d: { id: string; kode: string; nama: string }) => [d.kode, d])
+  );
 
   // Required departments
   const required = ["STOR", "GCOM", "EDIT", "FIN", "HROP", "SMO"];
@@ -693,7 +695,9 @@ async function main() {
     let count = 0;
     for (const sop of sops) {
       await prisma.sopDocument.upsert({
-        where: { kode: sop.kode },
+        // ─── Schema baru (Batch 1): kode @unique diganti @@unique([kode, versi])
+        // Composite unique name: "kode_versi" (sesuai @@unique name di schema)
+        where: { kode_versi: { kode: sop.kode, versi: sop.versi } },
         update: {
           judul: sop.judul,
           deskripsi: sop.deskripsi,
@@ -707,7 +711,7 @@ async function main() {
           versi: sop.versi,
           tanggalBerlaku: sop.tanggalBerlaku,
           status: "aktif",
-          uploadedById: superadminId,  // ← FIX: pakai const non-null
+          uploadedById: superadminId,
           departmentId: sop.departmentId,
           subcategoryId: sop.subcategoryId,
         },

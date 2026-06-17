@@ -620,7 +620,7 @@ function FilterBar({
         <Search size={14} className="text-muted-foreground" />
         <input
           type="text"
-          placeholder="Cari SOP berdasarkan judul, kode, atau deskripsi..."
+          placeholder="Cari SOP berdasarkan judul atau kode"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="flex-1 text-sm bg-transparent border-none outline-none"
