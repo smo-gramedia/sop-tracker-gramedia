@@ -5,7 +5,6 @@ import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   X,
-  RotateCw,
   ChevronLeft,
   ChevronRight,
   Lock,
@@ -86,6 +85,61 @@ type Screen = "entry" | "nik" | "quiz" | "result";
 const OPT_LABELS = ["A", "B", "C", "D"] as const;
 const OPT_KEYS = ["a", "b", "c", "d"] as const;
 
+// ─── Item perubahan 1 (Batch 5): Persistence helpers ───────────────────
+// Quiz state di-persist ke localStorage supaya kalau user refresh / buka
+// tab baru / browser crash, quiz bisa dilanjut dari titik terakhir.
+const QUIZ_STORAGE_PREFIX = "postTest:";
+
+type PersistedQuizState = {
+  nikKaryawan: string;
+  namaKaryawan: string;
+  answers: Record<string, string>;
+  current: number;
+  startedAt: number; // timestamp millis saat quiz dimulai
+  durasiMenit: number;
+  postTestId: string;
+};
+
+function loadQuizState(postTestId: string): PersistedQuizState | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(QUIZ_STORAGE_PREFIX + postTestId);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PersistedQuizState;
+    // Validasi: harus match postTestId yang sekarang
+    if (parsed.postTestId !== postTestId) return null;
+    // Validasi: kalau startedAt sudah terlalu lama (lebih dari durasi),
+    // anggap quiz sudah expired
+    const elapsedMs = Date.now() - parsed.startedAt;
+    const totalMs = parsed.durasiMenit * 60 * 1000;
+    if (elapsedMs >= totalMs) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function saveQuizState(state: PersistedQuizState) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      QUIZ_STORAGE_PREFIX + state.postTestId,
+      JSON.stringify(state)
+    );
+  } catch {
+    /* quota / SSR — ignore */
+  }
+}
+
+function clearQuizState(postTestId: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(QUIZ_STORAGE_PREFIX + postTestId);
+  } catch {
+    /* ignore */
+  }
+}
+
 // ═════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═════════════════════════════════════════════════════════════════════
@@ -104,6 +158,20 @@ export default function PostTestFlow({
   // ─── Item 8: NIK & Nama state, di-set dari modal sebelum mulai quiz ──
   const [nikKaryawan, setNikKaryawan] = useState("");
   const [namaKaryawan, setNamaKaryawan] = useState("");
+
+  // ─── Batch 5: Auto-restore quiz state kalau ada session yang belum selesai ──
+  // Dijalankan sekali saat mount. Kalau ada persisted state untuk postTestId
+  // ini, langsung skip ke screen "quiz" (NIK & Nama di-restore dari storage).
+  useEffect(() => {
+    if (!postTest) return;
+    const persisted = loadQuizState(postTest.id);
+    if (persisted) {
+      setNikKaryawan(persisted.nikKaryawan);
+      setNamaKaryawan(persisted.namaKaryawan);
+      setScreen("quiz");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [postTest?.id]);
 
   // Gate: attachment belum disetujui
   if (!attachmentOk) {
@@ -172,7 +240,6 @@ export default function PostTestFlow({
       <ResultScreen
         result={currentResult}
         onClose={() => setScreen("entry")}
-        onRetry={() => setScreen("nik")}
         onContinueToNext={onContinueToNext}
       />
     );
@@ -374,10 +441,61 @@ function QuizScreen({
   onSubmitted: (result: ResultData) => void;
 }) {
   const total = postTest.questions.length;
-  const [current, setCurrent] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+
+  // ─── Batch 5: Init quiz state dari localStorage kalau ada ──────────
+  // Kalau ada persisted state, restore: answers + current soal + sisa timer.
+  // Sisa timer dihitung dari (durasiMenit*60 - elapsedSeconds).
+  const initialState = (() => {
+    if (typeof window === "undefined") return null;
+    return loadQuizState(postTest.id);
+  })();
+
+  const [current, setCurrent] = useState<number>(
+    initialState?.current ?? 0
+  );
+  const [answers, setAnswers] = useState<Record<string, string>>(
+    initialState?.answers ?? {}
+  );
   const [submitting, setSubmitting] = useState(false);
-  const [secondsLeft, setSecondsLeft] = useState(postTest.durasiMenit * 60);
+
+  // Timer: kalau ada initialState, hitung sisa dari startedAt
+  // Kalau belum ada, mulai sesi baru dengan durasi penuh
+  const [startedAt] = useState<number>(
+    initialState?.startedAt ?? Date.now()
+  );
+  const [secondsLeft, setSecondsLeft] = useState<number>(() => {
+    if (initialState) {
+      const elapsedSec = Math.floor(
+        (Date.now() - initialState.startedAt) / 1000
+      );
+      return Math.max(0, postTest.durasiMenit * 60 - elapsedSec);
+    }
+    return postTest.durasiMenit * 60;
+  });
+
+  // ─── Persist quiz state setiap kali answers / current berubah ───────
+  useEffect(() => {
+    // Jangan persist kalau sedang submit (state akan di-clear setelah submit)
+    if (submitting) return;
+    saveQuizState({
+      postTestId: postTest.id,
+      nikKaryawan,
+      namaKaryawan,
+      answers,
+      current,
+      startedAt,
+      durasiMenit: postTest.durasiMenit,
+    });
+  }, [
+    answers,
+    current,
+    nikKaryawan,
+    namaKaryawan,
+    postTest.id,
+    postTest.durasiMenit,
+    startedAt,
+    submitting,
+  ]);
 
   useEffect(() => {
     if (submitting) return;
@@ -436,7 +554,17 @@ function QuizScreen({
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Gagal submit");
+      if (!res.ok) {
+        // ─── Batch 5: Kalau server reject (mis: dedup NIK), clear state
+        // supaya user tidak stuck di quiz screen yang sama. NIK ini sudah
+        // pernah submit jadi sesi quiz-nya invalid.
+        if (res.status === 409) {
+          clearQuizState(postTest.id);
+        }
+        throw new Error(data.error || "Gagal submit");
+      }
+      // ─── Batch 5: Clear persisted state setelah submit berhasil
+      clearQuizState(postTest.id);
       onSubmitted(data as ResultData);
     } catch (e) {
       alert(e instanceof Error ? e.message : "Gagal submit");
@@ -506,6 +634,8 @@ function QuizScreen({
                   "Yakin keluar dari Post Test? Jawaban Anda tidak akan disimpan."
                 )
               ) {
+                // ─── Batch 5: Clear persisted state saat user keluar
+                clearQuizState(postTest.id);
                 onCancelQuiz();
               }
             }}
@@ -582,12 +712,10 @@ function QuizScreen({
 function ResultScreen({
   result,
   onClose,
-  onRetry,
   onContinueToNext,
 }: {
   result: ResultData;
   onClose: () => void;
-  onRetry: () => void;
   onContinueToNext: () => void;
 }) {
   const isPassed = result.status === "lulus";
@@ -654,18 +782,30 @@ function ResultScreen({
           </div>
 
           <div className="flex flex-col gap-2">
-            <Button
-              variant="outline"
-              onClick={onRetry}
-              className="w-full gap-1.5"
-            >
-              <RotateCw size={14} /> Ulangi Post Test
-            </Button>
-            {/* HANYA muncul kalau lulus */}
-            {isPassed && (
+            {/* ─── Batch 5: Tombol "Ulangi Post Test" dihapus ──────────
+               1 NIK 1 attempt per SOP, jadi user tidak boleh ulangi
+               post test dengan NIK yang sama. Karyawan lain bisa
+               mengerjakan dari Step 5 → klik "Mulai Post Test
+               (Karyawan Baru)" untuk input NIK berbeda. */}
+            {isPassed ? (
               <Button onClick={onContinueToNext} className="w-full gap-1.5">
                 Lanjut ke Penutup <ChevronRight size={14} />
               </Button>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={onClose}
+                  className="w-full gap-1.5"
+                >
+                  Tutup
+                </Button>
+                <p className="text-xs text-muted-foreground text-center leading-relaxed mt-1">
+                  Setiap NIK hanya boleh 1x attempt per SOP. Karyawan lain
+                  dapat mengerjakan dari halaman Post Test dengan NIK
+                  masing-masing.
+                </p>
+              </>
             )}
           </div>
 
