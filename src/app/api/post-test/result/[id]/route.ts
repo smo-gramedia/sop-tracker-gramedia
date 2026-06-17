@@ -37,7 +37,10 @@ export async function GET(
 
   return NextResponse.json({
     resultId: result.id,
+    id: result.id, // alias untuk component yang baca `r.id`
     attemptNumber: result.attemptNumber,
+    nikKaryawan: result.nikKaryawan,
+    namaKaryawan: result.namaKaryawan,
     skor: result.skor,
     status: result.status,
     jumlahBenar: result.jumlahBenar,

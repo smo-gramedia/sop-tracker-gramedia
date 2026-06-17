@@ -300,6 +300,11 @@ model PostTestResult {
   userId        String               @map("user_id")
   postTestId    String               @map("post_test_id")
   attemptNumber Int                  @default(1) @map("attempt_number")
+  // ─── NIK & Nama karyawan (Item 8) ─────────────────────────────
+  // 6 digit angka, manual input via modal sebelum mulai test
+  // 1 NIK hanya boleh 1 attempt per postTest
+  nikKaryawan   String               @map("nik_karyawan")
+  namaKaryawan  String               @map("nama_karyawan")
   skor          Int
   jumlahBenar   Int                  @map("jumlah_benar")
   jumlahSalah   Int                  @map("jumlah_salah")
@@ -310,6 +315,10 @@ model PostTestResult {
   postTest      PostTest             @relation(fields: [postTestId], references: [id], onDelete: Cascade)
   user          User                 @relation(fields: [userId], references: [id])
 
+  // ─── Dedup: 1 NIK hanya boleh 1 attempt per post test
+  @@unique([postTestId, nikKaryawan], name: "post_test_nik")
+  @@index([userId, postTestId])
+  @@index([nikKaryawan])
   @@map("post_test_results")
 }
 

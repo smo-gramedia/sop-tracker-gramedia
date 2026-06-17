@@ -33,7 +33,11 @@ type PostTest = {
 
 type ResultData = {
   resultId: string;
+  id?: string; // alias dari API (sama dengan resultId)
   attemptNumber: number;
+  // ─── Item 8: NIK & Nama karyawan ─────────────
+  nikKaryawan?: string;
+  namaKaryawan?: string;
   skor: number;
   status: "lulus" | "tidak_lulus";
   jumlahBenar: number;
@@ -56,6 +60,9 @@ type ResultData = {
 type HistoryItem = {
   id: string;
   attemptNumber: number;
+  // ─── NIK & Nama (optional supaya backward-compatible dengan data lama) ──
+  nikKaryawan?: string | null;
+  namaKaryawan?: string | null;
   skor: number;
   status: "lulus" | "tidak_lulus";
   selesaiAt: string;
@@ -72,7 +79,9 @@ type Props = {
   onCancel: () => void; // Kembali ke step 4
 };
 
-type Screen = "entry" | "quiz" | "result";
+// ─── Item 8: Screen flow sekarang ada 4 tahap ─────────────
+// entry → nik (modal NIK + Nama) → quiz → result
+type Screen = "entry" | "nik" | "quiz" | "result";
 
 const OPT_LABELS = ["A", "B", "C", "D"] as const;
 const OPT_KEYS = ["a", "b", "c", "d"] as const;
@@ -92,6 +101,9 @@ export default function PostTestFlow({
 }: Props) {
   const [screen, setScreen] = useState<Screen>("entry");
   const [currentResult, setCurrentResult] = useState<ResultData | null>(null);
+  // ─── Item 8: NIK & Nama state, di-set dari modal sebelum mulai quiz ──
+  const [nikKaryawan, setNikKaryawan] = useState("");
+  const [namaKaryawan, setNamaKaryawan] = useState("");
 
   // Gate: attachment belum disetujui
   if (!attachmentOk) {
@@ -123,11 +135,28 @@ export default function PostTestFlow({
     );
   }
 
+  // ─── NIK Modal (sebelum mulai quiz) ───────────────────────────────
+  if (screen === "nik") {
+    return (
+      <NikModal
+        myResults={myResults}
+        onCancel={() => setScreen("entry")}
+        onConfirm={(nik, nama) => {
+          setNikKaryawan(nik);
+          setNamaKaryawan(nama);
+          setScreen("quiz");
+        }}
+      />
+    );
+  }
+
   if (screen === "quiz") {
     return (
       <QuizScreen
         postTest={postTest}
         sopJudul={sopJudul}
+        nikKaryawan={nikKaryawan}
+        namaKaryawan={namaKaryawan}
         onCancelQuiz={() => setScreen("entry")}
         onSubmitted={(result) => {
           setCurrentResult(result);
@@ -143,7 +172,7 @@ export default function PostTestFlow({
       <ResultScreen
         result={currentResult}
         onClose={() => setScreen("entry")}
-        onRetry={() => setScreen("quiz")}
+        onRetry={() => setScreen("nik")}
         onContinueToNext={onContinueToNext}
       />
     );
@@ -154,7 +183,7 @@ export default function PostTestFlow({
       postTest={postTest}
       myResults={myResults}
       hasPassedPostTest={hasPassedPostTest}
-      onStart={() => setScreen("quiz")}
+      onStart={() => setScreen("nik")}
       onContinueToNext={onContinueToNext}
       onViewResult={async (resultId) => {
         try {
@@ -191,17 +220,25 @@ function EntryScreen({
 }) {
   return (
     <div className="space-y-6 max-w-3xl">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h2 className="font-display font-bold text-3xl mb-2">Post Test</h2>
+          <h2 className="font-display font-bold text-2xl sm:text-3xl mb-2">
+            Post Test
+          </h2>
           <p className="text-sm text-muted-foreground">
-            Kerjakan evaluasi untuk mengukur pemahaman Anda. Durasi:{" "}
-            {postTest.durasiMenit} menit, {postTest.jumlahSoal} soal pilihan
-            ganda. Passing grade: {postTest.passingGrade}%.
+            Setiap karyawan unit kerja ini wajib mengerjakan Post Test
+            menggunakan NIK masing-masing. Durasi: {postTest.durasiMenit}{" "}
+            menit, {postTest.jumlahSoal} soal pilihan ganda. Passing grade:{" "}
+            {postTest.passingGrade}%.
+          </p>
+          <p className="text-xs text-muted-foreground mt-2">
+            <strong>Catatan:</strong> 1 NIK hanya boleh 1x attempt per SOP.
           </p>
         </div>
         <Button onClick={onStart} className="flex-shrink-0">
-          {myResults.length > 0 ? "Coba Lagi" : "Mulai Post Test"}
+          {myResults.length > 0
+            ? "Mulai Post Test (Karyawan Baru)"
+            : "Mulai Post Test"}
         </Button>
       </div>
 
@@ -216,63 +253,77 @@ function EntryScreen({
             Belum ada percobaan. Klik "Mulai Post Test" untuk memulai.
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40">
-                <th className="text-left px-5 py-3 font-medium text-muted-foreground">
-                  Tanggal
-                </th>
-                <th className="text-left px-5 py-3 font-medium text-muted-foreground">
-                  Skor
-                </th>
-                <th className="text-left px-5 py-3 font-medium text-muted-foreground">
-                  Status
-                </th>
-                <th className="text-right px-5 py-3 font-medium text-muted-foreground">
-                  Aksi
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {myResults.map((r) => (
-                <tr
-                  key={r.id}
-                  className="border-b last:border-0 hover:bg-muted/20 transition-colors"
-                >
-                  <td className="px-5 py-3">
-                    {new Date(r.selesaiAt).toLocaleDateString("id-ID", {
-                      day: "2-digit",
-                      month: "long",
-                      year: "numeric",
-                    })}
-                  </td>
-                  <td className="px-5 py-3 font-semibold">{r.skor}%</td>
-                  <td className="px-5 py-3">
-                    <span
-                      className={cn(
-                        "text-xs px-2.5 py-0.5 rounded-full border font-medium",
-                        r.status === "lulus"
-                          ? "bg-green-50 text-green-700 border-green-200"
-                          : "bg-red-50 text-red-700 border-red-200"
-                      )}
-                    >
-                      {r.status === "lulus" ? "Lulus" : "Tidak Lulus"}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 text-right">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 px-2.5 text-xs gap-1"
-                      onClick={() => onViewResult(r.id)}
-                    >
-                      <Eye size={12} /> Lihat Detail
-                    </Button>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[640px]">
+              <thead>
+                <tr className="border-b bg-muted/40">
+                  <th className="text-left px-5 py-3 font-medium text-muted-foreground">
+                    NIK
+                  </th>
+                  <th className="text-left px-5 py-3 font-medium text-muted-foreground">
+                    Nama Karyawan
+                  </th>
+                  <th className="text-left px-5 py-3 font-medium text-muted-foreground">
+                    Tanggal
+                  </th>
+                  <th className="text-left px-5 py-3 font-medium text-muted-foreground">
+                    Skor
+                  </th>
+                  <th className="text-left px-5 py-3 font-medium text-muted-foreground">
+                    Status
+                  </th>
+                  <th className="text-right px-5 py-3 font-medium text-muted-foreground">
+                    Aksi
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {myResults.map((r) => (
+                  <tr
+                    key={r.id}
+                    className="border-b last:border-0 hover:bg-muted/20 transition-colors"
+                  >
+                    <td className="px-5 py-3 font-mono text-xs">
+                      {r.nikKaryawan ?? "—"}
+                    </td>
+                    <td className="px-5 py-3 font-medium">
+                      {r.namaKaryawan ?? "—"}
+                    </td>
+                    <td className="px-5 py-3 text-muted-foreground text-xs">
+                      {new Date(r.selesaiAt).toLocaleDateString("id-ID", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </td>
+                    <td className="px-5 py-3 font-semibold">{r.skor}%</td>
+                    <td className="px-5 py-3">
+                      <span
+                        className={cn(
+                          "text-xs px-2.5 py-0.5 rounded-full border font-medium",
+                          r.status === "lulus"
+                            ? "bg-green-50 text-green-700 border-green-200"
+                            : "bg-red-50 text-red-700 border-red-200"
+                        )}
+                      >
+                        {r.status === "lulus" ? "Lulus" : "Tidak Lulus"}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2.5 text-xs gap-1"
+                        onClick={() => onViewResult(r.id)}
+                      >
+                        <Eye size={12} /> Lihat Detail
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
@@ -310,11 +361,15 @@ function EntryScreen({
 function QuizScreen({
   postTest,
   sopJudul,
+  nikKaryawan,
+  namaKaryawan,
   onCancelQuiz,
   onSubmitted,
 }: {
   postTest: PostTest;
   sopJudul: string;
+  nikKaryawan: string;
+  namaKaryawan: string;
   onCancelQuiz: () => void;
   onSubmitted: (result: ResultData) => void;
 }) {
@@ -375,6 +430,9 @@ function QuizScreen({
           postTestId: postTest.id,
           answers,
           durasiDetik,
+          // ─── Item 8: kirim NIK & Nama ──
+          nikKaryawan,
+          namaKaryawan,
         }),
       });
       const data = await res.json();
@@ -749,4 +807,146 @@ function formatTimer(totalSeconds: number): string {
   const m = Math.floor((totalSeconds % 3600) / 60);
   const s = totalSeconds % 60;
   return [h, m, s].map((n) => String(n).padStart(2, "0")).join(":");
+}
+
+// ═════════════════════════════════════════════════════════════════════
+// Item 8: NIK MODAL — wajib diisi sebelum mulai test
+// 1 NIK 1 attempt per SOP — validasi di client (UX) + server (security)
+// ═════════════════════════════════════════════════════════════════════
+function NikModal({
+  myResults,
+  onCancel,
+  onConfirm,
+}: {
+  myResults: HistoryItem[];
+  onCancel: () => void;
+  onConfirm: (nik: string, nama: string) => void;
+}) {
+  const [nik, setNik] = useState("");
+  const [nama, setNama] = useState("");
+  const [error, setError] = useState("");
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+
+    // Validasi NIK: 6 digit angka
+    if (!/^\d{6}$/.test(nik)) {
+      setError("NIK harus berupa 6 digit angka.");
+      return;
+    }
+
+    // Validasi Nama: minimal 2 karakter
+    if (nama.trim().length < 2) {
+      setError("Nama wajib diisi (minimal 2 karakter).");
+      return;
+    }
+
+    // Cek client-side: NIK sudah pernah submit di sesi ini?
+    const existing = myResults.find((r) => r.nikKaryawan === nik);
+    if (existing) {
+      setError(
+        `NIK ${nik} (${existing.namaKaryawan ?? "—"}) sudah pernah mengerjakan Post Test ini dengan skor ${existing.skor}. Setiap NIK hanya boleh 1x attempt per SOP.`
+      );
+      return;
+    }
+
+    onConfirm(nik, nama.trim());
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto">
+      <div className="bg-background rounded-2xl border shadow-2xl w-full max-w-md my-8 max-h-[calc(100vh-4rem)] overflow-y-auto animate-slide-up">
+        <form onSubmit={handleSubmit}>
+          {/* Header */}
+          <div className="p-6 border-b">
+            <h2 className="font-display font-bold text-2xl">Identitas Karyawan</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Masukkan NIK dan nama Anda sebelum mengerjakan Post Test.
+              Pastikan data benar — tidak dapat diubah setelah submit.
+            </p>
+          </div>
+
+          {/* Body */}
+          <div className="p-6 space-y-4">
+            <div>
+              <label
+                htmlFor="nik"
+                className="block text-sm font-medium mb-1.5"
+              >
+                NIK Karyawan <span className="text-destructive">*</span>
+              </label>
+              <input
+                id="nik"
+                type="text"
+                inputMode="numeric"
+                pattern="\d{6}"
+                maxLength={6}
+                value={nik}
+                onChange={(e) => {
+                  // Auto-strip non-digit
+                  const v = e.target.value.replace(/\D/g, "").slice(0, 6);
+                  setNik(v);
+                }}
+                placeholder="6 digit angka"
+                className="w-full px-3.5 py-2.5 rounded-lg border bg-background text-sm font-mono tracking-wider focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                autoFocus
+                required
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                {nik.length}/6 digit
+              </p>
+            </div>
+
+            <div>
+              <label
+                htmlFor="nama"
+                className="block text-sm font-medium mb-1.5"
+              >
+                Nama Lengkap <span className="text-destructive">*</span>
+              </label>
+              <input
+                id="nama"
+                type="text"
+                value={nama}
+                onChange={(e) => setNama(e.target.value)}
+                placeholder="Contoh: Budi Santoso"
+                maxLength={100}
+                className="w-full px-3.5 py-2.5 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                required
+              />
+            </div>
+
+            {error && (
+              <div className="bg-destructive/10 border border-destructive/30 rounded-lg px-3.5 py-2.5 text-sm text-destructive">
+                {error}
+              </div>
+            )}
+
+            {/* Info box */}
+            <div className="bg-muted/40 border rounded-lg p-3 text-xs text-muted-foreground space-y-1">
+              <p>
+                <strong className="text-foreground">Catatan penting:</strong>
+              </p>
+              <ul className="list-disc list-inside space-y-0.5">
+                <li>1 NIK hanya boleh 1x attempt per SOP</li>
+                <li>NIK & Nama akan tercatat di riwayat hasil</li>
+                <li>Pastikan data sesuai NIK karyawan Bapak/Ibu</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-end gap-2 p-6 border-t bg-muted/20 rounded-b-2xl">
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Batal
+            </Button>
+            <Button type="submit" disabled={nik.length !== 6 || nama.trim().length < 2}>
+              Mulai Post Test
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 }

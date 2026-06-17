@@ -257,6 +257,9 @@ export default function BelajarClient({
               myResults={results.map((r: any) => ({
                 id: r.id,
                 attemptNumber: r.attemptNumber,
+                // ─── Item 8: NIK & Nama karyawan ──────────
+                nikKaryawan: r.nikKaryawan ?? null,
+                namaKaryawan: r.namaKaryawan ?? null,
                 skor: r.skor,
                 status: r.status,
                 selesaiAt:
