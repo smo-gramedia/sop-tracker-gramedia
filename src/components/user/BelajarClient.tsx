@@ -1,7 +1,7 @@
 "use client";
 
 // src/components/user/BelajarClient.tsx
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -93,6 +93,33 @@ export default function BelajarClient({
   const [highestStep, setHighestStep] = useState<number>(initialStep);
   const [submitting, setSubmitting] = useState(false);
   const [results, setResults] = useState<any[]>(myResults);
+
+  // ─── Batch 5 fix: Auto-jump ke Step 5 kalau ada quiz session aktif ──
+  // Saat refresh atau buka tab baru, kalau ada localStorage `postTest:{id}`
+  // yang valid (belum expired), berarti user lagi di tengah quiz.
+  // Set currentStep = 5 supaya PostTestFlow muncul dan auto-restore quiz.
+  useEffect(() => {
+    if (!postTest || typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(`postTest:${postTest.id}`);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      // Validasi quiz belum expired
+      const elapsedMs = Date.now() - (parsed.startedAt ?? 0);
+      const totalMs = (parsed.durasiMenit ?? 0) * 60 * 1000;
+      if (elapsedMs >= totalMs) {
+        // Expired — hapus storage, jangan auto-jump
+        window.localStorage.removeItem(`postTest:${postTest.id}`);
+        return;
+      }
+      // Match — auto-jump ke step 5
+      setCurrentStep(5);
+      setHighestStep((prev) => Math.max(prev, 5));
+    } catch {
+      /* parse error — ignore */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [postTest?.id]);
 
   const theme =
     KATEGORI_THEME[doc.kategori] ?? KATEGORI_THEME.petunjuk;
@@ -269,6 +296,7 @@ export default function BelajarClient({
                       new Date().toISOString(),
               }))}
               sopJudul={doc.judul}
+              sopDocumentId={doc.id}
               hasPassedPostTest={hasPassedPostTest}
               onResultSubmitted={handlePostTestCompleted}
               onContinueToNext={() => goToStep(6)}

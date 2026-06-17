@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import UserNavbar from "@/components/user/UserNavbar";
 import UserFooter from "@/components/user/UserFooter";
+import ActiveQuizBanner from "@/components/user/ActiveQuizBanner";
 
 export default async function UserLayout({
   children,
@@ -25,6 +26,9 @@ export default async function UserLayout({
         userName={session.user.name}
         unreadCount={unreadCount}
       />
+      {/* ─── Batch 5.2: Banner muncul global kalau ada quiz session aktif ──
+         Otomatis hilang saat user sudah di /belajar/{id} yang sesuai */}
+      <ActiveQuizBanner />
       <main className="flex-1">{children}</main>
       <UserFooter />
     </div>

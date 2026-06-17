@@ -72,6 +72,9 @@ type Props = {
   attachmentOk: boolean;
   myResults: HistoryItem[];
   sopJudul: string;
+  // ─── Batch 5.2: untuk persist di localStorage supaya banner global
+  // bisa kembalikan user ke halaman ini
+  sopDocumentId: string;
   hasPassedPostTest: boolean;
   onResultSubmitted: (result: ResultData) => void;
   onContinueToNext: () => void; // Lanjut ke step 6
@@ -98,6 +101,11 @@ type PersistedQuizState = {
   startedAt: number; // timestamp millis saat quiz dimulai
   durasiMenit: number;
   postTestId: string;
+  // ─── Batch 5.2: simpan juga sopDocumentId supaya banner di halaman
+  // lain bisa navigate balik ke /belajar/{sopDocumentId}
+  sopDocumentId: string;
+  // Optional: judul SOP untuk display di banner
+  sopJudul?: string;
 };
 
 function loadQuizState(postTestId: string): PersistedQuizState | null {
@@ -148,6 +156,7 @@ export default function PostTestFlow({
   attachmentOk,
   myResults,
   sopJudul,
+  sopDocumentId,
   hasPassedPostTest,
   onResultSubmitted,
   onContinueToNext,
@@ -223,6 +232,7 @@ export default function PostTestFlow({
       <QuizScreen
         postTest={postTest}
         sopJudul={sopJudul}
+        sopDocumentId={sopDocumentId}
         nikKaryawan={nikKaryawan}
         namaKaryawan={namaKaryawan}
         onCancelQuiz={() => setScreen("entry")}
@@ -428,6 +438,7 @@ function EntryScreen({
 function QuizScreen({
   postTest,
   sopJudul,
+  sopDocumentId,
   nikKaryawan,
   namaKaryawan,
   onCancelQuiz,
@@ -435,6 +446,7 @@ function QuizScreen({
 }: {
   postTest: PostTest;
   sopJudul: string;
+  sopDocumentId: string;
   nikKaryawan: string;
   namaKaryawan: string;
   onCancelQuiz: () => void;
@@ -479,6 +491,8 @@ function QuizScreen({
     if (submitting) return;
     saveQuizState({
       postTestId: postTest.id,
+      sopDocumentId,
+      sopJudul,
       nikKaryawan,
       namaKaryawan,
       answers,
@@ -493,6 +507,8 @@ function QuizScreen({
     namaKaryawan,
     postTest.id,
     postTest.durasiMenit,
+    sopDocumentId,
+    sopJudul,
     startedAt,
     submitting,
   ]);
