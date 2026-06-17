@@ -36,6 +36,7 @@ export default function UserNavbar({ userName, unreadCount = 0 }: Props) {
   const [profileOpen, setProfileOpen] = useState(false);
   // ─── NEW: Mobile menu state ────────────────────────────────────
   const [mobileOpen, setMobileOpen] = useState(false);
+  // Sub-menu mobile: SOP categories collapsible
   const [mobileSopOpen, setMobileSopOpen] = useState(false);
 
   const sopRef = useRef<HTMLDivElement>(null);
@@ -82,6 +83,7 @@ export default function UserNavbar({ userName, unreadCount = 0 }: Props) {
     return pathname.startsWith(href);
   };
 
+  // SOP dropdown active hanya untuk /sop/* (bukan /juklak)
   const isSopActive = pathname.startsWith("/sop/");
 
   return (
@@ -90,9 +92,10 @@ export default function UserNavbar({ userName, unreadCount = 0 }: Props) {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-2">
           {/* ─── Left: Logo + Desktop Nav ─────────────────────────── */}
           <div className="flex items-center gap-6 min-w-0 flex-shrink">
-            <Link href="/home" className="flex-shrink-0">
+            {/* Logo sudah punya <Link href="/home"> internal — jangan dibungkus Link lagi */}
+            <div className="flex-shrink-0">
               <Logo size={38} textClassName="text-base" />
-            </Link>
+            </div>
 
             {/* Desktop nav links — hide di mobile */}
             <div className="hidden lg:flex items-center gap-6">
@@ -166,7 +169,7 @@ export default function UserNavbar({ userName, unreadCount = 0 }: Props) {
               <Bell size={20} className="text-muted-foreground" />
             </Link>
 
-            {/* Profile Dropdown — selalu tampil */}
+            {/* Profile Dropdown — selalu tampil (desktop & mobile) */}
             <div className="relative" ref={profileRef}>
               <button
                 onClick={() => setProfileOpen((v) => !v)}
@@ -223,6 +226,7 @@ export default function UserNavbar({ userName, unreadCount = 0 }: Props) {
           </div>
         </div>
       </nav>
+
       {/* ════════════════════════════════════════════════════════ */}
       {/* MOBILE MENU OVERLAY                                       */}
       {/* ════════════════════════════════════════════════════════ */}
