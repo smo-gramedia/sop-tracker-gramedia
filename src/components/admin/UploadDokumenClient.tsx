@@ -183,48 +183,67 @@ export default function UploadDokumenClient({
         </div>
 
         <div className="bg-background rounded-xl border overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40">
-                <th className="text-left px-5 py-3 font-medium text-muted-foreground w-32">
-                  Kode
-                </th>
-                <th className="text-left px-5 py-3 font-medium text-muted-foreground">
-                  Judul SOP
-                </th>
-                <th className="text-left px-5 py-3 font-medium text-muted-foreground">
-                  Kategori
-                </th>
-                <th className="text-left px-5 py-3 font-medium text-muted-foreground">
-                  Departemen
-                </th>
-                <th className="text-left px-5 py-3 font-medium text-muted-foreground">
-                  Status
-                </th>
-                <th className="text-right px-5 py-3 font-medium text-muted-foreground">
-                  Aksi
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredDocs.map((doc) => (
-                <tr
-                  key={doc.id}
-                  className="border-b last:border-0 hover:bg-muted/20 transition-colors"
-                >
-                  <td className="px-5 py-3 font-mono text-xs text-muted-foreground">
-                    {doc.kode}
-                  </td>
-                  <td className="px-5 py-3 font-medium">{doc.judul}</td>
-                  <td className="px-5 py-3">
-                    <KategoriBadge kategori={doc.kategori} />
-                  </td>
-                  <td className="px-5 py-3 text-muted-foreground text-sm">
-                    {doc.department?.nama ?? "—"}
-                  </td>
-                  <td className="px-5 py-3">
-                    <StatusBadge status={doc.status} />
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[900px]">
+              <thead>
+                <tr className="border-b bg-muted/40">
+                  <th className="text-left px-5 py-3 font-medium text-muted-foreground w-32">
+                    Kode
+                  </th>
+                  <th className="text-left px-5 py-3 font-medium text-muted-foreground">
+                    Judul SOP
+                  </th>
+                  <th className="text-left px-5 py-3 font-medium text-muted-foreground">
+                    Versi
+                  </th>
+                  <th className="text-left px-5 py-3 font-medium text-muted-foreground">
+                    Kategori
+                  </th>
+                  <th className="text-left px-5 py-3 font-medium text-muted-foreground">
+                    Departemen
+                  </th>
+                  <th className="text-left px-5 py-3 font-medium text-muted-foreground">
+                    Status
+                  </th>
+                  <th className="text-left px-5 py-3 font-medium text-muted-foreground">
+                    Tanggal Upload
+                  </th>
+                  <th className="text-right px-5 py-3 font-medium text-muted-foreground">
+                    Aksi
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredDocs.map((doc) => (
+                  <tr
+                    key={doc.id}
+                    className="border-b last:border-0 hover:bg-muted/20 transition-colors"
+                  >
+                    <td className="px-5 py-3 font-mono text-xs text-muted-foreground">
+                      {doc.kode}
+                    </td>
+                    <td className="px-5 py-3 font-medium">{doc.judul}</td>
+                    <td className="px-5 py-3 text-xs">
+                      <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground font-mono">
+                        {doc.versi}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <KategoriBadge kategori={doc.kategori} />
+                    </td>
+                    <td className="px-5 py-3 text-muted-foreground text-sm">
+                      {doc.department?.nama ?? "—"}
+                    </td>
+                    <td className="px-5 py-3">
+                      <StatusBadge status={doc.status} />
+                    </td>
+                    <td className="px-5 py-3 text-xs text-muted-foreground">
+                      {new Date(doc.createdAt).toLocaleDateString("id-ID", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </td>
                   <td className="px-5 py-3">
                     <div className="flex items-center justify-end gap-1.5">
                       <Button
@@ -252,7 +271,7 @@ export default function UploadDokumenClient({
               {filteredDocs.length === 0 && (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={8}
                     className="px-5 py-12 text-center text-muted-foreground"
                   >
                     {docs.length === 0
@@ -263,6 +282,7 @@ export default function UploadDokumenClient({
               )}
             </tbody>
           </table>
+          </div>
           <div className="px-5 py-3 border-t bg-muted/20 text-xs text-muted-foreground text-right">
             Menampilkan {filteredDocs.length} dari {docs.length} dokumen
             {total > docs.length && (

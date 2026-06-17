@@ -11,7 +11,8 @@ export default async function RawDokumenPage() {
           kode: true,
           judul: true,
           kategori: true,
-          status: true, // ← TAMBAH: untuk filter status di client
+          versi: true, // ← TAMBAH: untuk kolom versi di tabel
+          status: true, // untuk filter status di client
           department: { select: { nama: true } },
         },
       },

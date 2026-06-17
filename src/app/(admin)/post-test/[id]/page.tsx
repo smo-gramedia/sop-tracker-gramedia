@@ -82,6 +82,9 @@ export default async function PostTestDetailPage({ params }: Props) {
         id: r.id,
         userId: r.userId,
         attemptNumber: r.attemptNumber,
+        // ─── Item 8 (Batch 3): NIK & Nama ──────────
+        nikKaryawan: r.nikKaryawan,
+        namaKaryawan: r.namaKaryawan,
         skor: r.skor,
         jumlahBenar: r.jumlahBenar,
         jumlahSalah: r.jumlahSalah,

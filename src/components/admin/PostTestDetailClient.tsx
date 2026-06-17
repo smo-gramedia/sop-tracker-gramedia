@@ -44,6 +44,9 @@ type Result = {
   id: string;
   userId: string;
   attemptNumber: number;
+  // ─── Item 8 (Batch 3): NIK & Nama karyawan ──────────────
+  nikKaryawan: string;
+  namaKaryawan: string;
   skor: number;
   jumlahBenar: number;
   jumlahSalah: number;
@@ -81,37 +84,93 @@ export default function PostTestDetailClient({
   totalQuestions,
   stats,
 }: Props) {
-  const [tab, setTab] = useState<"all" | "latest">("latest");
+  // ─── Tab baru: "karyawan" (per submission) | "unit" (grouped) ────────
+  const [tab, setTab] = useState<"karyawan" | "unit">("karyawan");
   const [searchResult, setSearchResult] = useState("");
   const [exporting, setExporting] = useState(false);
 
-  // ─── "Latest per User" — group results by userId, take latest ───────
-  const latestResults = useMemo(() => {
-    const byUser: Record<string, Result> = {};
+  // ─── Per-unit-kerja summary: group by userId (unit kerja) ────────────
+  // Hitung: total karyawan ikut, lulus, tidak lulus, compliance %
+  type UnitSummary = {
+    userId: string;
+    user: Result["user"];
+    totalKaryawan: number;
+    lulusCount: number;
+    tidakLulusCount: number;
+    complianceRate: number; // %
+    latestAt: string;
+  };
+
+  const unitSummary = useMemo<UnitSummary[]>(() => {
+    const byUnit: Record<string, UnitSummary> = {};
     results.forEach((r) => {
-      const existing = byUser[r.userId];
-      if (!existing || r.attemptNumber > existing.attemptNumber) {
-        byUser[r.userId] = r;
+      if (!byUnit[r.userId]) {
+        byUnit[r.userId] = {
+          userId: r.userId,
+          user: r.user,
+          totalKaryawan: 0,
+          lulusCount: 0,
+          tidakLulusCount: 0,
+          complianceRate: 0,
+          latestAt: r.dikerjakanAt,
+        };
+      }
+      const u = byUnit[r.userId];
+      u.totalKaryawan++;
+      if (r.status === "lulus") u.lulusCount++;
+      else u.tidakLulusCount++;
+      // Latest tanggal
+      if (new Date(r.dikerjakanAt) > new Date(u.latestAt)) {
+        u.latestAt = r.dikerjakanAt;
       }
     });
-    return Object.values(byUser).sort(
+    // Hitung compliance rate
+    return Object.values(byUnit)
+      .map((u) => ({
+        ...u,
+        complianceRate:
+          u.totalKaryawan > 0
+            ? Math.round((u.lulusCount / u.totalKaryawan) * 100)
+            : 0,
+      }))
+      .sort(
+        (a, b) =>
+          new Date(b.latestAt).getTime() - new Date(a.latestAt).getTime()
+      );
+  }, [results]);
+
+  // ─── Per-karyawan: list sorted by date desc ───────────────────────
+  const karyawanResults = useMemo(() => {
+    return [...results].sort(
       (a, b) =>
         new Date(b.dikerjakanAt).getTime() - new Date(a.dikerjakanAt).getTime()
     );
   }, [results]);
 
   // ─── Apply search filter ────────────────────────────────────────────
-  const displayResults = useMemo(() => {
-    const source = tab === "all" ? results : latestResults;
-    if (!searchResult.trim()) return source;
+  const displayKaryawan = useMemo(() => {
+    if (!searchResult.trim()) return karyawanResults;
     const q = searchResult.toLowerCase();
-    return source.filter(
+    return karyawanResults.filter(
       (r) =>
+        r.namaKaryawan?.toLowerCase().includes(q) ||
+        r.nikKaryawan?.includes(q) ||
         r.user.nama.toLowerCase().includes(q) ||
         r.user.kodeUser.toLowerCase().includes(q) ||
         (r.user.unit?.toLowerCase().includes(q) ?? false)
     );
-  }, [tab, results, latestResults, searchResult]);
+  }, [karyawanResults, searchResult]);
+
+  const displayUnit = useMemo(() => {
+    if (!searchResult.trim()) return unitSummary;
+    const q = searchResult.toLowerCase();
+    return unitSummary.filter(
+      (u) =>
+        u.user.nama.toLowerCase().includes(q) ||
+        u.user.kodeUser.toLowerCase().includes(q) ||
+        (u.user.unit?.toLowerCase().includes(q) ?? false)
+    );
+  }, [unitSummary, searchResult]);
 
   // ─── Export Excel ───────────────────────────────────────────────────
   async function handleExport() {
@@ -204,8 +263,8 @@ export default function PostTestDetailClient({
           icon={Users}
           iconBg="bg-blue-50"
           iconColor="text-blue-600"
-          label="Unique User"
-          value={stats.uniqueUsers}
+          label="Karyawan Ikut"
+          value={stats.totalResults}
         />
         <StatCard
           icon={CheckCircle2}
@@ -290,24 +349,24 @@ export default function PostTestDetailClient({
           </div>
         </div>
 
-        {/* ═══ Section: Hasil Pengerjaan User ═══ */}
+        {/* ═══ Section: Hasil Pengerjaan ═══ */}
         <div className="bg-background rounded-xl border">
           <div className="px-5 py-3 border-b bg-muted/30">
             <h2 className="font-display font-semibold text-sm flex items-center gap-2 mb-3">
               <Users size={14} />
-              Hasil Pengerjaan Unit Kerja
+              Hasil Pengerjaan Post Test
             </h2>
 
             {/* Tabs */}
-            <div className="flex gap-1 mb-3">
+            <div className="flex gap-1 mb-3 flex-wrap">
               <TabButton
-                active={tab === "latest"}
-                onClick={() => setTab("latest")}
+                active={tab === "karyawan"}
+                onClick={() => setTab("karyawan")}
               >
-                Per Unit (Latest) · {latestResults.length}
+                Per Karyawan · {karyawanResults.length}
               </TabButton>
-              <TabButton active={tab === "all"} onClick={() => setTab("all")}>
-                Semua Attempt · {results.length}
+              <TabButton active={tab === "unit"} onClick={() => setTab("unit")}>
+                Per Unit Kerja · {unitSummary.length}
               </TabButton>
             </div>
 
@@ -316,7 +375,11 @@ export default function PostTestDetailClient({
               <Search size={12} className="text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Cari nama unit, kode user, atau unit..."
+                placeholder={
+                  tab === "karyawan"
+                    ? "Cari NIK, nama karyawan, atau unit kerja..."
+                    : "Cari unit kerja..."
+                }
                 value={searchResult}
                 onChange={(e) => setSearchResult(e.target.value)}
                 className="flex-1 text-xs bg-transparent border-none outline-none"
@@ -325,83 +388,206 @@ export default function PostTestDetailClient({
           </div>
 
           <div className="max-h-[600px] overflow-y-auto">
-            {displayResults.length === 0 ? (
-              <div className="text-sm text-muted-foreground text-center py-12">
-                {results.length === 0
-                  ? "Belum ada unit kerja yang mengerjakan."
-                  : "Tidak ada hasil yang sesuai pencarian."}
-              </div>
-            ) : (
-              <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-muted/40 z-10">
-                  <tr className="border-b">
-                    <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs">
-                      Unit Kerja
-                    </th>
-                    <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs">
-                      Attempt
-                    </th>
-                    <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs">
-                      Hasil
-                    </th>
-                    <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs">
-                      Tanggal
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {displayResults.map((r) => (
-                    <tr
-                      key={r.id}
-                      className="border-b last:border-0 hover:bg-muted/20 transition-colors"
-                    >
-                      <td className="px-4 py-2.5">
-                        <div className="flex items-center gap-2">
-                          <TipeIcon tipe={r.user.tipeUser} />
-                          <div className="min-w-0">
-                            <div className="text-sm font-medium">
-                              {r.user.nama}
-                            </div>
-                            <div className="text-[11px] text-muted-foreground font-mono">
-                              {r.user.kodeUser} · {r.user.unit ?? "—"}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <span className="text-xs font-mono bg-muted text-muted-foreground rounded px-1.5 py-0.5">
-                          #{r.attemptNumber}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <ResultDisplay
-                          status={r.status}
-                          skor={r.skor}
-                          jumlahBenar={r.jumlahBenar}
-                          totalQuestions={totalQuestions}
-                        />
-                      </td>
-                      <td className="px-4 py-2.5 text-[11px] text-muted-foreground">
-                        {new Date(r.dikerjakanAt).toLocaleString("id-ID", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            {/* ─── TAB: Per Karyawan ──────────────────────────────── */}
+            {tab === "karyawan" && (
+              <>
+                {displayKaryawan.length === 0 ? (
+                  <div className="text-sm text-muted-foreground text-center py-12">
+                    {results.length === 0
+                      ? "Belum ada karyawan yang mengerjakan."
+                      : "Tidak ada hasil yang sesuai pencarian."}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm min-w-[800px]">
+                      <thead className="sticky top-0 bg-muted/40 z-10">
+                        <tr className="border-b">
+                          <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs">
+                            NIK
+                          </th>
+                          <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs">
+                            Nama Karyawan
+                          </th>
+                          <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs">
+                            Unit Kerja
+                          </th>
+                          <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs">
+                            Hasil
+                          </th>
+                          <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs">
+                            Tanggal
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {displayKaryawan.map((r) => (
+                          <tr
+                            key={r.id}
+                            className="border-b last:border-0 hover:bg-muted/20 transition-colors"
+                          >
+                            <td className="px-4 py-2.5 font-mono text-xs">
+                              {r.nikKaryawan ?? "—"}
+                            </td>
+                            <td className="px-4 py-2.5 text-sm font-medium">
+                              {r.namaKaryawan ?? "—"}
+                            </td>
+                            <td className="px-4 py-2.5">
+                              <div className="flex items-center gap-2">
+                                <TipeIcon tipe={r.user.tipeUser} />
+                                <div className="min-w-0">
+                                  <div className="text-xs font-medium">
+                                    {r.user.nama}
+                                  </div>
+                                  <div className="text-[11px] text-muted-foreground font-mono">
+                                    {r.user.kodeUser}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-2.5">
+                              <ResultDisplay
+                                status={r.status}
+                                skor={r.skor}
+                                jumlahBenar={r.jumlahBenar}
+                                totalQuestions={totalQuestions}
+                              />
+                            </td>
+                            <td className="px-4 py-2.5 text-[11px] text-muted-foreground">
+                              {new Date(r.dikerjakanAt).toLocaleString(
+                                "id-ID",
+                                {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                }
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* ─── TAB: Per Unit Kerja (Summary) ──────────────────── */}
+            {tab === "unit" && (
+              <>
+                {displayUnit.length === 0 ? (
+                  <div className="text-sm text-muted-foreground text-center py-12">
+                    {unitSummary.length === 0
+                      ? "Belum ada unit kerja yang mengerjakan."
+                      : "Tidak ada unit kerja yang sesuai pencarian."}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm min-w-[700px]">
+                      <thead className="sticky top-0 bg-muted/40 z-10">
+                        <tr className="border-b">
+                          <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs">
+                            Unit Kerja
+                          </th>
+                          <th className="text-center px-4 py-2 font-medium text-muted-foreground text-xs">
+                            Karyawan Ikut
+                          </th>
+                          <th className="text-center px-4 py-2 font-medium text-muted-foreground text-xs">
+                            Lulus
+                          </th>
+                          <th className="text-center px-4 py-2 font-medium text-muted-foreground text-xs">
+                            Tidak Lulus
+                          </th>
+                          <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs">
+                            Compliance Rate
+                          </th>
+                          <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs">
+                            Update Terakhir
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {displayUnit.map((u) => (
+                          <tr
+                            key={u.userId}
+                            className="border-b last:border-0 hover:bg-muted/20 transition-colors"
+                          >
+                            <td className="px-4 py-2.5">
+                              <div className="flex items-center gap-2">
+                                <TipeIcon tipe={u.user.tipeUser} />
+                                <div className="min-w-0">
+                                  <div className="text-sm font-medium">
+                                    {u.user.nama}
+                                  </div>
+                                  <div className="text-[11px] text-muted-foreground font-mono">
+                                    {u.user.kodeUser} · {u.user.unit ?? "—"}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-2.5 text-center text-sm font-semibold">
+                              {u.totalKaryawan}
+                            </td>
+                            <td className="px-4 py-2.5 text-center">
+                              <span className="text-sm font-semibold text-green-700">
+                                {u.lulusCount}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2.5 text-center">
+                              <span className="text-sm font-semibold text-destructive">
+                                {u.tidakLulusCount}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2.5">
+                              <div className="flex items-center gap-2 min-w-[120px]">
+                                <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full ${
+                                      u.complianceRate >= 80
+                                        ? "bg-green-500"
+                                        : u.complianceRate >= 50
+                                        ? "bg-amber-500"
+                                        : "bg-destructive"
+                                    }`}
+                                    style={{ width: `${u.complianceRate}%` }}
+                                  />
+                                </div>
+                                <span className="text-xs font-semibold w-10 text-right">
+                                  {u.complianceRate}%
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-2.5 text-[11px] text-muted-foreground">
+                              {new Date(u.latestAt).toLocaleString("id-ID", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
-          {displayResults.length > 0 && (
+          {/* Footer count */}
+          {tab === "karyawan" && displayKaryawan.length > 0 && (
             <div className="px-5 py-2.5 border-t bg-muted/20 text-[11px] text-muted-foreground text-right">
-              Menampilkan {displayResults.length} dari{" "}
-              {tab === "all" ? results.length : latestResults.length}{" "}
-              {tab === "all" ? "pengerjaan" : "unit kerja"}
+              Menampilkan {displayKaryawan.length} dari{" "}
+              {karyawanResults.length} pengerjaan karyawan
+            </div>
+          )}
+          {tab === "unit" && displayUnit.length > 0 && (
+            <div className="px-5 py-2.5 border-t bg-muted/20 text-[11px] text-muted-foreground text-right">
+              Menampilkan {displayUnit.length} dari {unitSummary.length} unit
+              kerja
             </div>
           )}
         </div>

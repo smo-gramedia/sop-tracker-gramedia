@@ -150,45 +150,50 @@ export async function POST(
     // ────────────────────────────────────────────────────────────────
     // Sheet 2: Summary — latest result per user + total attempts
     // ────────────────────────────────────────────────────────────────
-    const summarySheet = workbook.addWorksheet("Summary");
+    const summarySheet = workbook.addWorksheet("Summary Per Unit");
 
-    // Group by user, take latest + count attempts
-    const byUser: Record<
+    // ────────────────────────────────────────────────────────────────
+    // Group by unit kerja (userId) — untuk summary compliance rate
+    // ────────────────────────────────────────────────────────────────
+    const byUnit: Record<
       string,
       {
         user: (typeof postTest.results)[0]["user"];
         userId: string;
-        latest: (typeof postTest.results)[0];
-        totalAttempts: number;
-        bestSkor: number;
-        firstAttemptAt: Date;
+        totalKaryawan: number;
+        lulusCount: number;
+        tidakLulusCount: number;
+        complianceRate: number;
+        latestAt: Date;
       }
     > = {};
 
     postTest.results.forEach((r) => {
-      const existing = byUser[r.userId];
-      if (!existing) {
-        byUser[r.userId] = {
+      if (!byUnit[r.userId]) {
+        byUnit[r.userId] = {
           user: r.user,
           userId: r.userId,
-          latest: r,
-          totalAttempts: 1,
-          bestSkor: r.skor,
-          firstAttemptAt: r.dikerjakanAt,
+          totalKaryawan: 0,
+          lulusCount: 0,
+          tidakLulusCount: 0,
+          complianceRate: 0,
+          latestAt: r.dikerjakanAt,
         };
-      } else {
-        existing.totalAttempts += 1;
-        if (r.skor > existing.bestSkor) existing.bestSkor = r.skor;
-        if (r.attemptNumber > existing.latest.attemptNumber) {
-          existing.latest = r;
-        }
-        if (r.dikerjakanAt < existing.firstAttemptAt) {
-          existing.firstAttemptAt = r.dikerjakanAt;
-        }
       }
+      const u = byUnit[r.userId];
+      u.totalKaryawan += 1;
+      if (r.status === "lulus") u.lulusCount += 1;
+      else u.tidakLulusCount += 1;
+      if (r.dikerjakanAt > u.latestAt) u.latestAt = r.dikerjakanAt;
     });
 
-    const userSummaries = Object.values(byUser);
+    const unitSummaries = Object.values(byUnit).map((u) => ({
+      ...u,
+      complianceRate:
+        u.totalKaryawan > 0
+          ? Math.round((u.lulusCount / u.totalKaryawan) * 100)
+          : 0,
+    }));
 
     summarySheet.columns = [
       { header: "No", key: "no", width: 5 },
@@ -197,17 +202,14 @@ export async function POST(
       { header: "Nama Unit Kerja", key: "nama", width: 28 },
       { header: "Unit", key: "unit", width: 18 },
       { header: "Email", key: "email", width: 30 },
-      { header: "Total Attempt", key: "totalAttempts", width: 13 },
-      { header: "Skor Terbaik", key: "bestSkor", width: 12 },
-      { header: "Latest Attempt", key: "latestAttempt", width: 13 },
-      { header: "Latest Skor", key: "latestSkor", width: 11 },
-      { header: "Jawaban Benar", key: "jumlahBenar", width: 13 },
-      { header: "Latest Status", key: "latestStatus", width: 13 },
-      { header: "Latest Tanggal", key: "latestTanggal", width: 18 },
-      { header: "Pertama Mengerjakan", key: "firstAt", width: 18 },
+      { header: "Karyawan Ikut", key: "totalKaryawan", width: 14 },
+      { header: "Lulus", key: "lulusCount", width: 10 },
+      { header: "Tidak Lulus", key: "tidakLulusCount", width: 12 },
+      { header: "Compliance Rate (%)", key: "complianceRate", width: 18 },
+      { header: "Update Terakhir", key: "latestAt", width: 18 },
     ];
 
-    userSummaries.forEach((u, idx) => {
+    unitSummaries.forEach((u, idx) => {
       summarySheet.addRow({
         no: idx + 1,
         kodeUser: u.user.kodeUser,
@@ -215,72 +217,63 @@ export async function POST(
         nama: u.user.nama,
         unit: u.user.unit ?? "—",
         email: u.user.email,
-        totalAttempts: u.totalAttempts,
-        bestSkor: u.bestSkor,
-        latestAttempt: u.latest.attemptNumber,
-        latestSkor: u.latest.skor,
-        jumlahBenar: `${u.latest.jumlahBenar}/${totalQuestions}`,
-        latestStatus: formatStatus(u.latest.status),
-        latestTanggal: formatDate(u.latest.dikerjakanAt),
-        firstAt: formatDate(u.firstAttemptAt),
+        totalKaryawan: u.totalKaryawan,
+        lulusCount: u.lulusCount,
+        tidakLulusCount: u.tidakLulusCount,
+        complianceRate: u.complianceRate,
+        latestAt: formatDate(u.latestAt),
       });
     });
 
-    // Status column for Summary = col 12
-    styleSheet(summarySheet, userSummaries.length, 12);
+    // Status column for Summary — no fixed status col, just header style
+    styleSheet(summarySheet, unitSummaries.length, 0); // 0 = no color-coding
 
     // ────────────────────────────────────────────────────────────────
-    // Sheet per attempt — Attempt 1, Attempt 2, Attempt 3, dst
+    // Sheet: Detail Per Karyawan — list semua submission dengan NIK + Nama
     // ────────────────────────────────────────────────────────────────
-    const maxAttempt = Math.max(
-      ...postTest.results.map((r) => r.attemptNumber),
-      1
+    const detailSheet = workbook.addWorksheet("Detail Per Karyawan");
+
+    detailSheet.columns = [
+      { header: "No", key: "no", width: 5 },
+      { header: "NIK", key: "nik", width: 12 },
+      { header: "Nama Karyawan", key: "namaKaryawan", width: 28 },
+      { header: "Kode Unit Kerja", key: "kodeUser", width: 18 },
+      { header: "Nama Unit Kerja", key: "nama", width: 28 },
+      { header: "Unit", key: "unit", width: 18 },
+      { header: "Skor", key: "skor", width: 8 },
+      { header: "Jawaban Benar", key: "benar", width: 13 },
+      { header: "Jawaban Salah", key: "salah", width: 13 },
+      { header: "Status", key: "status", width: 13 },
+      { header: "Tanggal Pengerjaan", key: "dikerjakanAt", width: 18 },
+      { header: "Tanggal Selesai", key: "selesaiAt", width: 18 },
+    ];
+
+    // Sort by tanggal desc (paling baru di atas)
+    const sortedDetail = [...postTest.results].sort(
+      (a, b) =>
+        new Date(b.dikerjakanAt).getTime() -
+        new Date(a.dikerjakanAt).getTime()
     );
 
-    for (let n = 1; n <= maxAttempt; n++) {
-      const attemptResults = postTest.results.filter(
-        (r) => r.attemptNumber === n
-      );
-
-      if (attemptResults.length === 0) continue;
-
-      const attemptSheet = workbook.addWorksheet(`Attempt ${n}`);
-
-      attemptSheet.columns = [
-        { header: "No", key: "no", width: 5 },
-        { header: "Kode User", key: "kodeUser", width: 18 },
-        { header: "Tipe", key: "tipeUser", width: 12 },
-        { header: "Nama Unit Kerja", key: "nama", width: 28 },
-        { header: "Unit", key: "unit", width: 18 },
-        { header: "Email", key: "email", width: 30 },
-        { header: "Skor", key: "skor", width: 8 },
-        { header: "Jawaban Benar", key: "benar", width: 13 },
-        { header: "Jawaban Salah", key: "salah", width: 13 },
-        { header: "Status", key: "status", width: 13 },
-        { header: "Tanggal Pengerjaan", key: "dikerjakanAt", width: 18 },
-        { header: "Tanggal Selesai", key: "selesaiAt", width: 18 },
-      ];
-
-      attemptResults.forEach((r, idx) => {
-        attemptSheet.addRow({
-          no: idx + 1,
-          kodeUser: r.user.kodeUser,
-          tipeUser: formatTipeUser(r.user.tipeUser),
-          nama: r.user.nama,
-          unit: r.user.unit ?? "—",
-          email: r.user.email,
-          skor: r.skor,
-          benar: `${r.jumlahBenar}/${totalQuestions}`,
-          salah: r.jumlahSalah,
-          status: formatStatus(r.status),
-          dikerjakanAt: formatDate(r.dikerjakanAt),
-          selesaiAt: formatDate(r.selesaiAt),
-        });
+    sortedDetail.forEach((r, idx) => {
+      detailSheet.addRow({
+        no: idx + 1,
+        nik: r.nikKaryawan,
+        namaKaryawan: r.namaKaryawan,
+        kodeUser: r.user.kodeUser,
+        nama: r.user.nama,
+        unit: r.user.unit ?? "—",
+        skor: r.skor,
+        benar: `${r.jumlahBenar}/${totalQuestions}`,
+        salah: r.jumlahSalah,
+        status: formatStatus(r.status),
+        dikerjakanAt: formatDate(r.dikerjakanAt),
+        selesaiAt: formatDate(r.selesaiAt),
       });
+    });
 
-      // Status column for Attempt sheet = col 10
-      styleSheet(attemptSheet, attemptResults.length, 10);
-    }
+    // Status column for Detail = col 10
+    styleSheet(detailSheet, sortedDetail.length, 10);
 
     // ─── Generate file ────────────────────────────────────────────────
     const buffer = await workbook.xlsx.writeBuffer();
@@ -326,20 +319,22 @@ function styleSheet(
   headerRow.alignment = { vertical: "middle", horizontal: "left" };
   headerRow.height = 22;
 
-  // Color code Status column
-  for (let r = 2; r <= dataRowCount + 1; r++) {
-    const cell = sheet.getCell(r, statusColIdx);
-    const value = String(cell.value ?? "");
-    let fillColor: string | null = null;
-    if (value === "Lulus") fillColor = "FFD1FAE5";
-    else if (value === "Tidak Lulus") fillColor = "FFFEE2E2";
-    if (fillColor) {
-      cell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: fillColor },
-      };
-      cell.font = { bold: true };
+  // Color code Status column (skip kalau statusColIdx === 0)
+  if (statusColIdx > 0) {
+    for (let r = 2; r <= dataRowCount + 1; r++) {
+      const cell = sheet.getCell(r, statusColIdx);
+      const value = String(cell.value ?? "");
+      let fillColor: string | null = null;
+      if (value === "Lulus") fillColor = "FFD1FAE5";
+      else if (value === "Tidak Lulus") fillColor = "FFFEE2E2";
+      if (fillColor) {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: fillColor },
+        };
+        cell.font = { bold: true };
+      }
     }
   }
 

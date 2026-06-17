@@ -14,6 +14,7 @@ type RawDoc = {
     kode: string;
     judul: string;
     kategori: string;
+    versi?: string;
     status?: string;
     department: { nama: string } | null;
   };
@@ -157,6 +158,9 @@ export default function RawDokumenClient({ rawDocs }: { rawDocs: RawDoc[] }) {
                   Judul Dokumen
                 </th>
                 <th className="text-left px-5 py-3 font-medium text-muted-foreground">
+                  Versi
+                </th>
+                <th className="text-left px-5 py-3 font-medium text-muted-foreground">
                   Jenis Dokumen
                 </th>
                 <th className="text-left px-5 py-3 font-medium text-muted-foreground">
@@ -180,7 +184,7 @@ export default function RawDokumenClient({ rawDocs }: { rawDocs: RawDoc[] }) {
               {filteredRawDocs.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={8}
                     className="px-5 py-12 text-center text-muted-foreground"
                   >
                     {rawDocs.length === 0
@@ -199,6 +203,11 @@ export default function RawDokumenClient({ rawDocs }: { rawDocs: RawDoc[] }) {
                       <div className="text-xs font-mono text-muted-foreground">
                         {r.sopDocument.kode}
                       </div>
+                    </td>
+                    <td className="px-5 py-3 text-xs">
+                      <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground font-mono">
+                        {r.sopDocument.versi ?? "—"}
+                      </span>
                     </td>
                     <td className="px-5 py-3">
                       <KategoriBadge kategori={r.sopDocument.kategori} />
