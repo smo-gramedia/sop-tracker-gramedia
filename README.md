@@ -1,576 +1,303 @@
 # Gramedia SOP Tracker
 
-Sistem manajemen pembelajaran SOP (Standard Operating Procedure) internal untuk PT Gramedia Asri Media, bagian dari Kompas Gramedia Group. Platform ini memungkinkan unit kerja (toko dan departemen) untuk mempelajari, memahami, dan diuji atas SOP yang berlaku secara terstruktur dan terdokumentasi.
+> **Internal Learning Management System (LMS) untuk pembelajaran SOP**
+> di lingkungan PT Gramedia Asri Media — Kompas Gramedia Group
 
-> **Dikembangkan oleh:** Strategic Management Office (SMO) — PT Gramedia Asri Media
-> **Status:** Production-ready (MVP)
-
----
-
-## Daftar Isi
-
-- [Tentang Project](#-tentang-project)
-- [Fitur Utama](#-fitur-utama)
-- [Konsep Arsitektur](#-konsep-arsitektur)
-- [Tech Stack](#-tech-stack)
-- [Quick Start](#-quick-start)
-- [Struktur Project](#-struktur-project)
-- [Akun Default](#-akun-default)
-- [Database & Migration](#-database--migration)
-- [Alur Pembelajaran](#-alur-pembelajaran-7-step)
-- [Format Kode User](#-format-kode-user)
-- [Excel Export](#-excel-export)
-- [Troubleshooting](#-troubleshooting)
-- [Roadmap](#-roadmap)
+[![Next.js](https://img.shields.io/badge/Next.js-16.2.9-black)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-blue)](https://react.dev/)
+[![Prisma](https://img.shields.io/badge/Prisma-6.6-darkblue)](https://www.prisma.io/)
+[![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-blue)](https://www.postgresql.org/)
+[![Supabase](https://img.shields.io/badge/Storage-Supabase-green)](https://supabase.com/)
 
 ---
 
-## Tentang Project
+## 📋 Daftar Isi
 
-**Gramedia SOP Tracker** adalah platform internal yang menggantikan pembelajaran SOP manual (via WhatsApp, Email, atau dokumen offline) dengan sistem terdigitalisasi yang:
-
-- **Terstruktur**: Setiap SOP dipelajari dalam 7 step terurut dengan gating logic.
-- **Terukur**: Setiap unit kerja menyelesaikan post-test untuk verifikasi pemahaman.
-- **Termonitor**: SMO bisa pantau progress, hasil pengerjaan, dan compliance lewat dashboard admin.
-- **Termotivasi**: Sistem ranking "Top Learners" antar unit kerja untuk mendorong kompetisi sehat.
-
----
-
-## Fitur Utama
-
-### Untuk Unit Kerja (Store / Department)
-- **Home dashboard** — stats progress + ranking + continue learning
-- **Halaman Pelajari (7 step)** — alur terstruktur dari pengenalan hingga post test
-- **5 Kategori SOP**:
-  - SOP Operation (SR) — operasional ritel
-  - Supporting Unit (SS) — unit pendukung HO
-  - Publishing & Education (SP) — penerbitan
-  - SOP General (SG) — prosedur umum
-  - Petunjuk Pelaksanaan (Juklak)
-- **Upload Bukti Sosialisasi** — bukti foto/dokumen, di-review admin
-- **Post Test** — kuis pilihan ganda dengan passing grade
-- **Ranking** — leaderboard unit kerja berdasarkan SOP yang diselesaikan
-- **Notifikasi** — alert saat bukti disetujui/ditolak, post test result
-- **Profile Settings** — kelola informasi unit kerja & ubah password
-
-### Untuk Admin SMO
-- **Dashboard** — overview seluruh sistem
-- **User Manajemen** — kelola unit kerja (auto-generate kode)
-- **Upload Dokumen** — CRUD SOP dengan lampiran
-- **Raw Dokumen** — file Word source SOP
-- **User Progress** — monitor pembelajaran lintas unit kerja
-- **Attachment Review** — approve/reject bukti sosialisasi + **Export Excel**
-- **Post Test Management** — kelola soal & monitor hasil pengerjaan + **Export Excel multi-sheet**
-- **FAQ & Glosarium** — konten edukasi
-- **Struktur Organisasi** — manage Directorate/Division/Department
+1. [Tentang Aplikasi](#tentang-aplikasi)
+2. [Tech Stack](#tech-stack)
+3. [Quick Start](#quick-start)
+4. [Struktur Folder](#struktur-folder)
+5. [Environment Variables](#environment-variables)
+6. [Build & Deploy](#build--deploy)
+7. [Database Setup](#database-setup)
+8. [Dokumentasi Terkait](#dokumentasi-terkait)
+9. [Kontak Support](#kontak-support)
 
 ---
 
-##  Konsep Arsitektur
+## Tentang Aplikasi
 
-### User = Unit Kerja (Bukan Individu)
+**Gramedia SOP Tracker** adalah platform pembelajaran Standard Operating Procedure (SOP) internal di lingkungan Kompas Gramedia Group. Aplikasi memfasilitasi:
 
-Konsep fundamental: **1 akun = 1 unit kerja**, bukan 1 karyawan. Beberapa karyawan dalam satu toko/departemen menggunakan **akun yang sama**.
+- Manajemen SOP dengan versioning system
+- Pembelajaran 6 tahap terstruktur per SOP
+- Post Test berbasis NIK karyawan
+- Approval workflow untuk bukti sosialisasi
+- Compliance reporting per unit kerja
+- Global search untuk SOP
 
-**Alasan desain:**
-- Compliance tracking di level unit (audit SMO fokus per unit, bukan per individu)
-- Skalabilitas (5 store + 7 dept = 12 akun, bukan ratusan akun karyawan)
-- Sederhana untuk maintenance
+### Versi Aplikasi
+**Post Batch 6 (Global Search)** — Juni 2026
 
-**Tipe User:**
-| Tipe | Format Kode | Contoh | Tipe Login |
-|---|---|---|---|
-| Store | `STR-XXXXX-NNN` | `STR-00123-001` | 1 akun dipakai bareng |
-| Department | `DEPT-AAAA-NNN` | `DEPT-SMO-001` | 1 akun dipakai bareng |
-| Admin | `ADMIN-NNN` / `SUPERADMIN-NNN` | `ADMIN-001` | Individual |
-
-### Gating Logic 7 Step
-
-Pembelajaran sequential — step berikutnya terkunci sampai step sebelumnya selesai:
-
-```
-Step 0: Petunjuk Pembelajaran  →  Step 1: Akses Dokumen SOP
-Step 1: Akses Dokumen SOP      →  Step 2: Baca Dokumen SOP
-Step 2: Baca Dokumen SOP       →  Step 3: Lampiran SOP
-Step 3: Lampiran SOP           →  Step 4: Upload Bukti Sosialisasi
-Step 4: Upload Bukti           →  (TUNGGU APPROVE ADMIN) → Step 5: Post Test
-Step 5: Post Test              →  Step 6: Penutup
-```
+### Fitur Utama
+- Manajemen SOP (CRUD) dengan composite unique `[kode, versi]`
+- Upload dokumen (PDF + raw .doc/.docx + lampiran)
+- User management dengan role-based access (admin/user)
+- Learning flow 6 tahap dengan progress tracking
+- Post Test NIK-based (1 NIK = 1 attempt per SOP)
+- Quiz state persistence (auto-resume saat refresh/buka tab baru)
+- Global Active Quiz Banner di semua halaman
+- Bukti sosialisasi approval workflow
+- Export Excel laporan (Detail Per Karyawan + Summary Per Unit)
+- Global Search (desktop inline + mobile icon-modal)
+- Responsive design (Desktop + Tablet + Mobile)
 
 ---
 
 ## Tech Stack
 
-| Kategori | Teknologi |
-|---|---|
-| **Framework** | Next.js 14 (App Router) |
-| **Bahasa** | TypeScript |
-| **Database** | PostgreSQL (Supabase) |
-| **ORM** | Prisma 6 |
-| **Authentication** | NextAuth.js v5 |
-| **Styling** | Tailwind CSS + shadcn/ui |
-| **Icons** | Lucide React |
-| **File Storage** | Supabase Storage |
-| **Excel Generation** | ExcelJS |
-| **Validation** | Zod |
-| **Password Hashing** | bcryptjs |
-| **Package Manager** | npm |
-| **Deployment Target** | Vercel |
+### Frontend
+- **Framework:** Next.js 16.2.9 (App Router + Server Components)
+- **UI Library:** React 19
+- **Styling:** Tailwind CSS 3.x + shadcn/ui components
+- **Icons:** Lucide React
+- **Forms:** React Hook Form + Zod validation
+
+### Backend
+- **API:** Next.js API Routes (Route Handlers)
+- **ORM:** Prisma 6.6
+- **Database:** PostgreSQL (via Supabase)
+- **Authentication:** NextAuth v5 (Credentials provider)
+- **File Storage:** Supabase Storage (Singapore region)
+
+### Development
+- **Language:** TypeScript 5
+- **Linter:** ESLint
+- **Formatter:** Prettier
+- **Build Tool:** Next.js Turbopack
 
 ---
 
 ## Quick Start
 
 ### Prerequisites
+- Node.js ≥ 18.x
+- npm ≥ 9.x atau pnpm ≥ 8.x
+- PostgreSQL access (via Supabase atau lokal)
+- Git
 
-- Node.js v20+
-- npm v10+
-- Supabase account (database PostgreSQL + storage)
-- File `.env` dengan konfigurasi yang benar
-
-### Installation
+### Setup
 
 ```bash
-# 1. Clone atau pindah ke directory project
-cd /Users/fahmijamaludin/Documents/Kompas\ Gramedia/Program/Code/gramedia-sop-tracker
+# 1. Clone repository
+git clone <repository-url>
+cd gramedia-sop-tracker
 
 # 2. Install dependencies
-npm install
+npm install --legacy-peer-deps
 
-# 3. Generate Prisma Client dari schema
+# 3. Setup environment variables
+cp .env.example .env
+# Edit .env dengan kredensial yang sesuai
+
+# 4. Generate Prisma client
 npx prisma generate
 
-# 4. Push schema ke database (kalau belum ada)
+# 5. Push schema ke database
 npx prisma db push
 
-# 5. Seed database dengan data dummy
-npx prisma db seed
+# 6. Seed data dasar (superadmin, departments, dll)
+npx tsx prisma/seed.ts
 
-# 6. Run development server
+# 7. (Optional) Seed SOP dummy untuk testing
+npx tsx prisma/seed-dummy-sops.ts
+
+# 8. Jalankan development server
 npm run dev
 ```
 
-Buka [http://localhost:3000](http://localhost:3000) di browser.
+Buka browser di **http://localhost:3000**
 
-### Environment Variables
+### Test Login
+- **Email:** `superadmin@gramedia.com`
+- **Password:** *(lihat seed file)*
 
-Buat file `.env` di root project (BUKAN `.env.local`):
-
-```env
-# Database
-DATABASE_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT].supabase.co:5432/postgres"
-DIRECT_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT].supabase.co:5432/postgres"
-
-# Supabase Storage
-NEXT_PUBLIC_SUPABASE_URL="https://[PROJECT].supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY="..."
-SUPABASE_SERVICE_ROLE_KEY="..."
-
-# NextAuth
-NEXTAUTH_SECRET="generate-random-string-32-chars"
-NEXTAUTH_URL="http://localhost:3000"
-```
-
-Generate `NEXTAUTH_SECRET`:
-```bash
-openssl rand -base64 32
-```
 
 ---
 
-## Struktur Project
+## Struktur Folder
 
 ```
 gramedia-sop-tracker/
 ├── prisma/
-│   ├── schema.prisma              # Database schema definition
-│   ├── seed.ts                    # Database seeder
-│   └── seed-dummy-sops.ts         # Additional SOP seeder
-│
+│   ├── schema.prisma           # Database schema (Prisma)
+│   ├── seed.ts                  # Seed data dasar
+│   └── seed-dummy-sops.ts       # Seed 60 SOP dummy untuk testing
+├── public/                      # Static assets (logo, favicon)
 ├── src/
 │   ├── app/
-│   │   ├── (admin)/               # Admin pages (protected)
+│   │   ├── (admin)/             # Layout & routes admin
 │   │   │   ├── dashboard/
 │   │   │   ├── user-manajemen/
 │   │   │   ├── upload-dokumen/
 │   │   │   ├── raw-dokumen/
-│   │   │   ├── user-progress/
-│   │   │   ├── attachment/
 │   │   │   ├── post-test/
-│   │   │   │   └── [id]/          # Detail per post test
-│   │   │   ├── faq/
-│   │   │   ├── glosarium/
-│   │   │   ├── kategori/
-│   │   │   └── struktur-organisasi/
-│   │   │
-│   │   ├── (user)/                # User pages (protected)
+│   │   │   ├── attachment/
+│   │   │   └── ...
+│   │   ├── (user)/              # Layout & routes user
 │   │   │   ├── home/
-│   │   │   ├── sop/[kategori]/    # SOP listing per kategori
-│   │   │   ├── juklak/            # Petunjuk Pelaksanaan
-│   │   │   ├── belajar/[id]/      # Halaman Pelajari 7-step
+│   │   │   ├── sop/[kategori]/
+│   │   │   ├── belajar/[id]/
+│   │   │   ├── cari/            # Global search results
+│   │   │   ├── post-test/
 │   │   │   ├── profil/
-│   │   │   │   └── settings/
-│   │   │   ├── notifikasi/
-│   │   │   └── bantuan/
-│   │   │
-│   │   ├── api/                   # API routes
-│   │   │   ├── users/route.ts     # User CRUD + auto-generate kode
-│   │   │   ├── attachment/export/ # Excel export attachment
-│   │   │   ├── post-test/[id]/export/ # Excel export post test
-│   │   │   ├── files/             # File serving (PDF, raw docs)
-│   │   │   └── sop/[id]/download  # SOP ZIP download
-│   │   │
-│   │   ├── login/                 # Login page
-│   │   ├── layout.tsx             # Root layout
-│   │   └── globals.css            # Global styles + color tokens
-│   │
+│   │   │   └── ...
+│   │   ├── api/                 # API Routes
+│   │   │   ├── auth/
+│   │   │   ├── post-test/
+│   │   │   ├── upload/
+│   │   │   ├── search/          # Global search API
+│   │   │   └── ...
+│   │   └── sign-in/
 │   ├── components/
-│   │   ├── admin/                 # Admin-only components
-│   │   ├── user/                  # User-side components
-│   │   └── ui/                    # shadcn/ui components
-│   │
+│   │   ├── admin/               # Komponen khusus admin
+│   │   ├── user/                # Komponen khusus user
+│   │   │   ├── PostTestFlow.tsx
+│   │   │   ├── ActiveQuizBanner.tsx
+│   │   │   ├── GlobalSearch.tsx
+│   │   │   └── ...
+│   │   ├── ui/                  # shadcn/ui base components
+│   │   └── Logo.tsx
+│   ├── actions/                 # Server Actions (deprecated, sebagian)
 │   ├── lib/
-│   │   ├── auth.ts                # NextAuth config
-│   │   ├── prisma.ts              # Prisma client
-│   │   ├── ranking.ts             # Ranking logic
-│   │   ├── learning-gates.ts      # Step gating logic
-│   │   ├── constants.ts           # SOP kategori labels, etc
-│   │   └── utils.ts               # Utility functions
-│   │
-│   ├── actions/                   # Server actions
-│   │   ├── sop-document.ts
-│   │   ├── attachment.ts
-│   │   ├── profile-actions.ts
-│   │   └── ...
-│   │
-│   └── types/
-│       ├── index.ts               # Shared types
-│       └── next-auth.d.ts         # NextAuth type extension
-│
-├── public/                        # Static assets
-│   └── icon/                      # SOP category icons
-│
-├── .env                           # Environment variables (DO NOT COMMIT)
-├── package.json
-└── README.md                      # This file
+│   │   ├── auth.ts              # NextAuth config
+│   │   ├── prisma.ts            # Prisma client singleton
+│   │   ├── utils.ts             # cn() helper, formatters
+│   │   └── learning-gates.ts    # Logic untuk gating step learning
+│   └── types/                   # Custom TypeScript types
+├── .env                          # Environment variables (JANGAN COMMIT!)
+├── .env.example                  # Template env variables
+├── .gitignore
+├── next.config.mjs               # Next.js config
+├── tailwind.config.ts            # Tailwind config
+├── tsconfig.json                 # TypeScript config
+├── package.json                  # Dependencies & scripts
+└── README.md                     # File ini
 ```
 
 ---
 
-## Akun Default
+## Environment Variables
 
-Setelah `npx prisma db seed`, akan ter-generate **14 akun** dengan password sama: `Admin@123!`
+Detail lengkap di **ENV-VARIABLES.md**, ringkasnya:
 
-### Admin (2)
-| Email | Kode User | Role |
-|---|---|---|
-| `superadmin@gramedia.co.id` | `SUPERADMIN-001` | Super Admin |
-| `admin@gramedia.co.id` | `ADMIN-001` | Admin |
+```env
+# Database
+DATABASE_URL="postgresql://..."     # Supabase pooler URL (port 6543)
+DIRECT_URL="postgresql://..."        # Supabase direct (port 5432, untuk migration)
 
-### Store (5)
-| Email | Kode User | Nama |
-|---|---|---|
-| `str.matraman@gramedia.co.id` | `STR-00001-001` | Gramedia Matraman |
-| `str.kelapagading@gramedia.co.id` | `STR-00012-001` | Gramedia Kelapa Gading |
-| `str.cibubur@gramedia.co.id` | `STR-00023-001` | Gramedia Cibubur Junction |
-| `str.plazasenayan@gramedia.co.id` | `STR-00045-001` | Gramedia Plaza Senayan |
-| `str.bandungtransstudio@gramedia.co.id` | `STR-00078-001` | Gramedia Bandung Trans Studio |
+# Authentication (NextAuth v5)
+AUTH_SECRET="..."                    # Generate: openssl rand -base64 32
+AUTH_TRUST_HOST=true                 # WAJIB di production
 
-### Department (7)
-| Email | Kode User | Nama |
-|---|---|---|
-| `dept.smo@gramedia.co.id` | `DEPT-SMO-001` | Strategic Management Office |
-| `dept.finance@gramedia.co.id` | `DEPT-FIN-001` | Finance Department |
-| `dept.hr@gramedia.co.id` | `DEPT-HR-001` | Human Resources Department |
-| `dept.it@gramedia.co.id` | `DEPT-IT-001` | Information Technology |
-| `dept.accounting@gramedia.co.id` | `DEPT-ACC-001` | Accounting Department |
-| `dept.editorial@gramedia.co.id` | `DEPT-EDIT-001` | Editorial Department |
-| `dept.audit@gramedia.co.id` | `DEPT-AUDIT-001` | Internal Audit Department |
+# Supabase Storage
+SUPABASE_URL="https://xxx.supabase.co"
+SUPABASE_ANON_KEY="..."
+SUPABASE_SERVICE_ROLE_KEY="..."      # SENSITIVE!
+SUPABASE_BUCKET="sop-documents"
 
-> ⚠️ **PENTING**: Ganti password default sebelum deploy ke production!
+# Optional
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+```
 
 ---
 
-## 🗄 Database & Migration
+## Build & Deploy
 
-### Schema Models Utama
-
-```
-User (Unit Kerja)
-├─ kodeUser (unique, auto-generated)
-├─ tipeUser (store | department | null untuk admin)
-├─ nama (nama toko/dept/admin)
-├─ email, passwordHash
-├─ unit (deskripsi: "Store Operations", "Finance", dll)
-├─ role (user | admin | superadmin)
-└─ status (aktif | nonaktif)
-
-SopDocument
-├─ kode (e.g. "MP/STOR/01")
-├─ kategori (sr | ss | sp | sg | petunjuk)
-├─ judul, deskripsi, versi
-├─ department (relation)
-└─ relations: SopAttachment, LearningProgress, PostTest, dll
-
-LearningProgress
-├─ userId, sopDocumentId
-├─ stepCurrent (0-6)
-├─ status (belum | dipelajari | selesai)
-└─ timestamps
-
-PostTest + PostTestQuestion + PostTestResult
-├─ passingGrade, durasiMenit, jumlahSoal
-└─ multi-attempt per user
-
-SosialisasiAttachment
-├─ filename, uploadKe, status
-└─ reviewedBy, alasanTolak
-
-Notification
-└─ tipe, judul, pesan, isRead
-
-Directorate → Division → Department (struktur organisasi)
-SopSubcategory (untuk SOP General)
-ActivityLog
-FaqEntry, GlossaryEntry
-```
-
-### Useful Commands
-
+### Development
 ```bash
-# Generate Prisma Client setelah edit schema
-npx prisma generate
+npm run dev          # Start dev server (Turbopack)
+```
 
-# Push schema changes ke database (development)
+### Production Build
+```bash
+npm run build        # Build aplikasi
+npm start            # Run production server
+```
+
+Detail deployment di **DEPLOYMENT-GUIDE.md** (untuk server perusahaan).
+
+### Common Scripts
+```bash
+npm run lint         # ESLint check
+npx prisma generate  # Generate Prisma client
+npx prisma db push   # Push schema (TANPA migration history)
+npx prisma studio    # Prisma Studio (GUI database)
+```
+
+---
+
+## Database Setup
+
+### Schema Overview
+Database memiliki ~15 model utama. Detail lihat **DATABASE-SCHEMA.md** dan **ERD diagram**.
+
+**Models utama:**
+- `User` (auth, role)
+- `Department`, `Division`, `Directorate` (struktur organisasi)
+- `SopDocument` (SOP utama, dengan versioning)
+- `SopAttachment`, `RawDocument` (file SOP)
+- `PostTest`, `PostTestQuestion`, `PostTestResult` (post test system)
+- `LearningProgress` (progress user per SOP)
+- `Attachment` (bukti sosialisasi)
+- `Notification`, `FaqEntry`, `GlossaryEntry`
+
+### Critical Constraints
+1. **SopDocument:** `@@unique([kode, versi], name: "kode_versi")` — kombinasi kode+versi harus unique
+2. **PostTestResult:** `@@unique([postTestId, nikKaryawan], name: "post_test_nik")` — 1 NIK = 1 attempt per post test
+3. **NIK format:** 6 digit angka (validated via Zod)
+
+### Migrations
+Project ini **tidak pakai migration files**, gunakan `db push`:
+```bash
+# Update schema
 npx prisma db push
 
-# Run seed
-npx prisma db seed
-
-# Open Prisma Studio (GUI database)
-npx prisma studio
-
-# Reset database (HATI-HATI: hapus semua data)
-npx prisma migrate reset
-
-# Cek koneksi database
-npx prisma db pull
+# Reset (HATI-HATI di production!)
+npx prisma db push --force-reset
 ```
 
 ---
 
-## Alur Pembelajaran 7 Step
+## Dokumentasi Terkait
 
-Setiap SOP memiliki alur pembelajaran terstruktur dengan **gating logic**:
+Lihat folder dokumentasi untuk panduan detail:
 
-| Step | Nama | Aksi |
+| Dokumen | Untuk Siapa | Lokasi |
 |---|---|---|
-| **0** | Petunjuk Pembelajaran | Baca pengantar |
-| **1** | Akses Dokumen SOP | Konfirmasi akses |
-| **2** | Baca Dokumen SOP | View PDF utama |
-| **3** | Lampiran SOP | View lampiran (kalau ada) |
-| **4** | Upload Bukti Sosialisasi | Upload foto/dokumen → review admin |
-| **5** | Post Test | Kerjakan kuis pilihan ganda |
-| **6** | Penutup | Selesai, dapat reward UI |
+| **README.md** | Developer | File ini |
+| **User Manual Admin** | Admin SMO | `docs/User-Manual-Admin.docx` |
+| **User Manual User** | Karyawan | `docs/User-Manual-User.docx` |
+| **User Guideline** | All users | `docs/User-Guideline.md` |
+| **ERD Diagram** | Database admin | `docs/ERD-*.svg/.png/.pdf` |
+| **List Package** | IT/Security | `docs/LIST-PACKAGE.md` |
+| **Technical Architecture** | Senior Dev | `docs/TECHNICAL-ARCHITECTURE.md` |
+| **Deployment Guide** | DevOps/IT | `docs/DEPLOYMENT-GUIDE.md` |
+| **Environment Variables** | DevOps | `docs/ENV-VARIABLES.md` |
+| **Database Schema** | Developer | `docs/DATABASE-SCHEMA.md` |
+| **API Documentation** | Developer/Integrator | `docs/API-DOCUMENTATION.md` |
+| **Changelog** | All | `docs/CHANGELOG.md` |
+| **Troubleshooting** | Support | `docs/TROUBLESHOOTING.md` |
+| **Security** | IT Security | `docs/SECURITY.md` |
+| **Testing Checklist** | QA | `docs/Testing-Checklist.xlsx` |
 
-### Aturan Gating
-
-- Step **0-3**: Bisa diklik kapan saja oleh user
-- Step **4**: Bisa diakses setelah step 3 dibaca
-- Step **5**: **TERKUNCI** sampai admin approve bukti sosialisasi
-- Step **6**: Hanya bisa diakses setelah post test lulus (atau retry sampai lulus)
-
-User TIDAK bisa lompat step. Sistem track `stepCurrent` di tabel `LearningProgress`.
-
----
-
-## Format Kode User
-
-Sistem **auto-generate** kode user saat admin tambah user baru.
-
-### Format Store
-
-```
-STR-XXXXX-NNN
-│   │     │
-│   │     └── 3 digit counter (001, 002, ...)
-│   └─────── 5 digit kode toko (00001, 12345, ...)
-└─────────── Prefix Store
-```
-
-**Contoh:**
-- `STR-00001-001` → User pertama di Store 00001
-- `STR-00001-002` → User kedua di Store 00001 (kalau dibutuhkan)
-- `STR-12345-001` → User pertama di Store 12345
-
-### Format Department
-
-```
-DEPT-AAAA-NNN
-│    │    │
-│    │    └── 3 digit counter
-│    └─────── 2-5 huruf singkatan dept (SMO, FIN, AUDIT, ...)
-└──────────── Prefix Department
-```
-
-**Contoh:**
-- `DEPT-SMO-001` → Strategic Management Office
-- `DEPT-FIN-001` → Finance
-- `DEPT-AUDIT-001` → Internal Audit
-
-### Validasi
-
-- Store code: regex `^\d{5}$` (wajib 5 digit angka)
-- Dept code: regex `^[A-Z]{2,5}$` (wajib 2-5 huruf uppercase)
-- Counter: auto-increment per (prefix + subCode) combination
-- Sistem cegah duplicate kode user
-
----
-
-## Excel Export
-
-### Attachment Export
-
-Endpoint: `POST /api/attachment/export`
-
-Trigger: Tombol "Export Excel" di halaman `/attachment`
-
-**Output:**
-- File: `attachment-sosialisasi-YYYY-MM-DD.xlsx`
-- Single sheet dengan kolom: No, Kode User, Tipe, Nama Unit Kerja, Email, Unit, Kode SOP, Judul SOP, Kategori, Departemen, Status, Upload ke-, Tanggal Upload, Direview oleh, Tanggal Review, Alasan Tolak
-- Color-coded status (amber/green/red)
-- Auto-filter + frozen header
-- **Respect filter aktif** — export hanya data yang ditampilkan
-
-### Post Test Export
-
-Endpoint: `POST /api/post-test/[id]/export`
-
-Trigger: Tombol "Export Excel" di halaman detail Post Test (`/post-test/[id]`)
-
-**Output:** Multi-sheet workbook
-- **Sheet "Info SOP"** — header info & statistics
-- **Sheet "Summary"** — per user dengan latest attempt + total attempts + skor terbaik
-- **Sheet "Attempt 1", "Attempt 2", "Attempt N"...** — list user yang mengerjakan di attempt tersebut (dinamis sesuai max attempt)
-
-Berguna untuk audit SMO: "Berapa rata-rata attempt sampai user lulus?"
-
----
-
-## Troubleshooting
-
-### Error: "Unknown field `kodeUser` for select statement"
-
-**Penyebab:** Prisma Client belum di-regenerate setelah schema diubah.
-
-**Fix:**
-```bash
-npx prisma generate
-
-# Kalau masih error:
-rm -rf node_modules/.prisma
-rm -rf .next
-npx prisma generate
-npm run dev
-```
-
-### Error: "Table 'users' doesn't exist"
-
-**Penyebab:** Database belum ter-migrate.
-
-**Fix:**
-```bash
-npx prisma db push
-npx prisma db seed
-```
-
-### Error: "Cannot find module '@prisma/client'"
-
-**Fix:**
-```bash
-npm install
-npx prisma generate
-```
-
-### Login berhasil tapi langsung logout
-
-**Penyebab:** `NEXTAUTH_SECRET` belum di-set atau berbeda.
-
-**Fix:** Pastikan `NEXTAUTH_SECRET` ada di `.env` dan **konsisten** (jangan diganti tanpa logout dulu).
-
-### Excel export gagal generate
-
-**Penyebab:** Library `exceljs` belum di-install.
-
-**Fix:**
-```bash
-npm install exceljs
-```
-
-### Build error: "Module not found"
-
-**Fix:**
-```bash
-rm -rf .next node_modules
-npm install
-npx prisma generate
-npm run build
-```
-
----
-
-## Roadmap
-
-### Selesai (v1.0 - MVP)
-
-- [x] Auth (login/logout, role-based access)
-- [x] CRUD SOP Documents + attachments
-- [x] 7-step learning flow dengan gating
-- [x] Upload bukti sosialisasi + review admin
-- [x] Post test management + multi-attempt
-- [x] Ranking "Top Learners" antar unit kerja
-- [x] Konsep User = Unit Kerja (Store/Department)
-- [x] Auto-generate kode user (STR/DEPT/ADMIN)
-- [x] Excel export (Attachment + Post Test)
-- [x] Coursera-style UI redesign (user-side)
-- [x] Search + filter di semua admin pages
-- [x] FAQ + Glosarium
-- [x] Struktur Organisasi management
-
-### Roadmap (v1.1+)
-
-- [ ] **Email Notifikasi** (Resend) — auto-email saat approve/reject bukti & hasil post test
-- [ ] **Deployment Vercel** — production deployment
-- [ ] **Admin redesign** — polish admin pages dengan Coursera-style (kalau butuh)
-- [ ] **Analytics dashboard** — chart pembelajaran per quarter, completion rate trends
-- [ ] **Bulk import user** — upload CSV untuk tambah banyak unit kerja sekaligus
-- [ ] **SOP versioning** — track revisi SOP & notify user untuk re-learning
-- [ ] **Mobile app** — versi PWA atau native app untuk akses dari HP
-
----
-
-## Kontak & Support
-
-**Project Owner:**
-- Fahmi Jamaludin
-- Integration Officer 2 — Strategic Management Office (SMO)
-- PT Gramedia Asri Media
-
-**Tech Stack Support:**
-- [Next.js Docs](https://nextjs.org/docs)
-- [Prisma Docs](https://www.prisma.io/docs)
-- [Supabase Docs](https://supabase.com/docs)
-- [shadcn/ui](https://ui.shadcn.com)
-
----
 
 ## License
 
-Proprietary — Internal use only for PT Gramedia Asri Media (Kompas Gramedia Group).
-
-Tidak untuk didistribusikan ke pihak eksternal tanpa izin tertulis.
+**Proprietary** — Internal use only at PT Gramedia Asri Media & Kompas Gramedia Group.
 
 ---
 
-> **Built with care for Gramedia teams.**
-> Dokumentasi terakhir di-update: Mei 2026
+**Project Owner:** Strategic Management Office (SMO)
+**Original Developer:** Fahmi Jamaludin (Integration Officer SMO)
+**Hand-over to:** SIT Department — Juli 2026
