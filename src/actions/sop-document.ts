@@ -147,3 +147,35 @@ export async function getSopDocuments(opts?: {
 
   return { data, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
 }
+
+// ─────────────────────────────────────────────────────────────────────
+// E3: Ambil daftar file sebuah SOP (untuk fitur "Ganti File" di Edit)
+// ─────────────────────────────────────────────────────────────────────
+export async function getSopFiles(sopId: string) {
+  const session = await auth();
+  if (!session || session.user.role === "user") throw new Error("Unauthorized");
+
+  const [attachments, raw] = await Promise.all([
+    prisma.sopAttachment.findMany({
+      where: { sopDocumentId: sopId },
+      select: {
+        id: true,
+        filename: true,
+        mimeType: true,
+        ukuranKb: true,
+        tipe: true,
+      },
+      orderBy: { uploadedAt: "asc" },
+    }),
+    prisma.rawDocument.findFirst({
+      where: { sopDocumentId: sopId },
+      select: { id: true, filename: true, mimeType: true, ukuranKb: true },
+      orderBy: { uploadedAt: "desc" },
+    }),
+  ]);
+
+  const utama = attachments.find((a) => a.tipe === "utama") ?? null;
+  const lampiran = attachments.filter((a) => a.tipe !== "utama");
+
+  return { utama, raw, lampiran };
+}

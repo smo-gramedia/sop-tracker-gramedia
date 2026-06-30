@@ -7,6 +7,7 @@ import {
   uploadFile,
   buildStoragePath,
   validateFile,
+  deleteFile,
   type BucketName,
 } from "@/lib/storage";
 
@@ -62,6 +63,9 @@ export async function POST(req: NextRequest) {
     (formData.get("attachmentTipe") as "utama" | "lampiran" | null) ??
     "lampiran";
 
+  // E3: bila ada replaceId, ini operasi GANTI FILE (bukan tambah baru).
+  const replaceId = formData.get("replaceId") as string | null;
+
   if (!file || !bucket || !tipe) {
     return NextResponse.json(
       { error: "Missing fields: file, bucket, tipe" },
@@ -98,7 +102,8 @@ export async function POST(req: NextRequest) {
   }
 
   // Untuk attachment 'utama', enforce: hanya 1 PDF utama per SOP
-  if (tipe === "attachment" && attachmentTipe === "utama") {
+  // (dilewati saat REPLACE, karena memang sedang mengganti utama yang ada)
+  if (!replaceId && tipe === "attachment" && attachmentTipe === "utama") {
     if (file.type !== "application/pdf") {
       return NextResponse.json(
         { error: "PDF utama harus berupa file PDF" },
@@ -121,6 +126,94 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    // ─── E3: MODE GANTI FILE ────────────────────────────────────────────
+    //   Validasi & lookup record lama DULU (sebelum upload) supaya tidak ada
+    //   file "yatim" bila validasi gagal. Lalu upload baru → update record →
+    //   hapus file lama (best-effort).
+    if (replaceId) {
+      const ukuranKb = Math.round(file.size / 1024);
+
+      if (tipe === "raw") {
+        const old = await prisma.rawDocument.findUnique({
+          where: { id: replaceId },
+          select: { filename: true, sopDocumentId: true },
+        });
+        if (!old || old.sopDocumentId !== sopDocumentId) {
+          return NextResponse.json(
+            { error: "Dokumen yang akan diganti tidak ditemukan." },
+            { status: 404 }
+          );
+        }
+        const path = buildStoragePath({
+          prefix: sopDocumentId,
+          filename: file.name,
+        });
+        const buffer = Buffer.from(await file.arrayBuffer());
+        await uploadFile({ bucket, path, file: buffer, contentType: file.type });
+        await prisma.rawDocument.update({
+          where: { id: replaceId },
+          data: {
+            filename: path,
+            mimeType: file.type,
+            ukuranKb,
+            uploadedById: session.user.id,
+          },
+        });
+        try {
+          await deleteFile({ bucket, path: old.filename });
+        } catch (e) {
+          console.error("[upload] Gagal hapus file lama (raw):", e);
+        }
+        return NextResponse.json({ id: replaceId, path, bucket, replaced: true });
+      }
+
+      if (tipe === "attachment") {
+        const old = await prisma.sopAttachment.findUnique({
+          where: { id: replaceId },
+          select: { filename: true, sopDocumentId: true, tipe: true },
+        });
+        if (!old || old.sopDocumentId !== sopDocumentId) {
+          return NextResponse.json(
+            { error: "Lampiran yang akan diganti tidak ditemukan." },
+            { status: 404 }
+          );
+        }
+        // PDF utama wajib tetap PDF
+        if (old.tipe === "utama" && file.type !== "application/pdf") {
+          return NextResponse.json(
+            { error: "PDF utama harus berupa file PDF." },
+            { status: 400 }
+          );
+        }
+        const path = buildStoragePath({
+          prefix: sopDocumentId,
+          filename: file.name,
+        });
+        const buffer = Buffer.from(await file.arrayBuffer());
+        await uploadFile({ bucket, path, file: buffer, contentType: file.type });
+        await prisma.sopAttachment.update({
+          where: { id: replaceId },
+          data: {
+            filename: path,
+            mimeType: file.type,
+            ukuranKb,
+            uploadedById: session.user.id,
+          },
+        });
+        try {
+          await deleteFile({ bucket, path: old.filename });
+        } catch (e) {
+          console.error("[upload] Gagal hapus file lama (attachment):", e);
+        }
+        return NextResponse.json({ id: replaceId, path, bucket, replaced: true });
+      }
+
+      return NextResponse.json(
+        { error: "Tipe replace tidak valid." },
+        { status: 400 }
+      );
+    }
+
     const path = buildStoragePath({
       prefix: sopDocumentId,
       filename: file.name,
