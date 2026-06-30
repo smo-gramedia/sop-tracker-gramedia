@@ -56,10 +56,19 @@ export async function GET(
   // Validasi permittedAccess sudah dilakukan di halaman SOP (server component).
 
   try {
+    // ─── Fix B4: mode unduh vs pratinjau ────────────────────────────────
+    //   ?dl=1            → unduh dengan nama file asli
+    //   ?dl=<namafile>   → unduh dengan nama kustom
+    //   (tanpa ?dl)      → inline / pratinjau (PDF & gambar tampil di tab)
+    const dlParam = req.nextUrl.searchParams.get("dl");
+    const download =
+      dlParam == null ? undefined : dlParam === "1" ? true : dlParam;
+
     const signedUrl = await getSignedUrl({
       bucket,
       path,
       expiresIn: 300, // 5 menit
+      download,
     });
     return NextResponse.redirect(signedUrl);
   } catch (e) {

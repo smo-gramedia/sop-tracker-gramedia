@@ -62,16 +62,31 @@ export async function uploadFile(opts: {
   return { path: data.path };
 }
 
-/** Generate signed URL untuk download (default 1 jam). */
+/**
+ * Generate signed URL untuk akses file (default 1 jam).
+ *
+ * Opsi `download` (Fix B4):
+ *  - undefined / false → URL inline (browser preview, mis. PDF & gambar).
+ *  - true              → paksa unduh dengan nama file asli.
+ *  - string            → paksa unduh dengan nama file kustom.
+ * Saat bertanda download, Supabase menambahkan Content-Disposition:
+ * attachment pada URL, sehingga browser MENGUNDUH (bukan menampilkan) —
+ * meski URL-nya cross-origin (di mana atribut HTML `download` diabaikan).
+ */
 export async function getSignedUrl(opts: {
   bucket: BucketName;
   path: string;
   expiresIn?: number;
+  download?: boolean | string;
 }): Promise<string> {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase.storage
     .from(opts.bucket)
-    .createSignedUrl(opts.path, opts.expiresIn ?? 3600);
+    .createSignedUrl(
+      opts.path,
+      opts.expiresIn ?? 3600,
+      opts.download !== undefined ? { download: opts.download } : undefined
+    );
 
   if (error) throw new Error(`Gagal generate URL: ${error.message}`);
   return data.signedUrl;

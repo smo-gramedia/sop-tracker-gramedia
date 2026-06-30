@@ -567,8 +567,13 @@ function Step2({
               </div>
             </div>
             <a
-              href={canDownload ? baseFileUrl! : undefined}
-              download={canDownload ? `${doc.kode}.pdf` : undefined}
+              href={
+                canDownload
+                  ? `${baseFileUrl}?dl=${encodeURIComponent(
+                      `${doc.kode.replace(/\//g, "-")}.pdf`
+                    )}`
+                  : undefined
+              }
               onClick={(e) => !canDownload && e.preventDefault()}
               aria-disabled={!canDownload}
               className={`text-xs font-medium px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-colors ${
@@ -667,8 +672,9 @@ function Step3({
                 </div>
                 {canDownload ? (
                   <a
-                    href={`/api/files/sop-attachments/${a.filename}`}
-                    download
+                    href={`/api/files/sop-attachments/${
+                      a.filename
+                    }?dl=${encodeURIComponent(filename)}`}
                     className="flex-shrink-0"
                   >
                     <Button size="sm" className="gap-1.5">

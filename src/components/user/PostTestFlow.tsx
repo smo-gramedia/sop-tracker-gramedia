@@ -569,7 +569,19 @@ function QuizScreen({
           namaKaryawan,
         }),
       });
-      const data = await res.json();
+
+      // ─── Fix B1: JANGAN langsung res.json(). Kalau server membalas tanpa
+      // body JSON (mis. error 500 / timeout), res.json() melempar "Unexpected
+      // end of JSON input" dan layar tes crash. Baca sebagai teks dulu, lalu
+      // parse dengan aman. ───────────────────────────────────────────────────
+      const rawBody = await res.text();
+      let data: any = {};
+      try {
+        data = rawBody ? JSON.parse(rawBody) : {};
+      } catch {
+        data = {};
+      }
+
       if (!res.ok) {
         // ─── Batch 5: Kalau server reject (mis: dedup NIK), clear state
         // supaya user tidak stuck di quiz screen yang sama. NIK ini sudah
@@ -577,7 +589,9 @@ function QuizScreen({
         if (res.status === 409) {
           clearQuizState(postTest.id);
         }
-        throw new Error(data.error || "Gagal submit");
+        throw new Error(
+          data.error || `Gagal submit (HTTP ${res.status}). Silakan coba lagi.`
+        );
       }
       // ─── Batch 5: Clear persisted state setelah submit berhasil
       clearQuizState(postTest.id);

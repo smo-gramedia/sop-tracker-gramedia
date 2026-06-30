@@ -59,13 +59,30 @@ export async function POST(req: Request) {
     );
   }
 
+  // ─── Guard (Fix B1): jumlahSoal harus > 0 supaya tidak division-by-zero.
+  //     (jumlahBenar / 0) → NaN, dan NaN ditolak Prisma untuk kolom Int
+  //     `skor` → memicu error 500 → crash "Unexpected end of JSON input". ──
+  const totalSoal =
+    postTest.jumlahSoal && postTest.jumlahSoal > 0
+      ? postTest.jumlahSoal
+      : postTest.questions.length;
+  if (!totalSoal || totalSoal <= 0) {
+    return NextResponse.json(
+      {
+        error:
+          "Konfigurasi Post Test belum valid (jumlah soal 0). Hubungi admin.",
+      },
+      { status: 400 }
+    );
+  }
+
   // answers format: { [questionId]: 'a' | 'b' | 'c' | 'd' }
   let jumlahBenar = 0;
   postTest.questions.forEach((q) => {
     if (answers[q.id] === q.jawabanBenar) jumlahBenar++;
   });
-  const jumlahSalah = postTest.jumlahSoal - jumlahBenar;
-  const skor = Math.round((jumlahBenar / postTest.jumlahSoal) * 100);
+  const jumlahSalah = totalSoal - jumlahBenar;
+  const skor = Math.round((jumlahBenar / totalSoal) * 100);
   const status = skor >= postTest.passingGrade ? "lulus" : "tidak_lulus";
 
   // ─── attemptNumber: dihitung global per postTest (total semua karyawan) ──
@@ -90,37 +107,52 @@ export async function POST(req: Request) {
       },
     });
 
-    // ─── Jika lulus: update learning progress ke step 6 (per unit kerja) ──
-    // Catatan: progress unit kerja akan completed kalau MINIMAL 1 NIK lulus
+    // ─── Operasi turunan (best-effort, Fix B1) ──────────────────────────
+    //     Hasil tes (result) SUDAH tersimpan di atas. Kegagalan operasi di
+    //     bawah ini TIDAK boleh menggagalkan submit — sebelumnya error di
+    //     salah satunya akan ter-`throw` menjadi 500 tanpa body JSON dan
+    //     membuat layar tes crash. Sekarang cukup di-log. ───────────────────
     if (status === "lulus") {
-      await prisma.learningProgress.updateMany({
-        where: {
-          userId: session.user.id,
-          sopDocumentId: postTest.sopDocumentId,
-        },
-        data: { stepCurrent: 6, status: "selesai", completedAt: new Date() },
-      });
-      await prisma.notification.create({
+      try {
+        await prisma.learningProgress.updateMany({
+          where: {
+            userId: session.user.id,
+            sopDocumentId: postTest.sopDocumentId,
+          },
+          data: { stepCurrent: 6, status: "selesai", completedAt: new Date() },
+        });
+      } catch (e) {
+        console.error("[post-test] Gagal update learningProgress:", e);
+      }
+      try {
+        await prisma.notification.create({
+          data: {
+            userId: session.user.id,
+            sopDocumentId: postTest.sopDocumentId,
+            tipe: "post_test",
+            judul: "Post Test Lulus 🎉",
+            pesan: `${namaKaryawan} (NIK ${nikKaryawan}) lulus Post Test "${postTest.sopDocument.judul}" dengan skor ${skor}.`,
+          },
+        });
+      } catch (e) {
+        console.error("[post-test] Gagal buat notifikasi:", e);
+      }
+    }
+
+    try {
+      await prisma.activityLog.create({
         data: {
           userId: session.user.id,
           sopDocumentId: postTest.sopDocumentId,
-          tipe: "post_test",
-          judul: "Post Test Lulus 🎉",
-          pesan: `${namaKaryawan} (NIK ${nikKaryawan}) lulus Post Test "${postTest.sopDocument.judul}" dengan skor ${skor}.`,
+          action: `post_test_${status}`,
+          deskripsi: `${namaKaryawan} (NIK ${nikKaryawan}) mengerjakan Post Test "${postTest.sopDocument.judul}" — Skor: ${skor}/100 (${
+            status === "lulus" ? "Lulus" : "Tidak Lulus"
+          })`,
         },
       });
+    } catch (e) {
+      console.error("[post-test] Gagal tulis activity log:", e);
     }
-
-    await prisma.activityLog.create({
-      data: {
-        userId: session.user.id,
-        sopDocumentId: postTest.sopDocumentId,
-        action: `post_test_${status}`,
-        deskripsi: `${namaKaryawan} (NIK ${nikKaryawan}) mengerjakan Post Test "${postTest.sopDocument.judul}" — Skor: ${skor}/100 (${
-          status === "lulus" ? "Lulus" : "Tidak Lulus"
-        })`,
-      },
-    });
 
     // Return data lengkap supaya client bisa render result tanpa fetch ulang
     return NextResponse.json({
@@ -134,7 +166,7 @@ export async function POST(req: Request) {
       jumlahBenar,
       jumlahSalah,
       passingGrade: postTest.passingGrade,
-      jumlahSoal: postTest.jumlahSoal,
+      jumlahSoal: totalSoal,
       selesaiAt: result.selesaiAt,
       // Untuk review (hide kunci jawaban handled di client — lihat Item 1)
       review: postTest.questions.map((q) => ({
@@ -158,6 +190,18 @@ export async function POST(req: Request) {
         { status: 409 }
       );
     }
-    throw err;
+    // ─── PENTING (Fix B1): SELALU kembalikan JSON, jangan `throw`. ────────
+    //     `throw` di route handler menghasilkan response 500 TANPA body JSON,
+    //     yang memicu "Failed to execute 'json' on 'Response': Unexpected end
+    //     of JSON input" di browser. Detail error tetap di-log di Vercel
+    //     untuk menelusuri akar masalah sebenarnya. ─────────────────────────
+    console.error("[post-test] Submit gagal:", err);
+    return NextResponse.json(
+      {
+        error:
+          "Terjadi kesalahan di server saat menyimpan hasil. Silakan coba lagi dalam beberapa saat.",
+      },
+      { status: 500 }
+    );
   }
 }
