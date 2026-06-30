@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Pencil, Trash2, X } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Search } from "lucide-react";
 import { createFaq, updateFaq, deleteFaq } from "@/actions/faq";
 
 type Faq = {
@@ -26,6 +26,17 @@ export default function FaqAdminClient({ faqs }: Props) {
     | { mode: "edit"; faq: Faq }
   >({ mode: "closed" });
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+
+  // E7: filter FAQ berdasarkan keyword (cocokkan pertanyaan & jawaban).
+  const q = search.trim().toLowerCase();
+  const filtered = q
+    ? faqs.filter(
+        (f) =>
+          f.pertanyaan.toLowerCase().includes(q) ||
+          f.jawaban.toLowerCase().includes(q)
+      )
+    : faqs;
 
   async function handleDelete(id: string) {
     if (!confirm("Hapus FAQ ini?")) return;
@@ -58,8 +69,22 @@ export default function FaqAdminClient({ faqs }: Props) {
         </Button>
       </div>
 
+      {/* E7: Pencarian FAQ berdasarkan keyword */}
+      <div className="relative mb-4">
+        <Search
+          size={16}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+        />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Cari FAQ berdasarkan kata kunci..."
+          className="pl-9"
+        />
+      </div>
+
       <div className="space-y-2">
-        {faqs.map((f) => (
+        {filtered.map((f) => (
           <div
             key={f.id}
             className="bg-background rounded-xl border p-5 flex gap-4"
@@ -99,6 +124,11 @@ export default function FaqAdminClient({ faqs }: Props) {
           <div className="bg-background rounded-xl border p-12 text-center text-muted-foreground">
             Belum ada FAQ. Klik <strong>Tambah FAQ</strong> untuk membuat yang
             pertama.
+          </div>
+        )}
+        {faqs.length > 0 && filtered.length === 0 && (
+          <div className="bg-background rounded-xl border p-12 text-center text-muted-foreground">
+            Tidak ada FAQ yang cocok dengan &ldquo;{search}&rdquo;.
           </div>
         )}
       </div>

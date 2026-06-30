@@ -19,6 +19,7 @@ type Props = {
 export default function AttachmentActions({ attachment }: Props) {
   const router = useRouter();
   const [tolakOpen, setTolakOpen] = useState(false);
+  const [setujuOpen, setSetujuOpen] = useState(false);
   const [alasan, setAlasan] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -41,6 +42,7 @@ export default function AttachmentActions({ attachment }: Props) {
         decision === "ditolak" ? alasan.trim() : undefined
       );
       setTolakOpen(false);
+      setSetujuOpen(false);
       setAlasan("");
       router.refresh();
     } catch (e) {
@@ -69,7 +71,7 @@ export default function AttachmentActions({ attachment }: Props) {
             variant="outline"
             size="sm"
             className="h-7 px-2.5 text-xs gap-1 text-green-600 border-green-200 hover:bg-green-50"
-            onClick={() => handle("disetujui")}
+            onClick={() => setSetujuOpen(true)}
             disabled={loading}
           >
             <Check size={12} /> Setuju
@@ -94,6 +96,61 @@ export default function AttachmentActions({ attachment }: Props) {
             <Pause size={12} />
           </Button>
         </>
+      )}
+
+      {/* Setuju confirm modal (E4) */}
+      {setujuOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={(e) =>
+            e.target === e.currentTarget && !loading && setSetujuOpen(false)
+          }
+        >
+          <div className="bg-background rounded-2xl border w-full max-w-md overflow-hidden">
+            <div className="p-6 space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                  <Check size={18} className="text-green-600" />
+                </div>
+                <div>
+                  <h2 className="font-display font-bold text-lg">
+                    Setujui Bukti Sosialisasi
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Pastikan bukti sudah sesuai. Setelah disetujui, user dapat
+                    melanjutkan ke Post Test.
+                  </p>
+                </div>
+              </div>
+
+              {errorMsg && (
+                <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-sm text-destructive">
+                  {errorMsg}
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-2 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSetujuOpen(false);
+                    setErrorMsg(null);
+                  }}
+                  disabled={loading}
+                >
+                  Batal
+                </Button>
+                <Button
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                  onClick={() => handle("disetujui")}
+                  disabled={loading}
+                >
+                  {loading ? "Memproses..." : "Ya, Setujui"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Tolak modal */}

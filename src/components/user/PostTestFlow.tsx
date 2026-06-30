@@ -314,8 +314,8 @@ function EntryScreen({
         </div>
         <Button onClick={onStart} className="flex-shrink-0">
           {myResults.length > 0
-            ? "Mulai Post Test (Karyawan Baru)"
-            : "Mulai Post Test"}
+            ? "Mulai Test (Karyawan Baru)"
+            : "Mulai Test"}
         </Button>
       </div>
 
@@ -327,7 +327,7 @@ function EntryScreen({
 
         {myResults.length === 0 ? (
           <div className="p-12 text-center text-sm text-muted-foreground">
-            Belum ada percobaan. Klik "Mulai Post Test" untuk memulai.
+            Belum ada percobaan. Klik "Mulai Test" untuk memulai.
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -815,7 +815,7 @@ function ResultScreen({
             {/* ─── Batch 5: Tombol "Ulangi Post Test" dihapus ──────────
                1 NIK 1 attempt per SOP, jadi user tidak boleh ulangi
                post test dengan NIK yang sama. Karyawan lain bisa
-               mengerjakan dari Step 5 → klik "Mulai Post Test
+               mengerjakan dari Step 5 → klik "Mulai Test
                (Karyawan Baru)" untuk input NIK berbeda. */}
             {isPassed ? (
               <Button onClick={onContinueToNext} className="w-full gap-1.5">
@@ -1112,7 +1112,7 @@ function NikModal({
               Batal
             </Button>
             <Button type="submit" disabled={nik.length !== 6 || nama.trim().length < 2}>
-              Mulai Post Test
+              Mulai Test
             </Button>
           </div>
         </form>
