@@ -56,11 +56,26 @@ export async function GET(
   // Validasi permittedAccess sudah dilakukan di halaman SOP (server component).
 
   try {
+    const sp = req.nextUrl.searchParams;
+
+    // ─── Fix B2: mode "ambil URL" untuk Office Online viewer ────────────
+    //   ?url=1 → balas JSON { url } (signed URL langsung), TIDAK redirect.
+    //   Dipakai untuk pratinjau .docx via view.officeapps.live.com yang
+    //   butuh URL file yang dapat diakses publik oleh server Microsoft.
+    if (sp.get("url") === "1") {
+      const url = await getSignedUrl({
+        bucket,
+        path,
+        expiresIn: 600, // 10 menit — beri waktu viewer mengambil file
+      });
+      return NextResponse.json({ url });
+    }
+
     // ─── Fix B4: mode unduh vs pratinjau ────────────────────────────────
     //   ?dl=1            → unduh dengan nama file asli
     //   ?dl=<namafile>   → unduh dengan nama kustom
     //   (tanpa ?dl)      → inline / pratinjau (PDF & gambar tampil di tab)
-    const dlParam = req.nextUrl.searchParams.get("dl");
+    const dlParam = sp.get("dl");
     const download =
       dlParam == null ? undefined : dlParam === "1" ? true : dlParam;
 

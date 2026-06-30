@@ -59,9 +59,39 @@ export default function RawDokumenClient({ rawDocs }: { rawDocs: RawDoc[] }) {
     });
   }, [rawDocs, search, kategoriFilter, deptFilter, statusFilter]);
 
-  function handleView(r: RawDoc) {
-    // Buka file di tab baru
-    window.open(`/api/files/raw-documents/${r.filename}`, "_blank");
+  async function handleView(r: RawDoc) {
+    // PDF bisa dipratinjau native di browser → buka inline di tab baru.
+    if (r.filename.toLowerCase().endsWith(".pdf")) {
+      window.open(
+        `/api/files/raw-documents/${r.filename}`,
+        "_blank",
+        "noopener,noreferrer"
+      );
+      return;
+    }
+
+    // Fix B2: file .docx tidak bisa dipratinjau native di browser (selalu
+    // terunduh). Buka lewat Microsoft Office Online viewer — ambil dulu
+    // signed URL (yang dapat diakses publik), lalu serahkan ke viewer.
+    try {
+      const res = await fetch(`/api/files/raw-documents/${r.filename}?url=1`);
+      const raw = await res.text();
+      let data: any = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        data = {};
+      }
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || "Gagal membuka dokumen");
+      }
+      const viewerUrl =
+        "https://view.officeapps.live.com/op/view.aspx?src=" +
+        encodeURIComponent(data.url);
+      window.open(viewerUrl, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Gagal membuka dokumen");
+    }
   }
 
   async function handleDownload(r: RawDoc) {

@@ -160,24 +160,24 @@ export default function UserProgressClient({
         </div>
         <div className="max-h-[600px] overflow-y-auto">
           <div className="overflow-x-auto"><table className="w-full text-sm min-w-[640px]">
-            <thead className="sticky top-0 bg-muted/40 z-10">
+            <thead className="sticky top-0 bg-muted z-10">
               <tr className="border-b">
-                <th className="text-left px-5 py-3 font-medium text-muted-foreground">
+                <th className="text-left px-5 py-3 font-medium text-muted-foreground bg-muted">
                   Unit Kerja
                 </th>
-                <th className="text-left px-5 py-3 font-medium text-muted-foreground">
+                <th className="text-left px-5 py-3 font-medium text-muted-foreground bg-muted">
                   SOP
                 </th>
-                <th className="text-left px-5 py-3 font-medium text-muted-foreground">
+                <th className="text-left px-5 py-3 font-medium text-muted-foreground bg-muted">
                   Step
                 </th>
-                <th className="text-left px-5 py-3 font-medium text-muted-foreground">
+                <th className="text-left px-5 py-3 font-medium text-muted-foreground bg-muted">
                   Status
                 </th>
-                <th className="text-left px-5 py-3 font-medium text-muted-foreground">
+                <th className="text-left px-5 py-3 font-medium text-muted-foreground bg-muted">
                   Terakhir Diakses
                 </th>
-                <th className="text-left px-5 py-3 font-medium text-muted-foreground">
+                <th className="text-left px-5 py-3 font-medium text-muted-foreground bg-muted">
                   Selesai
                 </th>
               </tr>

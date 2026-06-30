@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { X, FileText, Paperclip, FileBox, Trash2, Plus } from "lucide-react";
-import { createSopDocument } from "@/actions/sop-document";
+import { createSopDocument, deleteSopDocument } from "@/actions/sop-document";
 
 type Dept = { id: string; nama: string; kode: string };
 type Division = { id: string; nama: string; departments: Dept[] };
@@ -137,10 +137,19 @@ export default function TambahDokumenModal({
     }
 
     const res = await fetch("/api/upload", { method: "POST", body: fd });
-    const data = await res.json();
+    // Parse aman: kalau server membalas tanpa body JSON (mis. 413 Payload Too
+    // Large dari Vercel untuk file besar), res.json() bisa melempar. Baca teks
+    // dulu lalu parse dengan aman.
+    const raw = await res.text();
+    let data: any = {};
+    try {
+      data = raw ? JSON.parse(raw) : {};
+    } catch {
+      data = {};
+    }
     if (!res.ok) {
       throw new Error(
-        `Upload "${file.name}" gagal: ${data.error || res.status}`
+        `Upload "${file.name}" gagal: ${data.error || `HTTP ${res.status}`}`
       );
     }
   }
@@ -149,6 +158,9 @@ export default function TambahDokumenModal({
     e.preventDefault();
     setSaving(true);
     setErrorMsg(null);
+
+    // Fix B3: lacak SOP yang dibuat supaya bisa di-rollback bila upload gagal.
+    let createdSopId: string | null = null;
 
     try {
       // Validasi: minimal 1 PDF utama wajib (kalau kategori bukan petunjuk)
@@ -187,6 +199,7 @@ export default function TambahDokumenModal({
       }
 
       const sopId = result.id;
+      createdSopId = sopId; // tandai untuk rollback bila upload gagal
 
       // STEP 2: Upload PDF utama
       let uploaded = 0;
@@ -253,7 +266,24 @@ export default function TambahDokumenModal({
       }, 800);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Gagal menyimpan";
-      setErrorMsg(msg);
+
+      // Fix B3: rollback — kalau SOP sudah terlanjur dibuat tapi upload gagal,
+      // hapus kembali supaya tidak ada SOP "yatim" tanpa file di tabel.
+      let rolledBack = false;
+      if (createdSopId) {
+        try {
+          await deleteSopDocument(createdSopId);
+          rolledBack = true;
+        } catch (delErr) {
+          console.error("[upload-dokumen] Rollback SOP gagal:", delErr);
+        }
+      }
+
+      setErrorMsg(
+        rolledBack
+          ? `${msg} — perubahan dibatalkan otomatis, data SOP tidak tersimpan. Silakan perbaiki file lalu coba lagi.`
+          : msg
+      );
       setProgress((prev) => ({
         ...prev,
         step: "error",
@@ -603,8 +633,8 @@ export default function TambahDokumenModal({
             <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-sm text-destructive">
               <strong>Error:</strong> {errorMsg}
               <p className="text-xs mt-1 text-destructive/80">
-                SOP mungkin sudah ter-create tapi upload gagal. Cek di tabel
-                Upload Dokumen, hapus dan coba lagi.
+                Pastikan tipe file termasuk yang diizinkan (.pdf, .docx, .xlsx,
+                .zip, .jpg, .png) dan ukuran tidak melebihi batas.
               </p>
             </div>
           )}
