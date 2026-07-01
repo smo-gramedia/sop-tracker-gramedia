@@ -571,7 +571,7 @@ function Step2({
                 canDownload
                   ? `${baseFileUrl}?dl=${encodeURIComponent(
                       `${doc.kode.replace(/\//g, "-")}.pdf`
-                    )}`
+                    )}&wm=1&sop=${doc.id}`
                   : undefined
               }
               onClick={(e) => !canDownload && e.preventDefault()}
@@ -674,7 +674,7 @@ function Step3({
                   <a
                     href={`/api/files/sop-attachments/${
                       a.filename
-                    }?dl=${encodeURIComponent(filename)}`}
+                    }?dl=${encodeURIComponent(filename)}&wm=1&sop=${doc.id}`}
                     className="flex-shrink-0"
                   >
                     <Button size="sm" className="gap-1.5">

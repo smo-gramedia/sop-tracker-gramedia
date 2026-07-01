@@ -104,6 +104,22 @@ export async function deleteFile(opts: {
   if (error) throw new Error(`Hapus file gagal: ${error.message}`);
 }
 
+/** Unduh isi file (bytes) dari storage — dipakai untuk watermark PDF sisi server. */
+export async function downloadFileBytes(opts: {
+  bucket: BucketName;
+  path: string;
+}): Promise<Uint8Array> {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase.storage
+    .from(opts.bucket)
+    .download(opts.path);
+  if (error || !data) {
+    throw new Error(`Gagal mengunduh file: ${error?.message ?? "kosong"}`);
+  }
+  const buf = await data.arrayBuffer();
+  return new Uint8Array(buf);
+}
+
 /** Build path konsisten: {prefix}/{timestamp}_{safe-filename} */
 export function buildStoragePath(opts: {
   prefix: string;

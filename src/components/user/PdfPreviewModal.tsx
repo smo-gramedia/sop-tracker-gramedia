@@ -2,7 +2,7 @@
 
 // src/components/user/PdfPreviewModal.tsx
 import { useEffect } from "react";
-import { X, ExternalLink } from "lucide-react";
+import { X } from "lucide-react";
 
 type Props = {
   open: boolean;
@@ -58,14 +58,6 @@ export default function PdfPreviewModal({
               Preview Dokumen SOP
             </p>
           </div>
-          <a
-            href={fileUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-md border hover:bg-muted transition-colors"
-          >
-            <ExternalLink size={12} /> Buka di Tab Baru
-          </a>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
@@ -78,7 +70,7 @@ export default function PdfPreviewModal({
         {/* PDF iframe */}
         <div className="flex-1 bg-muted/30">
           <iframe
-            src={fileUrl}
+            src={`${fileUrl}#toolbar=0&navpanes=0`}
             className="w-full h-full"
             title={title}
           />
