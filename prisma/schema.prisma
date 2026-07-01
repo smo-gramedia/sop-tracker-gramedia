@@ -35,6 +35,7 @@ model User {
   reviewedAttachments    SosialisasiAttachment[] @relation("ReviewedByAdmin")
   sosialisasiAttachments SosialisasiAttachment[] @relation("UploadedByUser")
 
+  @@index([role, status])
   @@map("users")
 }
 
@@ -118,6 +119,9 @@ model SopDocument {
   // (Sebelumnya `kode @unique` → tidak bisa multi-versi)
   @@unique([kode, versi], name: "kode_versi")
   @@index([kode])
+  @@index([status])
+  @@index([departmentId])
+  @@index([kategori])
   @@map("sop_documents")
 }
 
@@ -132,6 +136,7 @@ model RawDocument {
   sopDocument   SopDocument @relation(fields: [sopDocumentId], references: [id], onDelete: Cascade)
   uploadedBy    User        @relation(fields: [uploadedById], references: [id])
 
+  @@index([sopDocumentId])
   @@map("raw_documents")
 }
 
@@ -147,6 +152,7 @@ model SopAttachment {
   sopDocument   SopDocument @relation(fields: [sopDocumentId], references: [id], onDelete: Cascade)
   uploadedBy    User        @relation(fields: [uploadedById], references: [id])
 
+  @@index([sopDocumentId])
   @@map("sop_attachments")
 }
 
@@ -216,6 +222,7 @@ model LearningProgress {
   user           User           @relation(fields: [userId], references: [id])
 
   @@unique([userId, sopDocumentId])
+  @@index([sopDocumentId])
   @@map("learning_progress")
 }
 
@@ -242,6 +249,8 @@ model ActivityLog {
   sopDocument   SopDocument? @relation(fields: [sopDocumentId], references: [id])
   user          User         @relation(fields: [userId], references: [id])
 
+  @@index([sopDocumentId])
+  @@index([createdAt])
   @@map("activity_logs")
 }
 
@@ -262,6 +271,9 @@ model SosialisasiAttachment {
   sopDocument   SopDocument      @relation(fields: [sopDocumentId], references: [id], onDelete: Cascade)
   user          User             @relation("UploadedByUser", fields: [userId], references: [id])
 
+  @@index([sopDocumentId])
+  @@index([status])
+  @@index([userId])
   @@map("sosialisasi_attachments")
 }
 
@@ -292,6 +304,7 @@ model PostTestQuestion {
   jawabanBenar String   @map("jawaban_benar")
   postTest     PostTest @relation(fields: [postTestId], references: [id], onDelete: Cascade)
 
+  @@index([postTestId])
   @@map("post_test_questions")
 }
 
@@ -334,6 +347,8 @@ model Notification {
   sopDocument   SopDocument?     @relation(fields: [sopDocumentId], references: [id])
   user          User             @relation(fields: [userId], references: [id])
 
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
   @@map("notifications")
 }
 
