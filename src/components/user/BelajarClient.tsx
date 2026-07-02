@@ -336,6 +336,7 @@ export default function BelajarClient({
                   lampiran={lampiran}
                   hasPassedPostTest={hasPassedPostTest}
                   theme={theme}
+                  sopId={doc.id}
                 />
               )}
               {currentStep === 4 && (
@@ -630,10 +631,12 @@ function Step3({
   lampiran,
   hasPassedPostTest,
   theme,
+  sopId,
 }: {
   lampiran: any[];
   hasPassedPostTest: boolean;
   theme: { gradient: string };
+  sopId: string;
 }) {
   // Gating: download lampiran juga hanya boleh setelah lulus post test
   const canDownload = hasPassedPostTest;
@@ -674,7 +677,7 @@ function Step3({
                   <a
                     href={`/api/files/sop-attachments/${
                       a.filename
-                    }?dl=${encodeURIComponent(filename)}&wm=1&sop=${doc.id}`}
+                    }?dl=${encodeURIComponent(filename)}&wm=1&sop=${sopId}`}
                     className="flex-shrink-0"
                   >
                     <Button size="sm" className="gap-1.5">
