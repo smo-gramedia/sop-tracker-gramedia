@@ -17,6 +17,7 @@ import {
   FileText,
 } from "lucide-react";
 import PdfPreviewModal from "./PdfPreviewModal";
+import DownloadConfirmDialog from "./DownloadConfirmDialog";
 
 type ProgressData = {
   stepCurrent: number;
@@ -148,6 +149,8 @@ export default function JuklakClient({
     setPreviewDoc(doc);
   }
 
+  const [dlConfirmUrl, setDlConfirmUrl] = useState<string | null>(null);
+
   function handleDownload(doc: Document) {
     const lock = getActionLock(doc);
     if (lock) {
@@ -162,7 +165,7 @@ export default function JuklakClient({
       });
       return;
     }
-    window.location.href = `/api/sop/${doc.id}/download`;
+    setDlConfirmUrl(`/api/sop/${doc.id}/download`);
   }
 
   return (
@@ -327,6 +330,11 @@ export default function JuklakClient({
           fileUrl={`/api/files/sop-attachments/${previewDoc.sopAttachments[0].filename}`}
         />
       )}
+      <DownloadConfirmDialog
+        open={!!dlConfirmUrl}
+        onClose={() => setDlConfirmUrl(null)}
+        onConfirm={() => dlConfirmUrl && (window.location.href = dlConfirmUrl)}
+      />
     </div>
   );
 }

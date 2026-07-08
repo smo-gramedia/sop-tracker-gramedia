@@ -18,6 +18,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import PdfPreviewModal from "./PdfPreviewModal";
+import DownloadConfirmDialog from "./DownloadConfirmDialog";
 
 type ProgressItem = {
   sopDocumentId: string;
@@ -275,25 +276,15 @@ export default function SopKategoriClient({
     setPreviewDoc(doc);
   }
 
-  function handleDownload(doc: Doc) {
-    // DEBUG LOGGING — bisa dihapus setelah bug ketemu
-    console.log("[SOP Download Click]", {
-      kategori,
-      docId: doc.id,
-      docKode: doc.kode,
-      isAdmin,
-      progress: progressMap[doc.id],
-      attachments: doc.sopAttachments?.length ?? 0,
-    });
+  const [dlConfirmUrl, setDlConfirmUrl] = useState<string | null>(null);
 
+  function handleDownload(doc: Doc) {
     const lock = getActionLock(doc);
     if (lock) {
-      console.log("[SOP Download] Lock detected, showing popup:", lock.title);
       setPopup(lock);
       return;
     }
     if (!doc.sopAttachments || doc.sopAttachments.length === 0) {
-      console.log("[SOP Download] No PDF, showing fallback popup");
       setPopup({
         title: "Dokumen Belum Tersedia",
         message:
@@ -301,8 +292,8 @@ export default function SopKategoriClient({
       });
       return;
     }
-    console.log("[SOP Download] Triggering download for SOP:", doc.id);
-    window.location.href = `/api/sop/${doc.id}/download`;
+    // Tampilkan dialog konfirmasi dulu; unduhan berjalan setelah disetujui.
+    setDlConfirmUrl(`/api/sop/${doc.id}/download`);
   }
 
   const selectedDivision = useMemo(() => {
@@ -590,6 +581,11 @@ export default function SopKategoriClient({
           fileUrl={`/api/files/sop-attachments/${previewDoc.sopAttachments[0].filename}`}
         />
       )}
+      <DownloadConfirmDialog
+        open={!!dlConfirmUrl}
+        onClose={() => setDlConfirmUrl(null)}
+        onConfirm={() => dlConfirmUrl && (window.location.href = dlConfirmUrl)}
+      />
     </div>
   );
 }

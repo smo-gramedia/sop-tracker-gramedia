@@ -3,6 +3,7 @@
 // src/components/user/BelajarClient.tsx
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import DownloadConfirmDialog from "./DownloadConfirmDialog";
 import {
   ArrowLeft,
   ArrowRight,
@@ -541,8 +542,21 @@ function Step2({
     ? `${baseFileUrl}#toolbar=0&navpanes=0&scrollbar=1`
     : null;
 
+  const dlUrl =
+    canDownload && baseFileUrl
+      ? `${baseFileUrl}?dl=${encodeURIComponent(
+          `${doc.kode.replace(/\//g, "-")}.pdf`
+        )}&wm=1&sop=${doc.id}`
+      : null;
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
   return (
     <div>
+      <DownloadConfirmDialog
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={() => dlUrl && (window.location.href = dlUrl)}
+      />
       <p className="text-muted-foreground text-sm mb-5">
         Baca dan pelajari dokumen SOP berikut dengan seksama.{" "}
         <span className="font-medium">
@@ -568,14 +582,11 @@ function Step2({
               </div>
             </div>
             <a
-              href={
-                canDownload
-                  ? `${baseFileUrl}?dl=${encodeURIComponent(
-                      `${doc.kode.replace(/\//g, "-")}.pdf`
-                    )}&wm=1&sop=${doc.id}`
-                  : undefined
-              }
-              onClick={(e) => !canDownload && e.preventDefault()}
+              href={dlUrl ?? undefined}
+              onClick={(e) => {
+                e.preventDefault();
+                if (dlUrl) setConfirmOpen(true);
+              }}
               aria-disabled={!canDownload}
               className={`text-xs font-medium px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-colors ${
                 canDownload
@@ -640,9 +651,15 @@ function Step3({
 }) {
   // Gating: download lampiran juga hanya boleh setelah lulus post test
   const canDownload = hasPassedPostTest;
+  const [confirmUrl, setConfirmUrl] = useState<string | null>(null);
 
   return (
     <div>
+      <DownloadConfirmDialog
+        open={!!confirmUrl}
+        onClose={() => setConfirmUrl(null)}
+        onConfirm={() => confirmUrl && (window.location.href = confirmUrl)}
+      />
       <p className="text-muted-foreground text-sm mb-5">
         Lihat daftar lampiran pendukung dokumen SOP berikut.{" "}
         <span className="font-medium">
@@ -678,6 +695,16 @@ function Step3({
                     href={`/api/files/sop-attachments/${
                       a.filename
                     }?dl=${encodeURIComponent(filename)}&wm=1&sop=${sopId}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setConfirmUrl(
+                        `/api/files/sop-attachments/${
+                          a.filename
+                        }?dl=${encodeURIComponent(
+                          filename
+                        )}&wm=1&sop=${sopId}`
+                      );
+                    }}
                     className="flex-shrink-0"
                   >
                     <Button size="sm" className="gap-1.5">
