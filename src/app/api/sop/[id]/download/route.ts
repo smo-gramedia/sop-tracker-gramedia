@@ -3,7 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getSignedUrl, BUCKETS } from "@/lib/storage";
+import { watermarkPdf } from "@/lib/pdf-watermark";
 import JSZip from "jszip";
+
+// pdf-lib (watermark) butuh Node.js runtime.
+export const runtime = "nodejs";
 
 export async function GET(
   req: NextRequest,
@@ -73,9 +77,21 @@ export async function GET(
   try {
     const zip = new JSZip();
 
+    // ─── Identitas untuk watermark (samakan dgn unduhan lain) ─────────
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { kodeUser: true },
+    });
+    const kodeUser = user?.kodeUser ?? session.user.id;
+    const wib = new Date(
+      new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" })
+    );
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const tanggal = `${pad(wib.getDate())}/${pad(
+      wib.getMonth() + 1
+    )}/${wib.getFullYear()} ${pad(wib.getHours())}:${pad(wib.getMinutes())}`;
+
     // Helper: download file dari Supabase signed URL → arraybuffer
-    // FIX: Pakai const arrow function (function declaration di dalam block
-    // tidak diizinkan di TypeScript strict mode ES5)
     const fetchFile = async (path: string): Promise<ArrayBuffer> => {
       const url = await getSignedUrl({
         bucket: BUCKETS.ATTACHMENTS,
@@ -101,7 +117,26 @@ export async function GET(
           ? `[Utama] ${sop.kode.replace(/\//g, "-")} - ${baseName}`
           : baseName;
 
-      zip.file(finalName, buffer);
+      // Watermark identitas untuk file PDF (main & lampiran PDF). File lain
+      // (docx/xlsx/zip/gambar) dimasukkan apa adanya. Bila watermark gagal,
+      // fallback ke file asli agar ZIP tetap lengkap.
+      const isPdf =
+        att.mimeType === "application/pdf" ||
+        att.filename.toLowerCase().endsWith(".pdf");
+      if (isPdf) {
+        try {
+          const stamped = await watermarkPdf(new Uint8Array(buffer), {
+            kodeUser,
+            tanggal,
+          });
+          zip.file(finalName, stamped);
+        } catch (e) {
+          console.error("[sop-download] Watermark gagal, pakai file asli:", e);
+          zip.file(finalName, buffer);
+        }
+      } else {
+        zip.file(finalName, buffer);
+      }
     }
 
     // Generate ZIP buffer
@@ -119,7 +154,7 @@ export async function GET(
           userId: session.user.id,
           sopDocumentId: sopId,
           action: "download_sop",
-          deskripsi: `Download SOP "${sop.judul}" (${sop.sopAttachments.length} file)`,
+          deskripsi: `Download SOP "${sop.judul}" (${sop.sopAttachments.length} file) oleh kode user ${kodeUser} pada ${tanggal} WIB`,
         },
       });
     } catch (e) {
