@@ -12,13 +12,11 @@ export default async function BantuanPage() {
     <div className="max-w-4xl mx-auto px-6 py-8">
       <div className="mb-6">
         <p className="text-sm text-muted-foreground">Pusat Bantuan</p>
-        <h1 className="font-display font-bold text-3xl mt-1">
-          Bantuan & FAQ
-        </h1>
+        <h1 className="font-display font-bold text-3xl mt-1">Bantuan & FAQ</h1>
         <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
           Temukan jawaban atas pertanyaan yang sering diajukan terkait
-          penggunaan SOP Tracker. Kalau pertanyaan Anda belum terjawab,
-          silakan hubungi admin SMO.
+          penggunaan SOP Tracker. Kalau pertanyaan Anda belum terjawab, silakan
+          hubungi admin SMO.
         </p>
       </div>
 
@@ -52,7 +50,7 @@ export default async function BantuanPage() {
             <p className="text-sm mt-3">
               Email:{" "}
               <a
-                href="mailto:smo@gramedia.co.id"
+                href="mailto:smointegrations@gramedia.co.id"
                 className="text-primary hover:underline font-medium"
               >
                 smo@gramedia.co.id

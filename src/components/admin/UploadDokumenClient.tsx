@@ -3,10 +3,11 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, BookMarked } from "lucide-react";
 import TambahDokumenModal from "./TambahDokumenModal";
 import EditDokumenModal from "./EditDokumenModal";
 import { deleteSopDocument } from "@/actions/sop-document";
+import GlossaryReviewModal from "./GlossaryReviewModal";
 
 // Extended Doc type — include all fields yang EditDokumenModal butuhkan
 type Doc = {
@@ -55,6 +56,7 @@ export default function UploadDokumenClient({
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingDoc, setEditingDoc] = useState<Doc | null>(null);
+  const [glossaryDoc, setGlossaryDoc] = useState<{ id: string; kode: string } | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
 
   // ─── Filter state ───────────────────────────────────────────────────
@@ -250,6 +252,14 @@ export default function UploadDokumenClient({
                         variant="outline"
                         size="sm"
                         className="h-7 px-2.5 text-xs gap-1"
+                        onClick={() => setGlossaryDoc({ id: doc.id, kode: doc.kode })}
+                      >
+                        <BookMarked size={12} /> Glosarium
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2.5 text-xs gap-1"
                         onClick={() => setEditingDoc(doc)}
                       >
                         <Pencil size={12} /> Edit
@@ -310,6 +320,14 @@ export default function UploadDokumenClient({
           subcategories={subcategories}
         />
       )}
+
+      <GlossaryReviewModal
+        open={!!glossaryDoc}
+        onClose={() => setGlossaryDoc(null)}
+        sopId={glossaryDoc?.id ?? null}
+        sopKode={glossaryDoc?.kode}
+      />
+
     </>
   );
 }

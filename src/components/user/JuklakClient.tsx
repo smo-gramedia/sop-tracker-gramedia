@@ -188,7 +188,7 @@ export default function JuklakClient({
                 </span>
               </h1>
               <p className="text-white/80 text-sm leading-relaxed max-w-xl">
-                Halaman ini menampilkan seluruh juklak yang dapat diakses
+                Halaman ini menampilkan seluruh Petunjuk Pelaksanaan yang dapat diakses
                 berdasarkan unit atau departemen. Cek status pembelajaran Anda,
                 lalu buka dokumen yang perlu dipelajari.
               </p>
