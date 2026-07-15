@@ -56,8 +56,11 @@ export default function UploadDokumenClient({
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingDoc, setEditingDoc] = useState<Doc | null>(null);
-  const [glossaryDoc, setGlossaryDoc] = useState<{ id: string; kode: string } | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [glossaryDoc, setGlossaryDoc] = useState<{
+    id: string;
+    kode: string;
+  } | null>(null);
 
   // ─── Filter state ───────────────────────────────────────────────────
   const [search, setSearch] = useState("");
@@ -252,7 +255,9 @@ export default function UploadDokumenClient({
                         variant="outline"
                         size="sm"
                         className="h-7 px-2.5 text-xs gap-1"
-                        onClick={() => setGlossaryDoc({ id: doc.id, kode: doc.kode })}
+                        onClick={() =>
+                          setGlossaryDoc({ id: doc.id, kode: doc.kode })
+                        }
                       >
                         <BookMarked size={12} /> Glosarium
                       </Button>
@@ -327,7 +332,6 @@ export default function UploadDokumenClient({
         sopId={glossaryDoc?.id ?? null}
         sopKode={glossaryDoc?.kode}
       />
-
     </>
   );
 }
