@@ -1,5 +1,11 @@
 // src/lib/glossary-extract.ts
-import { PDFParse } from "pdf-parse";
+//
+// CATATAN: memakai `unpdf` (bukan `pdf-parse`). Alasannya, pdf-parse memuat
+// mesin pdf.js yang membutuhkan `DOMMatrix` — API milik browser yang tidak
+// tersedia di runtime server Vercel, sehingga menyebabkan error:
+//   "Failed to load external module pdf-parse: ReferenceError: DOMMatrix is not defined"
+// `unpdf` memakai build pdf.js khusus serverless yang tidak butuh API browser.
+import { extractText, getDocumentProxy } from "unpdf";
 
 export type ExtractedTerm = { istilah: string; definisi: string };
 export type ExtractResult =
@@ -7,11 +13,10 @@ export type ExtractResult =
   | { ok: false; reason: "no_text" | "no_definisi" };
 
 // Baris "sampah" template Gramedia yang tersisip saat pindah halaman:
-// penanda halaman, kop tabel, dan judul (huruf kapital penuh).
+// kop tabel dan judul dokumen (huruf kapital penuh).
 function isNoise(line: string): boolean {
   const t = line.trim();
   if (!t) return true;
-  if (/^--\s*\d+\s*of\s*\d+\s*--$/i.test(t)) return true; // penanda halaman pdf-parse
   if (/^MANUAL\s+PROSEDUR/i.test(t)) return true;
   if (/^(Nomor|Versi|Halaman)\b/i.test(t)) return true;
   if (/^Tgl\.?\s*Berlaku/i.test(t)) return true;
@@ -27,16 +32,10 @@ function isNoise(line: string): boolean {
 export async function extractDefinitionsFromPdf(
   bytes: Uint8Array
 ): Promise<ExtractResult> {
-  const parser = new PDFParse({ data: bytes });
-  let text = "";
-  try {
-    const res = await parser.getText();
-    text = res.text || "";
-  } finally {
-    await (parser as { destroy?: () => Promise<void> }).destroy?.();
-  }
+  const pdf = await getDocumentProxy(bytes);
+  const { text } = await extractText(pdf, { mergePages: false });
 
-  const lines = text
+  const lines = (Array.isArray(text) ? text.join("\n") : String(text))
     .split("\n")
     .map((l) => l.replace(/\t/g, " ").replace(/\s{2,}/g, " ").trim());
 

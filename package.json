@@ -39,8 +39,8 @@
     "resend": "^4.0.0",
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
-    "zod": "^3.23.8",
-    "pdf-parse": "^2.4.5"
+    "unpdf": "^1.6.2",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
