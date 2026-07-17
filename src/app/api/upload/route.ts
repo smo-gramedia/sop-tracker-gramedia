@@ -6,41 +6,86 @@ import {
   BUCKETS,
   uploadFile,
   buildStoragePath,
-  validateFile,
   deleteFile,
   type BucketName,
 } from "@/lib/storage";
 
-const BUCKET_RULES: Record<
-  BucketName,
-  { maxSizeMb: number; allowedMime: string[]; requireRole?: string[] }
-> = {
-  "raw-documents": {
-    maxSizeMb: 50,
-    allowedMime: [
-      "application/pdf",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    ],
-    requireRole: ["admin", "superadmin"],
-  },
-  "sop-attachments": {
-    maxSizeMb: 50,
-    allowedMime: [
-      "application/pdf",
-      "application/zip",
-      "application/x-zip-compressed",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "image/jpeg",
-      "image/png",
-    ],
-    requireRole: ["admin", "superadmin"],
-  },
-  sosialisasi: {
-    maxSizeMb: 10,
-    allowedMime: ["image/jpeg", "image/png", "image/webp", "application/pdf"],
-  },
+// ─── Batas ukuran (MB) ───────────────────────────────────────────────
+// CATATAN: selama masih di Vercel, upload > ~4.5MB tetap gagal karena batas
+// body request platform. Angka di bawah baru berlaku penuh setelah migrasi
+// ke server internal.
+const MAX_RAW_MB = 50;
+const MAX_UTAMA_MB = 50;
+const MAX_LAMPIRAN_MB = 15; // lampiran WAJIB ZIP
+const MAX_SOSIALISASI_MB = 10; // bukti sosialisasi WAJIB PDF
+
+const PDF_MIME = "application/pdf";
+const DOCX_MIME =
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+const DOC_MIME = "application/msword";
+
+/**
+ * Browser/OS mengirim MIME .zip berbeda-beda (bahkan kadang kosong atau
+ * application/octet-stream). Normalisasi berdasarkan ekstensi agar validasi
+ * konsisten DAN contentType yang dikirim ke Supabase selalu benar
+ * (bucket punya daftar MIME yang diizinkan).
+ */
+function effectiveMime(file: File): string {
+  const name = file.name.toLowerCase();
+  if (name.endsWith(".zip")) return "application/zip";
+  if (name.endsWith(".pdf")) return PDF_MIME;
+  if (name.endsWith(".docx")) return DOCX_MIME;
+  if (name.endsWith(".doc")) return DOC_MIME;
+  return file.type;
+}
+
+type UploadRules = {
+  maxSizeMb: number;
+  allowedMime: string[];
+  requireRole?: string[];
+  /** Pesan yang ditampilkan bila tipe file tidak sesuai. */
+  hint: string;
 };
+
+/** Aturan upload ditentukan oleh bucket + sub-tipe, bukan bucket saja. */
+function resolveRules(
+  bucket: BucketName,
+  attachmentTipe: "utama" | "lampiran"
+): UploadRules {
+  if (bucket === "raw-documents") {
+    return {
+      maxSizeMb: MAX_RAW_MB,
+      allowedMime: [PDF_MIME, DOCX_MIME, DOC_MIME],
+      requireRole: ["admin", "superadmin"],
+      hint: "Raw dokumen harus berupa file .doc, .docx, atau .pdf.",
+    };
+  }
+
+  if (bucket === "sop-attachments") {
+    if (attachmentTipe === "utama") {
+      return {
+        maxSizeMb: MAX_UTAMA_MB,
+        allowedMime: [PDF_MIME],
+        requireRole: ["admin", "superadmin"],
+        hint: "PDF utama harus berupa file PDF.",
+      };
+    }
+    // Lampiran WAJIB ZIP — bila lebih dari satu berkas, satukan dalam 1 ZIP.
+    return {
+      maxSizeMb: MAX_LAMPIRAN_MB,
+      allowedMime: ["application/zip"],
+      requireRole: ["admin", "superadmin"],
+      hint: `Lampiran harus berupa file ZIP (.zip), maksimal ${MAX_LAMPIRAN_MB}MB. Satukan seluruh berkas pendukung ke dalam satu file ZIP.`,
+    };
+  }
+
+  // sosialisasi → WAJIB PDF
+  return {
+    maxSizeMb: MAX_SOSIALISASI_MB,
+    allowedMime: [PDF_MIME],
+    hint: `Bukti sosialisasi harus berupa file PDF, maksimal ${MAX_SOSIALISASI_MB}MB.`,
+  };
+}
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -82,14 +127,27 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const rules = BUCKET_RULES[bucket];
+  const rules = resolveRules(bucket, attachmentTipe);
   if (rules.requireRole && !rules.requireRole.includes(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const validation = validateFile(file, rules);
-  if (!validation.ok) {
-    return NextResponse.json({ error: validation.reason }, { status: 400 });
+  // Validasi ukuran & tipe — pakai MIME hasil normalisasi ekstensi.
+  const mime = effectiveMime(file);
+  if (file.size > rules.maxSizeMb * 1024 * 1024) {
+    return NextResponse.json(
+      {
+        error: `Ukuran file melebihi ${rules.maxSizeMb}MB (file Anda ${(
+          file.size /
+          1024 /
+          1024
+        ).toFixed(1)}MB).`,
+      },
+      { status: 400 }
+    );
+  }
+  if (!rules.allowedMime.includes(mime)) {
+    return NextResponse.json({ error: rules.hint }, { status: 400 });
   }
 
   // Verifikasi SOP exists
@@ -104,12 +162,6 @@ export async function POST(req: NextRequest) {
   // Untuk attachment 'utama', enforce: hanya 1 PDF utama per SOP
   // (dilewati saat REPLACE, karena memang sedang mengganti utama yang ada)
   if (!replaceId && tipe === "attachment" && attachmentTipe === "utama") {
-    if (file.type !== "application/pdf") {
-      return NextResponse.json(
-        { error: "PDF utama harus berupa file PDF" },
-        { status: 400 }
-      );
-    }
     const existingUtama = await prisma.sopAttachment.findFirst({
       where: { sopDocumentId, tipe: "utama" },
       select: { id: true },
@@ -149,12 +201,12 @@ export async function POST(req: NextRequest) {
           filename: file.name,
         });
         const buffer = Buffer.from(await file.arrayBuffer());
-        await uploadFile({ bucket, path, file: buffer, contentType: file.type });
+        await uploadFile({ bucket, path, file: buffer, contentType: mime });
         await prisma.rawDocument.update({
           where: { id: replaceId },
           data: {
             filename: path,
-            mimeType: file.type,
+            mimeType: mime,
             ukuranKb,
             uploadedById: session.user.id,
           },
@@ -178,10 +230,17 @@ export async function POST(req: NextRequest) {
             { status: 404 }
           );
         }
-        // PDF utama wajib tetap PDF
-        if (old.tipe === "utama" && file.type !== "application/pdf") {
+        // Aturan mengikuti tipe lampiran LAMA (utama tetap PDF, lampiran tetap ZIP)
+        const oldRules = resolveRules(
+          bucket,
+          (old.tipe as "utama" | "lampiran") ?? "lampiran"
+        );
+        if (!oldRules.allowedMime.includes(mime)) {
+          return NextResponse.json({ error: oldRules.hint }, { status: 400 });
+        }
+        if (file.size > oldRules.maxSizeMb * 1024 * 1024) {
           return NextResponse.json(
-            { error: "PDF utama harus berupa file PDF." },
+            { error: `Ukuran file melebihi ${oldRules.maxSizeMb}MB.` },
             { status: 400 }
           );
         }
@@ -190,12 +249,12 @@ export async function POST(req: NextRequest) {
           filename: file.name,
         });
         const buffer = Buffer.from(await file.arrayBuffer());
-        await uploadFile({ bucket, path, file: buffer, contentType: file.type });
+        await uploadFile({ bucket, path, file: buffer, contentType: mime });
         await prisma.sopAttachment.update({
           where: { id: replaceId },
           data: {
             filename: path,
-            mimeType: file.type,
+            mimeType: mime,
             ukuranKb,
             uploadedById: session.user.id,
           },
@@ -219,7 +278,7 @@ export async function POST(req: NextRequest) {
       filename: file.name,
     });
     const buffer = Buffer.from(await file.arrayBuffer());
-    await uploadFile({ bucket, path, file: buffer, contentType: file.type });
+    await uploadFile({ bucket, path, file: buffer, contentType: mime });
 
     const ukuranKb = Math.round(file.size / 1024);
 
@@ -228,7 +287,7 @@ export async function POST(req: NextRequest) {
         data: {
           sopDocumentId,
           filename: path,
-          mimeType: file.type,
+          mimeType: mime,
           ukuranKb,
           uploadedById: session.user.id,
         },
@@ -241,7 +300,7 @@ export async function POST(req: NextRequest) {
         data: {
           sopDocumentId,
           filename: path,
-          mimeType: file.type,
+          mimeType: mime,
           ukuranKb,
           uploadedById: session.user.id,
           tipe: attachmentTipe,
@@ -264,7 +323,7 @@ export async function POST(req: NextRequest) {
           userId: session.user.id,
           sopDocumentId,
           filename: path,
-          mimeType: file.type,
+          mimeType: mime,
           ukuranKb,
           uploadKe: existing + 1,
           status: "menunggu",

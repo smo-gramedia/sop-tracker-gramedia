@@ -16,6 +16,10 @@ import {
 import { X, FileText, Paperclip, FileBox, Trash2, Plus } from "lucide-react";
 import { createSopDocument, deleteSopDocument } from "@/actions/sop-document";
 
+// Lampiran WAJIB berupa satu file ZIP. Bila berkas pendukung lebih dari satu,
+// satukan ke dalam satu ZIP. Batas ini juga ditegakkan di server (/api/upload).
+const MAX_LAMPIRAN_MB = 15;
+
 type Dept = { id: string; nama: string; kode: string };
 type Division = { id: string; nama: string; departments: Dept[] };
 type Directorate = {
@@ -125,7 +129,7 @@ export default function TambahDokumenModal({
       bucket: "raw-documents" | "sop-attachments";
       tipe: "raw" | "attachment";
       attachmentTipe?: "utama" | "lampiran";
-    }
+    },
   ): Promise<void> {
     const fd = new FormData();
     fd.append("file", file);
@@ -149,7 +153,7 @@ export default function TambahDokumenModal({
     }
     if (!res.ok) {
       throw new Error(
-        `Upload "${file.name}" gagal: ${data.error || `HTTP ${res.status}`}`
+        `Upload "${file.name}" gagal: ${data.error || `HTTP ${res.status}`}`,
       );
     }
   }
@@ -282,7 +286,7 @@ export default function TambahDokumenModal({
       setErrorMsg(
         rolledBack
           ? `${msg} — perubahan dibatalkan otomatis, data SOP tidak tersimpan. Silakan perbaiki file lalu coba lagi.`
-          : msg
+          : msg,
       );
       setProgress((prev) => ({
         ...prev,
@@ -334,7 +338,9 @@ export default function TambahDokumenModal({
               <SelectContent>
                 <SelectItem value="sr">SOP Operation</SelectItem>
                 <SelectItem value="ss">SOP Supporting Unit</SelectItem>
-                <SelectItem value="sp">SOP Publishing &amp; Education</SelectItem>
+                <SelectItem value="sp">
+                  SOP Publishing &amp; Education
+                </SelectItem>
                 <SelectItem value="sg">SOP General</SelectItem>
                 <SelectItem value="petunjuk">Petunjuk Pelaksanaan</SelectItem>
               </SelectContent>
@@ -547,7 +553,8 @@ export default function TambahDokumenModal({
                 <div className="flex-1">
                   <div className="text-sm font-medium">Lampiran (Multiple)</div>
                   <div className="text-xs text-muted-foreground">
-                    .pdf, .zip, .docx, .xlsx, .jpg, .png · Maks 50MB per file
+                    Wajib berformat <strong>.zip</strong> · Maks{" "}
+                    {MAX_LAMPIRAN_MB}MB per file
                   </div>
                 </div>
                 <label className="cursor-pointer">
@@ -558,10 +565,34 @@ export default function TambahDokumenModal({
                     type="file"
                     className="hidden"
                     multiple
-                    accept=".pdf,.zip,.docx,.xlsx,.jpg,.jpeg,.png"
+                    accept=".zip,application/zip,application/x-zip-compressed"
                     onChange={(e) => {
                       const files = Array.from(e.target.files ?? []);
-                      setLampiran((prev) => [...prev, ...files]);
+                      const diterima: File[] = [];
+                      const ditolak: string[] = [];
+                      for (const f of files) {
+                        if (!f.name.toLowerCase().endsWith(".zip")) {
+                          ditolak.push(`${f.name} (bukan file ZIP)`);
+                        } else if (f.size > MAX_LAMPIRAN_MB * 1024 * 1024) {
+                          ditolak.push(
+                            `${f.name} (${(f.size / 1024 / 1024).toFixed(
+                              1,
+                            )}MB, melebihi ${MAX_LAMPIRAN_MB}MB)`,
+                          );
+                        } else {
+                          diterima.push(f);
+                        }
+                      }
+                      if (diterima.length > 0) {
+                        setLampiran((prev) => [...prev, ...diterima]);
+                      }
+                      setErrorMsg(
+                        ditolak.length > 0
+                          ? `Lampiran tidak dapat ditambahkan: ${ditolak.join(
+                              "; ",
+                            )}. Lampiran harus berupa file ZIP maksimal ${MAX_LAMPIRAN_MB}MB.`
+                          : null,
+                      );
                       e.target.value = "";
                     }}
                   />
@@ -620,8 +651,8 @@ export default function TambahDokumenModal({
                       progress.filesTotal > 0
                         ? `${(progress.filesUploaded / progress.filesTotal) * 100}%`
                         : progress.step === "creating"
-                        ? "20%"
-                        : "0%",
+                          ? "20%"
+                          : "0%",
                   }}
                 />
               </div>

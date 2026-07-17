@@ -27,6 +27,9 @@ import {
   getStepLockInfo,
 } from "@/lib/learning-gates";
 
+// Bukti sosialisasi WAJIB PDF. Batas ini juga ditegakkan di server (/api/upload).
+const MAX_SOSIALISASI_MB = 10;
+
 type Props = {
   doc: any;
   progress: any;
@@ -825,10 +828,33 @@ function Step4({
 
   return (
     <div>
-      <p className="text-muted-foreground text-sm mb-5">
-        Unggah foto atau dokumen sebagai bukti Anda telah mengikuti sosialisasi
-        SOP ini. Admin akan memverifikasi sebelum Post Test terbuka.
+      <p className="text-muted-foreground text-sm mb-4">
+        Unggah dokumen sebagai bukti unit Anda telah mengikuti sosialisasi SOP
+        ini. Admin akan memverifikasi sebelum Post Test terbuka.
       </p>
+
+      {/* Ketentuan bukti sosialisasi */}
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 mb-5">
+        <div className="flex items-center gap-2 mb-2">
+          <FileText size={15} className="text-amber-700 flex-shrink-0" />
+          <span className="text-sm font-semibold text-amber-900">
+            Ketentuan Bukti Sosialisasi
+          </span>
+        </div>
+        <p className="text-xs text-amber-800 mb-2 leading-relaxed">
+          File wajib berformat <strong>PDF</strong> (maksimal{" "}
+          {MAX_SOSIALISASI_MB}MB), dan di dalam dokumen harus memuat:
+        </p>
+        <ol className="text-xs text-amber-800 space-y-1 list-decimal list-inside leading-relaxed">
+          <li>Nama Toko</li>
+          <li>Foto Bukti Sosialisasi</li>
+          <li>Daftar Hadir (NIK dan Nama)</li>
+        </ol>
+        <p className="text-[11px] text-amber-700/90 mt-2.5 leading-relaxed">
+          Bukti yang tidak memenuhi ketentuan di atas akan ditolak oleh admin
+          dan harus diunggah ulang.
+        </p>
+      </div>
 
       <div
         className={`rounded-xl border p-4 mb-5 flex items-center gap-3 ${statusBox.bg}`}
@@ -864,15 +890,34 @@ function Step4({
               Klik untuk upload atau drag & drop
             </div>
             <div className="text-xs text-muted-foreground">
-              JPG, JPEG, PNG, WebP, PDF · Maks 10MB
+              Hanya file PDF · Maks {MAX_SOSIALISASI_MB}MB
             </div>
             <input
               id="file-upload"
               type="file"
               className="hidden"
-              accept="image/jpeg,image/png,image/webp,application/pdf"
+              accept="application/pdf,.pdf"
               onChange={(e) => {
-                setFile(e.target.files?.[0] ?? null);
+                const f = e.target.files?.[0] ?? null;
+                e.target.value = "";
+                if (!f) return;
+                if (!f.name.toLowerCase().endsWith(".pdf")) {
+                  setFile(null);
+                  setErrorMsg(
+                    "Bukti sosialisasi harus berupa file PDF. Silakan gabungkan foto dan daftar hadir ke dalam satu dokumen PDF."
+                  );
+                  return;
+                }
+                if (f.size > MAX_SOSIALISASI_MB * 1024 * 1024) {
+                  setFile(null);
+                  setErrorMsg(
+                    `Ukuran file ${(f.size / 1024 / 1024).toFixed(
+                      1
+                    )}MB melebihi batas ${MAX_SOSIALISASI_MB}MB. Silakan kompres dokumen atau perkecil resolusi fotonya.`
+                  );
+                  return;
+                }
+                setFile(f);
                 setErrorMsg(null);
               }}
             />
@@ -881,7 +926,7 @@ function Step4({
           {file && (
             <div className="mt-3 flex items-center justify-between gap-3 px-4 py-3 bg-muted/40 rounded-xl border">
               <div className="flex items-center gap-2.5 min-w-0">
-                <span className="text-base">🖼</span>
+                <span className="text-base">📄</span>
                 <div className="min-w-0">
                   <div className="text-sm font-medium truncate">
                     {file.name}
