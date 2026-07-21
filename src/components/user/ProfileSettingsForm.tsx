@@ -120,7 +120,7 @@ export default function ProfileSettingsForm({ user }: { user: UserData }) {
           <h2 className="font-display font-semibold">Informasi Profil</h2>
         </div>
         <form onSubmit={handleProfileSubmit} className="p-5 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="kode">Kode User</Label>
               <Input

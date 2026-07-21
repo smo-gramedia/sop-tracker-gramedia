@@ -66,7 +66,7 @@ export default function TambahPostTestModal({ open, onClose, sopOptions }: Props
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Config */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="col-span-3 space-y-1.5">
               <Label>SOP</Label>
               <Select onValueChange={setSopId} required>
@@ -105,7 +105,7 @@ export default function TambahPostTestModal({ open, onClose, sopOptions }: Props
                     required
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-2 pl-9">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-9">
                   {(["A","B","C","D"] as const).map(opt => (
                     <label key={opt}
                       className={`flex items-center gap-2 border rounded-lg p-2.5 cursor-pointer transition-colors

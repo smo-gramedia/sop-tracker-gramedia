@@ -85,7 +85,7 @@ function ProfileForm({ user }: { user: UserData }) {
 
       <div className="p-6 space-y-5">
         {/* Read-only fields */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label className="text-muted-foreground">Kode Karyawan</Label>
             <Input value={user.kodeKaryawan} disabled className="bg-muted/40" />
@@ -113,7 +113,7 @@ function ProfileForm({ user }: { user: UserData }) {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label htmlFor="unit">Unit</Label>
             <Input
@@ -219,7 +219,7 @@ function PasswordForm() {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label htmlFor="newPassword">Password Baru</Label>
             <Input

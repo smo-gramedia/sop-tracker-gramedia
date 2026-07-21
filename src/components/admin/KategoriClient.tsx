@@ -100,7 +100,7 @@ export default function KategoriClient({ subcategories }: { subcategories: Sub[]
               <button onClick={() => setModal(null)} className="text-muted-foreground hover:text-foreground"><X size={18}/></button>
             </div>
             <div className="p-5 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>Kode <span className="text-xs text-muted-foreground">(unik)</span></Label>
                   <Input placeholder="SMGR" value={kode} onChange={e => setKode(e.target.value.toUpperCase())}/>

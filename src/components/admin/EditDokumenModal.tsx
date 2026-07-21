@@ -299,7 +299,7 @@ export default function EditDokumenModal({
           </div>
 
           {/* Editable fields */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="kode">Kode</Label>
               <Input
@@ -354,7 +354,7 @@ export default function EditDokumenModal({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="tanggalBerlaku">Tanggal Berlaku</Label>
               <Input

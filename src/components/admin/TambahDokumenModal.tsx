@@ -403,7 +403,7 @@ export default function TambahDokumenModal({
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Klasifikasi Organisasi
               </p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>Directorate</Label>
                   <Select onValueChange={setDirId}>
@@ -455,7 +455,7 @@ export default function TambahDokumenModal({
           )}
 
           {/* Base fields */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="kode">Kode</Label>
               <Input id="kode" name="kode" placeholder="MP/COM/04" required />
@@ -488,7 +488,7 @@ export default function TambahDokumenModal({
               className="w-full border rounded-lg p-3 text-sm min-h-[80px] resize-none focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="tanggalBerlaku">Tanggal Berlaku</Label>
               <Input id="tanggalBerlaku" name="tanggalBerlaku" type="date" />

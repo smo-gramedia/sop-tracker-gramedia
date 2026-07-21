@@ -193,7 +193,7 @@ export default function EditUserModal({ open, userId, onClose }: Props) {
           {user && (
             <>
               {/* Read-only info */}
-              <div className="bg-muted/40 rounded-xl p-4 border grid grid-cols-2 gap-3 text-sm">
+              <div className="bg-muted/40 rounded-xl p-4 border grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Kode User</p>
                   <p className="font-mono font-medium">{user.kodeUser}</p>

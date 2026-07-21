@@ -163,8 +163,8 @@ export default function AttachmentClient({
       </div>
 
       {/* Table */}
-      <div className="bg-background rounded-xl border overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-background rounded-xl border overflow-x-auto">
+        <table className="w-full min-w-[720px] text-sm">
           <thead>
             <tr className="border-b bg-muted/40">
               <th className="text-left px-5 py-3 font-medium text-muted-foreground">

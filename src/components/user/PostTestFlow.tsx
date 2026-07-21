@@ -604,7 +604,7 @@ function QuizScreen({
 
   return (
     <div className="fixed inset-0 bg-background z-50 flex flex-col">
-      <div className="flex items-center justify-between px-6 h-14 border-b flex-shrink-0">
+      <div className="flex items-center justify-between px-4 sm:px-6 h-14 border-b flex-shrink-0">
         <div className="text-sm font-medium text-muted-foreground">
           Soal {current + 1} dari {total}
         </div>
@@ -619,7 +619,7 @@ function QuizScreen({
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        <aside className="w-[200px] flex-shrink-0 bg-muted/30 border-r p-4 overflow-y-auto">
+        <aside className="hidden md:block w-[200px] flex-shrink-0 bg-muted/30 border-r p-4 overflow-y-auto">
           <div className="font-bold text-sm mb-3 leading-snug">{sopJudul}</div>
           <div className="grid grid-cols-5 gap-1.5 mb-4">
             {postTest.questions.map((qq, i) => {
@@ -762,7 +762,7 @@ function ResultScreen({
 
   return (
     <div className="fixed inset-0 bg-background z-50 flex flex-col">
-      <div className="flex items-center justify-between px-6 h-14 border-b flex-shrink-0">
+      <div className="flex items-center justify-between px-4 sm:px-6 h-14 border-b flex-shrink-0">
         <h2 className="font-display font-bold text-lg">Hasil Post Test</h2>
         <button
           onClick={onClose}

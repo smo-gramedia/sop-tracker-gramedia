@@ -210,9 +210,9 @@ export default function BelajarClient({
   const persenProgress = Math.round((currentStep / 6) * 100);
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
       {/* Top Header — sleek progress bar + breadcrumb */}
-      <div className="bg-background rounded-2xl border p-5 mb-6 animate-fade-in">
+      <div className="bg-background rounded-2xl border p-4 sm:p-5 mb-6 animate-fade-in">
         <div className="flex items-start justify-between gap-4 flex-wrap mb-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -307,7 +307,7 @@ export default function BelajarClient({
               onCancel={() => goToStep(4)}
             />
           ) : (
-            <div className="bg-background rounded-2xl border p-7">
+            <div className="bg-background rounded-2xl border p-4 sm:p-7">
               {/* Step indicator badge */}
               <div className="flex items-center gap-2 mb-5">
                 <div
@@ -615,7 +615,7 @@ function Step2({
           </div>
           <iframe
             src={viewerUrl}
-            className="w-full h-[600px] bg-muted"
+            className="w-full h-[65vh] min-h-[380px] lg:h-[600px] bg-muted"
             title={doc.judul}
           />
           {/* Footer info — tidak menampilkan link "buka di tab baru" supaya tidak bypass gating */}
