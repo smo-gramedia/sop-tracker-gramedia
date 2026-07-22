@@ -20,6 +20,7 @@ type Doc = {
   status: string;
   versi: string;
   permittedAccess: string | null;
+  juklakKategori: string | null;
   subcategoryId: string | null;
   departmentId: string | null;
   tanggalBerlaku: Date | string | null;

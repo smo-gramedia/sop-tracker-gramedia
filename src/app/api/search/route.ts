@@ -12,6 +12,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { allowedKategori } from "@/lib/access";
 
 export async function GET(req: Request) {
   const session = await auth();
@@ -30,10 +31,26 @@ export async function GET(req: Request) {
     return NextResponse.json({ results: [], total: 0, query: q });
   }
 
+  // ─── Batasi hasil sesuai tipe akun ────────────────────────────────
+  // Tanpa ini, pencarian akan membocorkan judul & kode SOP dari kategori
+  // yang seharusnya tidak dapat diakses unit tersebut.
+  const me = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { tipeUser: true },
+  });
+  const kategoriBoleh = allowedKategori({
+    role: session.user.role,
+    tipeUser: me?.tipeUser ?? null,
+  });
+  if (kategoriBoleh.length === 0) {
+    return NextResponse.json({ results: [], total: 0, query: q });
+  }
+
   // Search di kode, judul, dan deskripsi (case-insensitive)
   // Hanya status 'aktif' supaya tidak tampilkan SOP obsolete/draft
   const where = {
     status: "aktif" as const,
+    kategori: { in: kategoriBoleh as never[] },
     OR: [
       { kode: { contains: q, mode: "insensitive" as const } },
       { judul: { contains: q, mode: "insensitive" as const } },

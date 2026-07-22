@@ -60,6 +60,8 @@ type Props = {
   progressList: ProgressItem[];
   progressMap: Record<string, ProgressItem>;
   isAdmin: boolean;
+  /** Akun Audit: boleh view/download tanpa menyelesaikan pembelajaran. */
+  isAudit?: boolean;
   divisions: Division[];
   subcategories: Subcategory[];
 };
@@ -120,6 +122,7 @@ export default function SopKategoriClient({
   progressList,
   progressMap,
   isAdmin,
+  isAudit = false,
   divisions,
   subcategories,
 }: Props) {
@@ -225,7 +228,7 @@ export default function SopKategoriClient({
   }
 
   function getActionLock(doc: Doc): { title: string; message: string } | null {
-    if (isAdmin) return null;
+    if (isAdmin || isAudit) return null;
     const progress = progressMap[doc.id];
     if (!progress || progress.status === "belum") {
       return {

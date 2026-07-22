@@ -26,6 +26,7 @@ type Doc = {
   status: string;
   versi: string;
   permittedAccess: string | null;
+  juklakKategori: string | null;
   subcategoryId: string | null;
   departmentId: string | null;
   tanggalBerlaku: Date | string | null;
@@ -160,6 +161,11 @@ export default function EditDokumenModal({
   if (!open || !sop) return null;
 
   // Format tanggal untuk input type=date (YYYY-MM-DD)
+  // Folder Petunjuk Pelaksanaan (hanya untuk kategori "petunjuk")
+  const [juklakKategori, setJuklakKategori] = useState(
+    sop.juklakKategori ?? ""
+  );
+
   const tanggalBerlakuStr = sop.tanggalBerlaku
     ? typeof sop.tanggalBerlaku === "string"
       ? sop.tanggalBerlaku.split("T")[0]
@@ -178,6 +184,11 @@ export default function EditDokumenModal({
       // walau read-only di UI (supaya tidak hilang di update)
       fd.set("kategori", sop.kategori);
       fd.set("tipe", sop.tipe);
+      if (sop.kategori === "petunjuk") {
+        fd.set("juklakKategori", juklakKategori);
+      } else {
+        fd.delete("juklakKategori");
+      }
       if (sop.departmentId) fd.set("departmentId", sop.departmentId);
       if (sop.subcategoryId) fd.set("subcategoryId", sop.subcategoryId);
 
@@ -339,6 +350,34 @@ export default function EditDokumenModal({
               className="w-full border rounded-lg p-3 text-sm min-h-[80px] resize-none focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
+
+          {sop.kategori === "petunjuk" && (
+            <div className="space-y-1.5">
+              <Label>
+                Folder Petunjuk Pelaksanaan{" "}
+                <span className="text-xs text-muted-foreground font-normal">
+                  (pengelompokan tampilan)
+                </span>
+              </Label>
+              <Select
+                value={juklakKategori}
+                onValueChange={setJuklakKategori}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="-- Belum Dikelompokkan --" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="store">Store</SelectItem>
+                  <SelectItem value="business_unit_non_store">
+                    Business Unit Non Store
+                  </SelectItem>
+                  <SelectItem value="supporting_unit">
+                    Supporting Unit
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <Label htmlFor="permittedAccess">

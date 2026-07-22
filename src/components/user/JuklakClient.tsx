@@ -15,6 +15,7 @@ import {
   Clock,
   Circle,
   FileText,
+  FolderOpen,
 } from "lucide-react";
 import PdfPreviewModal from "./PdfPreviewModal";
 import DownloadConfirmDialog from "./DownloadConfirmDialog";
@@ -32,6 +33,7 @@ type Document = {
   versi: string;
   tanggalBerlaku: string | null;
   permittedAccess: string | null;
+  juklakKategori: string | null;
   departmentNama: string | null;
   sopAttachments: { id: string; filename: string }[];
 };
@@ -42,7 +44,19 @@ type Props = {
   accessValues: string[];
   departmentValues: string[];
   isAdmin: boolean;
+  /** Akun Audit: boleh view/download tanpa menyelesaikan pembelajaran. */
+  isAudit?: boolean;
 };
+
+// ─── Folder Petunjuk Pelaksanaan ─────────────────────────────────────
+// Pengelompokan TAMPILAN saja (tidak membatasi akses). Dokumen tanpa folder
+// tetap ditampilkan pada kelompok terakhir agar tidak "hilang" dari daftar.
+const JUKLAK_FOLDERS: { key: string; label: string }[] = [
+  { key: "store", label: "Store" },
+  { key: "business_unit_non_store", label: "Business Unit Non Store" },
+  { key: "supporting_unit", label: "Supporting Unit" },
+  { key: "__none__", label: "Belum Dikelompokkan" },
+];
 
 // Theme untuk Petunjuk Pelaksanaan (slate-gray)
 const THEME = {
@@ -57,6 +71,7 @@ export default function JuklakClient({
   accessValues,
   departmentValues,
   isAdmin,
+  isAudit = false,
 }: Props) {
   // Filter state
   const [search, setSearch] = useState("");
@@ -99,6 +114,16 @@ export default function JuklakClient({
     });
   }, [documents, search, filterDept, filterAccess, statusFilter, progressMap]);
 
+  // Kelompokkan dokumen (hasil filter) ke dalam folder, urut sesuai daftar.
+  const grouped = useMemo(() => {
+    return JUKLAK_FOLDERS.map((f) => ({
+      ...f,
+      docs: filtered.filter(
+        (d) => (d.juklakKategori ?? "__none__") === f.key
+      ),
+    })).filter((g) => g.docs.length > 0);
+  }, [filtered]);
+
   // Stats
   const selesaiCount = Object.values(progressMap).filter(
     (p) => p.status === "selesai"
@@ -111,7 +136,7 @@ export default function JuklakClient({
   function getActionLock(
     doc: Document
   ): { title: string; message: string } | null {
-    if (isAdmin) return null;
+    if (isAdmin || isAudit) return null;
     const progress = progressMap[doc.id];
     if (!progress || progress.status === "belum") {
       return {
@@ -274,17 +299,31 @@ export default function JuklakClient({
         )}
       </div>
 
-      {/* Cards grid */}
+      {/* Daftar per folder */}
       {filtered.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 animate-slide-up">
-          {filtered.map((doc) => (
-            <JuklakCard
-              key={doc.id}
-              doc={doc}
-              progress={progressMap[doc.id]}
-              onView={() => handleView(doc)}
-              onDownload={() => handleDownload(doc)}
-            />
+        <div className="space-y-7 animate-slide-up">
+          {grouped.map((g) => (
+            <section key={g.key}>
+              <div className="flex items-center gap-2.5 mb-3">
+                <FolderOpen size={16} className="text-muted-foreground" />
+                <h2 className="font-display font-bold text-base">{g.label}</h2>
+                <span className="text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">
+                  {g.docs.length}
+                </span>
+                <div className="flex-1 border-t ml-1" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {g.docs.map((doc) => (
+                  <JuklakCard
+                    key={doc.id}
+                    doc={doc}
+                    progress={progressMap[doc.id]}
+                    onView={() => handleView(doc)}
+                    onDownload={() => handleDownload(doc)}
+                  />
+                ))}
+              </div>
+            </section>
           ))}
         </div>
       ) : (

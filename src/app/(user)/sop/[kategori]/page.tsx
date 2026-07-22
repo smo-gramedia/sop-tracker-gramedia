@@ -5,6 +5,13 @@ import { notFound, redirect } from "next/navigation";
 import { SOP_KATEGORI_LABEL } from "@/lib/constants";
 import type { SopKategori } from "@prisma/client";
 import SopKategoriClient from "@/components/user/SopKategoriClient";
+import AksesDitolak from "@/components/user/AksesDitolak";
+import {
+  canAccessKategori,
+  isTipeBelumDitentukan,
+  PESAN_TIDAK_BERHAK,
+  PESAN_TIPE_BELUM_DITENTUKAN,
+} from "@/lib/access";
 
 const VALID_KATEGORI = ["sr", "ss", "sp", "sg", "petunjuk"] as const;
 
@@ -24,6 +31,29 @@ export default async function SopKategoriPage({ params }: Props) {
 
   const session = await auth();
   const isAdmin = ["admin", "superadmin"].includes(session!.user.role);
+
+  // ─── Pembatasan akses per tipe akun (lapis halaman) ───────────────
+  // Menyembunyikan menu saja tidak cukup — tanpa blok ini, user bisa
+  // mengetik /sop/ss langsung di browser.
+  const me = await prisma.user.findUnique({
+    where: { id: session!.user.id },
+    select: { tipeUser: true },
+  });
+  const aktor = { role: session!.user.role, tipeUser: me?.tipeUser ?? null };
+
+  if (isTipeBelumDitentukan(aktor)) {
+    return (
+      <AksesDitolak
+        judul="Tipe Akun Belum Ditentukan"
+        pesan={PESAN_TIPE_BELUM_DITENTUKAN}
+      />
+    );
+  }
+  if (!canAccessKategori(aktor, kategori)) {
+    return (
+      <AksesDitolak judul="Halaman Tidak Tersedia" pesan={PESAN_TIDAK_BERHAK} />
+    );
+  }
 
   const [documents, subcategories, divisions] = await Promise.all([
     prisma.sopDocument.findMany({
@@ -90,6 +120,7 @@ export default async function SopKategoriPage({ params }: Props) {
       progressList={myProgress}
       progressMap={progressMap}
       isAdmin={isAdmin}
+      isAudit={aktor.tipeUser === "audit"}
       divisions={divisions as any}
       subcategories={subcategories as any}
     />

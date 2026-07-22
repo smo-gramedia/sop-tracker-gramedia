@@ -10,7 +10,12 @@ import { X, Store, Building2, Shield, CheckCircle2 } from "lucide-react";
 
 type Props = { open: boolean; onClose: () => void };
 
-type TipeUser = "store" | "department" | "admin";
+type TipeUser =
+  | "store"
+  | "supporting"
+  | "publishing"
+  | "audit"
+  | "admin";
 
 export default function TambahUserModal({ open, onClose }: Props) {
   const router = useRouter();
@@ -37,6 +42,11 @@ export default function TambahUserModal({ open, onClose }: Props) {
   const [previewKode, setPreviewKode] = useState("");
   const [existingCount, setExistingCount] = useState(0);
 
+  // Supporting & Publishing sama-sama akun departemen → format kode DEPT-.
+  // Admin & Audit memakai kode manual.
+  const isDeptLike = tipeUser === "supporting" || tipeUser === "publishing";
+  const isKodeManual = tipeUser === "admin" || tipeUser === "audit";
+
   // Compute preview kode saat input berubah
   useEffect(() => {
     if (tipeUser === "store") {
@@ -46,17 +56,17 @@ export default function TambahUserModal({ open, onClose }: Props) {
       } else {
         setPreviewKode("");
       }
-    } else if (tipeUser === "department") {
+    } else if (isDeptLike) {
       if (/^[A-Z]{2,5}$/.test(singkatanDept)) {
         setPreviewKode(`DEPT-${singkatanDept}-???`);
       } else {
         setPreviewKode("");
       }
     } else {
-      // admin
+      // admin / audit → kode diisi manual
       setPreviewKode(kodeUserManual);
     }
-  }, [tipeUser, kodeStore, singkatanDept, kodeUserManual]);
+  }, [tipeUser, isDeptLike, kodeStore, singkatanDept, kodeUserManual]);
 
   // Reset form saat modal open
   useEffect(() => {
@@ -88,14 +98,14 @@ export default function TambahUserModal({ open, onClose }: Props) {
         setError("Kode toko harus 5 digit angka (contoh: 00123)");
         return;
       }
-    } else if (tipeUser === "department") {
+    } else if (isDeptLike) {
       if (!/^[A-Z]{2,5}$/.test(singkatanDept)) {
         setError("Singkatan departemen harus 2-5 huruf uppercase (contoh: SMO, AUDIT)");
         return;
       }
     } else {
       if (!kodeUserManual.trim()) {
-        setError("Kode user wajib diisi untuk admin");
+        setError("Kode user wajib diisi untuk akun Admin/Audit");
         return;
       }
     }
@@ -125,10 +135,12 @@ export default function TambahUserModal({ open, onClose }: Props) {
     };
 
     if (tipeUser === "store") body.kodeStore = kodeStore;
-    else if (tipeUser === "department") body.singkatanDept = singkatanDept;
+    else if (isDeptLike) body.singkatanDept = singkatanDept;
     else {
       body.kodeUserManual = kodeUserManual.trim();
-      body.role = adminRole;
+      // Hanya akun Admin yang memakai role admin/superadmin.
+      // Akun Audit tetap role "user" — hak istimewanya diatur lewat tipe akun.
+      if (tipeUser === "admin") body.role = adminRole;
     }
 
     const res = await fetch("/api/users", {
@@ -177,7 +189,7 @@ export default function TambahUserModal({ open, onClose }: Props) {
             <Label>
               Tipe User <span className="text-destructive">*</span>
             </Label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               <TipeUserButton
                 active={tipeUser === "store"}
                 onClick={() => setTipeUser("store")}
@@ -186,10 +198,24 @@ export default function TambahUserModal({ open, onClose }: Props) {
                 disabled={saving}
               />
               <TipeUserButton
-                active={tipeUser === "department"}
-                onClick={() => setTipeUser("department")}
+                active={tipeUser === "supporting"}
+                onClick={() => setTipeUser("supporting")}
                 icon={Building2}
-                label="Department"
+                label="Supporting"
+                disabled={saving}
+              />
+              <TipeUserButton
+                active={tipeUser === "publishing"}
+                onClick={() => setTipeUser("publishing")}
+                icon={Building2}
+                label="Publishing"
+                disabled={saving}
+              />
+              <TipeUserButton
+                active={tipeUser === "audit"}
+                onClick={() => setTipeUser("audit")}
+                icon={Shield}
+                label="Audit"
                 disabled={saving}
               />
               <TipeUserButton
@@ -225,7 +251,7 @@ export default function TambahUserModal({ open, onClose }: Props) {
           )}
 
           {/* ─── Conditional: Department ────────────────────────── */}
-          {tipeUser === "department" && (
+          {isDeptLike && (
             <div className="space-y-2 p-4 bg-purple-50/50 rounded-xl border border-purple-100">
               <Label htmlFor="singkatanDept">
                 Singkatan Departemen (2-5 huruf){" "}
@@ -251,7 +277,7 @@ export default function TambahUserModal({ open, onClose }: Props) {
           )}
 
           {/* ─── Conditional: Admin ─────────────────────────────── */}
-          {tipeUser === "admin" && (
+          {isKodeManual && (
             <div className="space-y-3 p-4 bg-amber-50/50 rounded-xl border border-amber-100">
               <div className="space-y-1.5">
                 <Label htmlFor="kodeUserManual">
@@ -265,6 +291,7 @@ export default function TambahUserModal({ open, onClose }: Props) {
                   disabled={saving}
                 />
               </div>
+              {tipeUser === "admin" && (
               <div className="space-y-1.5">
                 <Label>Role Admin</Label>
                 <div className="grid grid-cols-2 gap-2">
@@ -294,6 +321,7 @@ export default function TambahUserModal({ open, onClose }: Props) {
                   </button>
                 </div>
               </div>
+              )}
             </div>
           )}
 
@@ -302,7 +330,7 @@ export default function TambahUserModal({ open, onClose }: Props) {
             <Label htmlFor="nama">
               {tipeUser === "store"
                 ? "Nama Toko"
-                : tipeUser === "department"
+                : isDeptLike
                 ? "Nama Departemen"
                 : "Nama"}{" "}
               <span className="text-destructive">*</span>
@@ -312,7 +340,7 @@ export default function TambahUserModal({ open, onClose }: Props) {
               placeholder={
                 tipeUser === "store"
                   ? "Gramedia Matraman"
-                  : tipeUser === "department"
+                  : isDeptLike
                   ? "Strategic Management Office"
                   : "Nama Admin"
               }
@@ -333,7 +361,7 @@ export default function TambahUserModal({ open, onClose }: Props) {
               placeholder={
                 tipeUser === "store"
                   ? "str.matraman@gramedia.co.id"
-                  : tipeUser === "department"
+                  : isDeptLike
                   ? "dept.smo@gramedia.co.id"
                   : "admin@gramedia.co.id"
               }
@@ -368,7 +396,7 @@ export default function TambahUserModal({ open, onClose }: Props) {
                 placeholder={
                   tipeUser === "store"
                     ? "Store Operations"
-                    : tipeUser === "department"
+                    : isDeptLike
                     ? "Finance / HR / IT"
                     : "SMO"
                 }

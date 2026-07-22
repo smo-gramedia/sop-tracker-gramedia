@@ -3,6 +3,13 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import BelajarClient from "@/components/user/BelajarClient";
+import AksesDitolak from "@/components/user/AksesDitolak";
+import {
+  canAccessKategori,
+  isTipeBelumDitentukan,
+  PESAN_TIDAK_BERHAK,
+  PESAN_TIPE_BELUM_DITENTUKAN,
+} from "@/lib/access";
 
 // ─── Next.js 16: params sekarang Promise, harus di-await ──────────
 type Props = { params: Promise<{ id: string }> };
@@ -59,6 +66,31 @@ export default async function BelajarPage({ params }: Props) {
   ]);
 
   if (!doc) notFound();
+
+  // ─── Pembatasan akses per tipe akun ───────────────────────────────
+  // Mencegah user membuka SOP di luar kategori unitnya lewat tautan langsung.
+  const me = await prisma.user.findUnique({
+    where: { id: session!.user.id },
+    select: { tipeUser: true },
+  });
+  const aktor = { role: session!.user.role, tipeUser: me?.tipeUser ?? null };
+
+  if (isTipeBelumDitentukan(aktor)) {
+    return (
+      <AksesDitolak
+        judul="Tipe Akun Belum Ditentukan"
+        pesan={PESAN_TIPE_BELUM_DITENTUKAN}
+      />
+    );
+  }
+  if (!canAccessKategori(aktor, doc.kategori)) {
+    return (
+      <AksesDitolak
+        judul="Dokumen Tidak Tersedia"
+        pesan={PESAN_TIDAK_BERHAK}
+      />
+    );
+  }
 
   // Get post test results
   const myResults = postTest

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import UserNavbar from "@/components/user/UserNavbar";
 import UserFooter from "@/components/user/UserFooter";
 import ActiveQuizBanner from "@/components/user/ActiveQuizBanner";
+import { allowedKategori } from "@/lib/access";
 
 export default async function UserLayout({
   children,
@@ -15,9 +16,20 @@ export default async function UserLayout({
   if (!session) redirect("/sign-in");
   if (session.user.role !== "user") redirect("/dashboard");
 
-  // Hitung notifikasi belum dibaca untuk badge di navbar
-  const unreadCount = await prisma.notification.count({
-    where: { userId: session.user.id, isRead: false },
+  // Ambil tipe akun untuk menentukan kategori SOP yang boleh dibuka.
+  const [unreadCount, me] = await Promise.all([
+    prisma.notification.count({
+      where: { userId: session.user.id, isRead: false },
+    }),
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { tipeUser: true },
+    }),
+  ]);
+
+  const kategoriBoleh = allowedKategori({
+    role: session.user.role,
+    tipeUser: me?.tipeUser ?? null,
   });
 
   return (
@@ -25,6 +37,7 @@ export default async function UserLayout({
       <UserNavbar
         userName={session.user.name}
         unreadCount={unreadCount}
+        allowedKategori={kategoriBoleh}
       />
       {/* ─── Batch 5.2: Banner muncul global kalau ada quiz session aktif ──
          Otomatis hilang saat user sudah di /belajar/{id} yang sesuai */}

@@ -1,7 +1,7 @@
 // src/app/(user)/home/page.tsx
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getRankingForHome } from "@/lib/ranking";
+import { getRankingsByTipe } from "@/lib/ranking";
 import HomeHero from "@/components/user/HomeHero";
 import KategoriCard from "@/components/user/KategoriCard";
 import ContinueLearning from "@/components/user/ContinueLearning";
@@ -15,7 +15,8 @@ export default async function HomePage() {
   // Parallel fetch all data
   const [
     myProgress,
-    ranking,
+    rankings,
+    meUser,
     totalSelesai,
     totalDipelajari,
     totalSop,
@@ -37,7 +38,11 @@ export default async function HomePage() {
       orderBy: { lastAccessedAt: "desc" },
       take: 6,
     }),
-    getRankingForHome(userId, 10),
+    getRankingsByTipe(userId, 10),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { tipeUser: true },
+    }),
     prisma.learningProgress.count({
       where: { userId, status: "selesai" },
     }),
@@ -57,6 +62,7 @@ export default async function HomePage() {
       _count: true,
     }),
   ]);
+
 
   // Map count per kategori
   const countMap = Object.fromEntries(
@@ -143,11 +149,9 @@ export default async function HomePage() {
           </div>
           <div className="animate-slide-up">
             <RankingPanel
-              top={ranking.top}
-              me={ranking.me}
-              isInTop={ranking.isInTop}
+              rankings={rankings}
+              myTipe={meUser?.tipeUser ?? null}
               currentUserId={userId}
-              totalRanked={ranking.totalRanked}
             />
           </div>
         </div>
@@ -166,11 +170,9 @@ export default async function HomePage() {
             </div>
           </div>
           <RankingPanel
-            top={ranking.top}
-            me={ranking.me}
-            isInTop={ranking.isInTop}
+            rankings={rankings}
+            myTipe={meUser?.tipeUser ?? null}
             currentUserId={userId}
-            totalRanked={ranking.totalRanked}
           />
         </div>
       )}

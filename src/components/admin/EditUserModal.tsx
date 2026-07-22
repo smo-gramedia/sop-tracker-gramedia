@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { TIPE_USER_LABEL } from "@/lib/access";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -47,6 +48,7 @@ export default function EditUserModal({ open, userId, onClose }: Props) {
   const [email, setEmail] = useState("");
   const [unit, setUnit] = useState("");
   const [status, setStatus] = useState<"aktif" | "nonaktif">("aktif");
+  const [tipeUser, setTipeUser] = useState<string>("");
   const [joinedAt, setJoinedAt] = useState("");
 
   // ─── Reset password (optional) ─────────────────────────────────────
@@ -80,6 +82,7 @@ export default function EditUserModal({ open, userId, onClose }: Props) {
         setEmail(data.email);
         setUnit(data.unit ?? "");
         setStatus(data.status as "aktif" | "nonaktif");
+        setTipeUser(data.tipeUser ?? "");
         setJoinedAt(
           data.joinedAt
             ? new Date(data.joinedAt).toISOString().split("T")[0]
@@ -117,6 +120,10 @@ export default function EditUserModal({ open, userId, onClose }: Props) {
       status,
       joinedAt: joinedAt || null,
     };
+    // Tipe akun hanya berlaku untuk akun non-admin
+    if (user.role === "user" && tipeUser) {
+      payload.tipeUser = tipeUser;
+    }
     if (resetPasswordMode && newPassword) {
       payload.newPassword = newPassword;
     }
@@ -205,14 +212,35 @@ export default function EditUserModal({ open, userId, onClose }: Props) {
                       ? "Super Admin"
                       : user.role === "admin"
                       ? "Admin"
-                      : user.tipeUser === "store"
-                      ? "Store"
-                      : user.tipeUser === "department"
-                      ? "Department"
-                      : "—"}
+                      : TIPE_USER_LABEL[user.tipeUser ?? ""] ?? "—"}
                   </p>
                 </div>
               </div>
+
+              {/* Ubah tipe akun — menentukan kategori SOP yang dapat diakses */}
+              {user.role === "user" && (
+                <div className="mb-4 p-4 rounded-xl border border-amber-200 bg-amber-50/60">
+                  <Label htmlFor="edit-tipe">Tipe Akun</Label>
+                  <p className="text-xs text-muted-foreground mt-1 mb-2 leading-relaxed">
+                    Menentukan kategori SOP yang dapat diakses akun ini. Akun
+                    lama bertipe <em>Department</em> perlu dipindahkan ke
+                    Supporting atau Publishing.
+                  </p>
+                  <select
+                    id="edit-tipe"
+                    value={tipeUser}
+                    onChange={(e) => setTipeUser(e.target.value)}
+                    disabled={saving}
+                    className="w-full bg-background border rounded-lg px-3 py-2 text-sm"
+                  >
+                    <option value="">— Belum ditentukan —</option>
+                    <option value="store">Store</option>
+                    <option value="supporting">Supporting</option>
+                    <option value="publishing">Publishing</option>
+                    <option value="audit">Audit</option>
+                  </select>
+                </div>
+              )}
 
               {/* Editable fields */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

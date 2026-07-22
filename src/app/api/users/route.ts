@@ -12,7 +12,13 @@ import { z } from "zod";
 
 const CreateUserSchema = z
   .object({
-    tipeUser: z.enum(["store", "department", "admin"]),
+    tipeUser: z.enum([
+      "store",
+      "supporting",
+      "publishing",
+      "audit",
+      "admin",
+    ]),
     nama: z.string().min(1, "Nama wajib diisi"),
     email: z.string().email("Format email tidak valid"),
     password: z.string().min(8, "Password minimal 8 karakter"),
@@ -30,10 +36,10 @@ const CreateUserSchema = z
       if (data.tipeUser === "store") {
         return /^\d{5}$/.test(data.kodeStore ?? "");
       }
-      if (data.tipeUser === "department") {
+      if (data.tipeUser === "supporting" || data.tipeUser === "publishing") {
         return /^[A-Z]{2,5}$/.test(data.singkatanDept ?? "");
       }
-      if (data.tipeUser === "admin") {
+      if (data.tipeUser === "admin" || data.tipeUser === "audit") {
         return (data.kodeUserManual ?? "").length > 0;
       }
       return true;
@@ -124,16 +130,33 @@ export async function POST(req: Request) {
 
   // ─── Generate kodeUser ───────────────────────────────────────────
   let kodeUser: string;
-  let tipeUserField: "store" | "department" | null = null;
+  let tipeUserField:
+    | "store"
+    | "supporting"
+    | "publishing"
+    | "audit"
+    | null = null;
   let roleField: "user" | "admin" | "superadmin" = "user";
 
   if (data.tipeUser === "store") {
     kodeUser = await generateKodeUser("store", data.kodeStore!);
     tipeUserField = "store";
     roleField = "user";
-  } else if (data.tipeUser === "department") {
+  } else if (
+    data.tipeUser === "supporting" ||
+    data.tipeUser === "publishing"
+  ) {
+    // Supporting & Publishing sama-sama akun departemen → kode DEPT-
     kodeUser = await generateKodeUser("department", data.singkatanDept!);
-    tipeUserField = "department";
+    tipeUserField = data.tipeUser;
+    roleField = "user";
+  } else if (data.tipeUser === "audit") {
+    // Akun Audit: kode manual, role tetap "user".
+    // Hak istimewanya (akses seluruh kategori & bebas gate pembelajaran)
+    // ditentukan oleh tipe akun, BUKAN role — supaya tidak ikut lolos
+    // pemeriksaan role di API admin.
+    kodeUser = data.kodeUserManual!;
+    tipeUserField = "audit";
     roleField = "user";
   } else {
     // Admin manual

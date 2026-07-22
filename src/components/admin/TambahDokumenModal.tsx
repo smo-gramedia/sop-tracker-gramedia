@@ -67,6 +67,8 @@ export default function TambahDokumenModal({
   const [divId, setDivId] = useState("");
   const [deptId, setDeptId] = useState("");
   const [subkatId, setSubkatId] = useState("");
+  // Folder Petunjuk Pelaksanaan (hanya untuk kategori "petunjuk")
+  const [juklakKategori, setJuklakKategori] = useState("");
 
   // File state
   const [pdfUtama, setPdfUtama] = useState<File | null>(null);
@@ -195,6 +197,15 @@ export default function TambahDokumenModal({
       // Default tipe untuk petunjuk
       if (kategori === "petunjuk") {
         fd.set("tipe", "petunjuk");
+        if (!juklakKategori) {
+          throw new Error(
+            "Folder Petunjuk Pelaksanaan wajib dipilih (Store / Business Unit Non Store / Supporting Unit)."
+          );
+        }
+        fd.set("juklakKategori", juklakKategori);
+      } else {
+        // Kategori selain petunjuk tidak memakai folder ini
+        fd.delete("juklakKategori");
       }
 
       const result = await createSopDocument(fd);
@@ -364,6 +375,35 @@ export default function TambahDokumenModal({
                   <SelectItem value="MP">Manual Prosedur</SelectItem>
                   <SelectItem value="PS">Panduan / Standar</SelectItem>
                   <SelectItem value="IK">Instruksi Kerja</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Folder Petunjuk Pelaksanaan */}
+          {kategori === "petunjuk" && (
+            <div className="space-y-1.5">
+              <Label>
+                Folder Petunjuk Pelaksanaan{" "}
+                <span className="text-xs text-muted-foreground font-normal">
+                  (pengelompokan tampilan)
+                </span>
+              </Label>
+              <Select
+                value={juklakKategori}
+                onValueChange={setJuklakKategori}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="-- Pilih Folder --" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="store">Store</SelectItem>
+                  <SelectItem value="business_unit_non_store">
+                    Business Unit Non Store
+                  </SelectItem>
+                  <SelectItem value="supporting_unit">
+                    Supporting Unit
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>

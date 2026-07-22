@@ -7,13 +7,20 @@ export default async function JuklakPage() {
   const session = await auth();
   const isAdmin = ["admin", "superadmin"].includes(session!.user.role);
 
+  // Akun Audit boleh view/download tanpa menyelesaikan pembelajaran.
+  const me = await prisma.user.findUnique({
+    where: { id: session!.user.id },
+    select: { tipeUser: true },
+  });
+  const isAudit = me?.tipeUser === "audit";
+
   // Ambil semua dokumen kategori "petunjuk" yang aktif
   const documents = await prisma.sopDocument.findMany({
     where: {
       kategori: "petunjuk",
       status: "aktif",
     },
-    orderBy: { kode: "asc" },
+    orderBy: [{ juklakKategori: "asc" }, { kode: "asc" }],
     select: {
       id: true,
       kode: true,
@@ -22,6 +29,7 @@ export default async function JuklakPage() {
       versi: true,
       tanggalBerlaku: true,
       permittedAccess: true,
+      juklakKategori: true,
       department: { select: { id: true, nama: true } },
       sopAttachments: {
         where: { tipe: "utama" },
@@ -68,6 +76,7 @@ export default async function JuklakPage() {
         versi: d.versi,
         tanggalBerlaku: d.tanggalBerlaku?.toISOString() ?? null,
         permittedAccess: d.permittedAccess,
+        juklakKategori: d.juklakKategori,
         departmentNama: d.department?.nama ?? null,
         sopAttachments: d.sopAttachments,
       }))}
@@ -75,6 +84,7 @@ export default async function JuklakPage() {
       accessValues={accessValues}
       departmentValues={departmentValues}
       isAdmin={isAdmin}
+      isAudit={isAudit}
     />
   );
 }

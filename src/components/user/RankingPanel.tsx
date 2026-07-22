@@ -1,22 +1,45 @@
 // src/components/user/RankingPanel.tsx
+"use client";
+import { useState } from "react";
 import { Trophy, Award, Store, Building2 } from "lucide-react";
 import type { RankingEntry } from "@/lib/ranking";
+import { TIPE_LEADERBOARD, TIPE_USER_LABEL } from "@/lib/access";
 
-type Props = {
+export type PanelData = {
   top: RankingEntry[];
   me: RankingEntry | null;
   isInTop: boolean;
-  currentUserId: string;
   totalRanked: number;
 };
 
+type Props = {
+  /** Data leaderboard per tipe akun: store / supporting / publishing. */
+  rankings: Record<string, PanelData>;
+  /** Tipe akun user saat ini — dipakai sebagai tab yang terbuka pertama. */
+  myTipe: string | null;
+  currentUserId: string;
+};
+
+const KOSONG: PanelData = {
+  top: [],
+  me: null,
+  isInTop: false,
+  totalRanked: 0,
+};
+
 export default function RankingPanel({
-  top,
-  me,
-  isInTop,
+  rankings,
+  myTipe,
   currentUserId,
-  totalRanked,
 }: Props) {
+  // Leaderboard dipisah per tipe akun karena jumlah SOP wajib tiap tipe
+  // berbeda. Tab yang terbuka pertama = tipe akun user sendiri.
+  const tabAwal =
+    myTipe && (TIPE_LEADERBOARD as readonly string[]).includes(myTipe)
+      ? myTipe
+      : TIPE_LEADERBOARD[0];
+  const [tab, setTab] = useState<string>(tabAwal);
+  const { top, me, isInTop, totalRanked } = rankings[tab] ?? KOSONG;
   return (
     <div className="bg-gradient-to-br from-amber-50 via-orange-50 to-pink-50 rounded-2xl border border-amber-100 p-6 hover-lift">
       {/* Header */}
@@ -32,6 +55,24 @@ export default function RankingPanel({
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Tab per tipe akun */}
+      <div className="flex gap-1 mb-4 bg-white/70 rounded-xl p-1">
+        {TIPE_LEADERBOARD.map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setTab(t)}
+            className={`flex-1 text-[11px] sm:text-xs px-2 py-1.5 rounded-lg transition-all ${
+              tab === t
+                ? "bg-white shadow-sm font-semibold text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {TIPE_USER_LABEL[t] ?? t}
+          </button>
+        ))}
       </div>
 
       {/* List */}

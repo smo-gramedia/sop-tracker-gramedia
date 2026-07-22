@@ -9,6 +9,7 @@ import {
   type BucketName,
 } from "@/lib/storage";
 import { watermarkPdf } from "@/lib/pdf-watermark";
+import { canAccessKategori } from "@/lib/access";
 
 // pdf-lib + Buffer butuh Node.js runtime (bukan edge).
 export const runtime = "nodejs";
@@ -61,8 +62,47 @@ export async function GET(
     }
   }
 
-  // raw-documents & sop-attachments: semua user login boleh akses.
-  // Validasi permittedAccess sudah dilakukan di halaman SOP (server component).
+  // ─── raw-documents & sop-attachments: batasi per tipe akun ─────────
+  // Lapis penegakan di sisi server. Tanpa ini, user bisa mengakses berkas
+  // SOP di luar kategori unitnya lewat URL langsung, meskipun menu dan
+  // halamannya sudah disembunyikan.
+  if (bucket === BUCKETS.ATTACHMENTS || bucket === BUCKETS.RAW_DOCUMENTS) {
+    const isAdmin = ["admin", "superadmin"].includes(session.user.role);
+    if (!isAdmin) {
+      const owner =
+        bucket === BUCKETS.ATTACHMENTS
+          ? await prisma.sopAttachment.findFirst({
+              where: { filename: path },
+              select: { sopDocument: { select: { kategori: true } } },
+            })
+          : await prisma.rawDocument.findFirst({
+              where: { filename: path },
+              select: { sopDocument: { select: { kategori: true } } },
+            });
+
+      if (!owner) {
+        return NextResponse.json(
+          { error: "File metadata not found" },
+          { status: 404 }
+        );
+      }
+
+      const me = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { tipeUser: true },
+      });
+      const boleh = canAccessKategori(
+        { role: session.user.role, tipeUser: me?.tipeUser ?? null },
+        owner.sopDocument.kategori
+      );
+      if (!boleh) {
+        return NextResponse.json(
+          { error: "Dokumen ini tidak tersedia untuk tipe akun Anda." },
+          { status: 403 }
+        );
+      }
+    }
+  }
 
   try {
     const sp = req.nextUrl.searchParams;

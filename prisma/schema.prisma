@@ -93,6 +93,7 @@ model SopDocument {
   kategori               SopKategori
   tipe                   SopTipe
   permittedAccess        String?                 @map("permitted_access")
+  juklakKategori         JuklakKategori?         @map("juklak_kategori")
   subcategoryId          String?                 @map("subcategory_id")
   departmentId           String?                 @map("department_id")
   versi                  String                  @default("Original")
@@ -365,7 +366,23 @@ enum UserStatus {
 
 enum TipeUser {
   store
+  // DEPRECATED — nilai transisi. Akun lama bertipe "department" perlu
+  // dipindahkan ke "supporting" atau "publishing" lewat menu Edit User.
   department
+  supporting
+  publishing
+  // Akun Audit: boleh mengakses SELURUH kategori dan boleh view/download
+  // tanpa harus menyelesaikan pembelajaran. Dikecualikan dari leaderboard.
+  audit
+}
+
+// Folder pengelompokan pada halaman Petunjuk Pelaksanaan.
+// Hanya dipakai untuk dokumen berkategori "petunjuk"; bersifat TAMPILAN saja
+// (tidak membatasi akses).
+enum JuklakKategori {
+  store
+  business_unit_non_store
+  supporting_unit
 }
 
 enum SopKategori {

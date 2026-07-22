@@ -11,6 +11,12 @@ const UpdateUserSchema = z.object({
   email: z.string().email("Format email tidak valid").optional(),
   unit: z.string().nullable().optional(),
   status: z.enum(["aktif", "nonaktif"]).optional(),
+  // Memindahkan tipe akun (mis. "department" lama → "supporting"/"publishing").
+  // Hanya untuk akun non-admin; admin tetap dibedakan lewat role.
+  tipeUser: z
+    .enum(["store", "supporting", "publishing", "audit"])
+    .nullable()
+    .optional(),
   joinedAt: z.string().nullable().optional(),
   // Password baru opsional — kalau kosong/null/undefined, tidak diubah
   newPassword: z

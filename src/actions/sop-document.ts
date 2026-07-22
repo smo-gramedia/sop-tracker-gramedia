@@ -12,6 +12,15 @@ const SopDocumentSchema = z.object({
   kategori:       z.enum(["sr","ss","sp","sg","petunjuk"]),
   tipe:           z.enum(["MP","PS","IK","petunjuk"]),
   permittedAccess:z.string().optional(),
+  // Folder Petunjuk Pelaksanaan — hanya relevan untuk kategori "petunjuk".
+  // Nilai kosong ("") dari form diperlakukan sebagai null (belum dikelompokkan).
+  juklakKategori: z
+    .union([
+      z.enum(["store", "business_unit_non_store", "supporting_unit"]),
+      z.literal(""),
+    ])
+    .optional()
+    .transform((v) => (v ? v : null)),
   subcategoryId:  z.string().optional().nullable(),
   departmentId:   z.string().optional().nullable(),
   versi:          z.string().default("Original"),

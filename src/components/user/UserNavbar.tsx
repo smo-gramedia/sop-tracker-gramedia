@@ -22,16 +22,27 @@ import GlobalSearch from "@/components/user/GlobalSearch";
 type Props = {
   userName?: string | null;
   unreadCount?: number;
+  /** Kategori SOP yang boleh dibuka akun ini (dari src/lib/access.ts). */
+  allowedKategori: readonly string[];
 };
 
 const SOP_CATEGORIES = [
-  { href: "/sop/sr", label: "SOP Operation" },
-  { href: "/sop/ss", label: "SOP Supporting Unit" },
-  { href: "/sop/sp", label: "SOP Publishing & Education" },
-  { href: "/sop/sg", label: "SOP General" },
+  { key: "sr", href: "/sop/sr", label: "SOP Operation" },
+  { key: "ss", href: "/sop/ss", label: "SOP Supporting Unit" },
+  { key: "sp", href: "/sop/sp", label: "SOP Publishing & Education" },
+  { key: "sg", href: "/sop/sg", label: "SOP General" },
 ] as const;
 
-export default function UserNavbar({ userName, unreadCount = 0 }: Props) {
+export default function UserNavbar({
+  userName,
+  unreadCount = 0,
+  allowedKategori,
+}: Props) {
+  // Menu kategori disaring sesuai tipe akun. Ini hanya lapisan tampilan —
+  // penegakan sesungguhnya ada di halaman & API (lihat src/lib/access.ts).
+  const visibleCategories = SOP_CATEGORIES.filter((c) =>
+    allowedKategori.includes(c.key)
+  );
   const pathname = usePathname();
   const [sopOpen, setSopOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -140,7 +151,7 @@ export default function UserNavbar({ userName, unreadCount = 0 }: Props) {
 
                 {sopOpen && (
                   <div className="absolute top-full left-0 mt-2 w-64 bg-background border rounded-xl shadow-lg overflow-hidden z-40">
-                    {SOP_CATEGORIES.map((cat) => (
+                    {visibleCategories.map((cat) => (
                       <Link
                         key={cat.href}
                         href={cat.href}
@@ -301,7 +312,7 @@ export default function UserNavbar({ userName, unreadCount = 0 }: Props) {
               </button>
               {mobileSopOpen && (
                 <div className="bg-muted/30">
-                  {SOP_CATEGORIES.map((cat) => (
+                  {visibleCategories.map((cat) => (
                     <Link
                       key={cat.href}
                       href={cat.href}

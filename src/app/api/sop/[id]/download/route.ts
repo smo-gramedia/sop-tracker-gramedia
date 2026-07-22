@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getSignedUrl, BUCKETS } from "@/lib/storage";
 import { watermarkPdf } from "@/lib/pdf-watermark";
+import { canAccessKategori, canBypassLearningGate } from "@/lib/access";
 import JSZip from "jszip";
 
 // pdf-lib (watermark) butuh Node.js runtime.
@@ -28,6 +29,7 @@ export async function GET(
       id: true,
       kode: true,
       judul: true,
+      kategori: true,
       sopAttachments: {
         select: {
           id: true,
@@ -50,26 +52,44 @@ export async function GET(
     );
   }
 
-  // ─── Authorization: User biasa harus selesai 100% ──────────────
+  // ─── Authorization ─────────────────────────────────────────────
+  // 1) Kategori SOP harus sesuai tipe akun
+  // 2) User biasa harus menyelesaikan pembelajaran 100%
+  //    (admin/superadmin & akun Audit dibebaskan dari syarat ini)
   if (!isAdmin) {
-    const progress = await prisma.learningProgress.findUnique({
-      where: {
-        userId_sopDocumentId: {
-          userId: session.user.id,
-          sopDocumentId: sopId,
-        },
-      },
-      select: { stepCurrent: true, status: true },
+    const me = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { tipeUser: true },
     });
+    const aktor = { role: session.user.role, tipeUser: me?.tipeUser ?? null };
 
-    const isCompleted =
-      progress?.status === "selesai" && progress?.stepCurrent === 6;
-
-    if (!isCompleted) {
+    if (!canAccessKategori(aktor, sop.kategori)) {
       return NextResponse.json(
-        { error: "Selesaikan pembelajaran SOP terlebih dahulu (100%)" },
+        { error: "Dokumen ini tidak tersedia untuk tipe akun Anda." },
         { status: 403 }
       );
+    }
+
+    if (!canBypassLearningGate(aktor)) {
+      const progress = await prisma.learningProgress.findUnique({
+        where: {
+          userId_sopDocumentId: {
+            userId: session.user.id,
+            sopDocumentId: sopId,
+          },
+        },
+        select: { stepCurrent: true, status: true },
+      });
+
+      const isCompleted =
+        progress?.status === "selesai" && progress?.stepCurrent === 6;
+
+      if (!isCompleted) {
+        return NextResponse.json(
+          { error: "Selesaikan pembelajaran SOP terlebih dahulu (100%)" },
+          { status: 403 }
+        );
+      }
     }
   }
 
