@@ -533,9 +533,13 @@ function Step2({
   const baseFileUrl = pdfUtama
     ? `/api/files/sop-attachments/${pdfUtama.filename}`
     : null;
-  // ─── Gating: hanya boleh download SETELAH lulus post test ───────────
-  // (Sebelumnya pakai highestStep >= 2 → user bisa download di Step 2 langsung)
-  const canDownload = hasPassedPostTest;
+  // ─── Gating: TERBUKA sejak Step 2 (langkah baca dokumen) ────────────
+  // Alasan: Step 4 mewajibkan unggah bukti sosialisasi (daftar hadir + foto),
+  // sehingga unit memang membutuhkan dokumennya untuk MENYELENGGARAKAN
+  // sosialisasi — yang terjadi SEBELUM post test. Akuntabilitas tetap dijaga
+  // lewat watermark identitas, audit log, dan dialog konfirmasi unduhan.
+  // Di luar halaman belajar (daftar SOP & Juklak) gating tetap berlaku.
+  const canDownload = true;
 
   // ─── PDF viewer URL: tambahkan #toolbar=0&navpanes=0 untuk hide Chrome PDF toolbar
   // sehingga tombol download bawaan browser tidak muncul. Sebagian browser
@@ -563,8 +567,7 @@ function Step2({
       <p className="text-muted-foreground text-sm mb-5">
         Baca dan pelajari dokumen SOP berikut dengan seksama.{" "}
         <span className="font-medium">
-          Dokumen dapat diunduh setelah Anda menyelesaikan seluruh
-          pembelajaran dan lulus post test.
+          Dokumen dapat diunduh untuk keperluan sosialisasi di unit Anda.
         </span>
       </p>
 
@@ -579,9 +582,7 @@ function Step2({
                 {doc.judul}.pdf
               </div>
               <div className="text-[11px] opacity-80">
-                {canDownload
-                  ? "Anda dapat mengunduh dokumen ini"
-                  : "Preview dokumen pembelajaran"}
+                Anda dapat membaca dan mengunduh dokumen ini
               </div>
             </div>
             <a
@@ -596,11 +597,7 @@ function Step2({
                   ? "bg-white text-foreground hover:bg-white/90 cursor-pointer"
                   : "bg-white/20 text-white/60 cursor-not-allowed"
               }`}
-              title={
-                canDownload
-                  ? "Download dokumen"
-                  : "Selesaikan dan lulus post test untuk dapat mengunduh"
-              }
+              title="Download dokumen"
             >
               {canDownload ? (
                 <>
@@ -620,9 +617,9 @@ function Step2({
           />
           {/* Footer info — tidak menampilkan link "buka di tab baru" supaya tidak bypass gating */}
           <div className="px-4 py-2 bg-muted/40 text-[11px] text-muted-foreground border-t">
-            {canDownload
-              ? "Anda telah menyelesaikan pembelajaran. Klik tombol Download di atas untuk mengunduh dokumen."
-              : "Dokumen tersedia untuk dibaca. Tombol Download akan terbuka setelah Anda lulus post test."}
+            Dokumen dapat dibaca di sini atau diunduh melalui tombol Download di
+            atas. Dokumen bersifat rahasia — setiap unduhan ditandai dan dicatat
+            atas nama unit Anda.
           </div>
         </div>
       ) : (
@@ -652,8 +649,8 @@ function Step3({
   theme: { gradient: string };
   sopId: string;
 }) {
-  // Gating: download lampiran juga hanya boleh setelah lulus post test
-  const canDownload = hasPassedPostTest;
+  // Gating: lampiran ikut terbuka sejak langkah ini (lihat catatan di Step 2)
+  const canDownload = true;
   const [confirmUrl, setConfirmUrl] = useState<string | null>(null);
 
   return (
@@ -666,7 +663,7 @@ function Step3({
       <p className="text-muted-foreground text-sm mb-5">
         Lihat daftar lampiran pendukung dokumen SOP berikut.{" "}
         <span className="font-medium">
-          Lampiran dapat diunduh setelah Anda lulus post test.
+          Lampiran dapat diunduh untuk keperluan sosialisasi di unit Anda.
         </span>
       </p>
       {lampiran.length > 0 ? (

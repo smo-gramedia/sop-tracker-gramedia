@@ -37,16 +37,21 @@ export default function HomeHero({
         <div className="grid md:grid-cols-[1.5fr_1fr] gap-8 items-center">
           {/* Left: Text */}
           <div>
-            <h1 className="font-display font-bold text-4xl md:text-5xl text-white leading-tight mb-4">
-              Halo, {firstName}!
+            {/* Identitas unit — tetap ditampilkan di atas sapaan */}
+            <div className="text-white/70 text-xs md:text-sm font-semibold tracking-wide uppercase mb-2">
+              {firstName}
+            </div>
+            <h1 className="font-display font-bold text-3xl sm:text-4xl md:text-5xl text-white leading-tight mb-4">
+              Halo, Gramedians!
               <br />
               <span className="bg-gradient-to-r from-pink-200 to-amber-200 bg-clip-text text-transparent">
-                Mari belajar SOP hari ini.
+                Siap upgrade skill hari ini?
               </span>
             </h1>
             <p className="text-white/80 text-base leading-relaxed mb-6 max-w-lg">
-              Pelajari SOP Gramedia dengan lebih cepat dan terstruktur. Selesaikan
-              setiap langkah pembelajaran untuk meraih posisi tertinggi.
+              Yuk, pelajari SOP Gramedia dengan cara yang lebih mudah, cepat, dan
+              seru. Selesaikan setiap materi, kumpulkan pencapaianmu, dan raih
+              posisi teratas di leaderboard!
             </p>
 
             {/* CTA buttons */}
