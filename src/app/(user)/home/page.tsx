@@ -14,10 +14,22 @@ export default async function HomePage() {
   const userId = session!.user.id;
 
   // Parallel fetch all data
+  // Tipe akun diambil lebih dulu karena dipakai untuk menyaring query di
+  // bawahnya (SOP terbaru, hitungan total, dan riwayat belajar).
+  const meUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { tipeUser: true },
+  });
+  const aktorAwal = {
+    role: session.user.role,
+    tipeUser: meUser?.tipeUser ?? null,
+  };
+  const kategoriBoleh = allowedKategori(aktorAwal);
+  const filterKategori = { kategori: { in: kategoriBoleh as never[] } };
+
   const [
     myProgress,
     rankings,
-    meUser,
     totalSelesai,
     totalDipelajari,
     totalSop,
@@ -25,7 +37,8 @@ export default async function HomePage() {
     countsByKategori,
   ] = await Promise.all([
     prisma.learningProgress.findMany({
-      where: { userId, status: "dipelajari" },
+      // Progres lama atas SOP di luar kategori akun disembunyikan
+      where: { userId, status: "dipelajari", sopDocument: filterKategori },
       include: {
         sopDocument: {
           select: {
@@ -40,26 +53,24 @@ export default async function HomePage() {
       take: 6,
     }),
     getRankingsByTipe(userId, 10),
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: { tipeUser: true },
+    prisma.learningProgress.count({
+      where: { userId, status: "selesai", sopDocument: filterKategori },
     }),
     prisma.learningProgress.count({
-      where: { userId, status: "selesai" },
+      where: { userId, status: "dipelajari", sopDocument: filterKategori },
     }),
-    prisma.learningProgress.count({
-      where: { userId, status: "dipelajari" },
+    prisma.sopDocument.count({
+      where: { status: "aktif", ...filterKategori },
     }),
-    prisma.sopDocument.count({ where: { status: "aktif" } }),
     prisma.sopDocument.findMany({
-      where: { status: "aktif" },
+      where: { status: "aktif", ...filterKategori },
       orderBy: { createdAt: "desc" },
       take: 4,
       include: { department: { select: { nama: true } } },
     }),
     prisma.sopDocument.groupBy({
       by: ["kategori"],
-      where: { status: "aktif" },
+      where: { status: "aktif", ...filterKategori },
       _count: true,
     }),
   ]);
@@ -131,10 +142,10 @@ export default async function HomePage() {
 
   // ─── Saring kartu kategori sesuai tipe akun ───────────────────────
   // Tanpa ini, user melihat kartu kategori yang saat diklik justru ditolak.
-  const aktor = { role: session.user.role, tipeUser: meUser?.tipeUser ?? null };
-  const kategoriBoleh = allowedKategori(aktor);
-  const menuTampil = sopMenus.filter((m) => kategoriBoleh.includes(m.kategori as never));
-  const tipeBelumDitentukan = isTipeBelumDitentukan(aktor);
+  const menuTampil = sopMenus.filter((m) =>
+    kategoriBoleh.includes(m.kategori as never)
+  );
+  const tipeBelumDitentukan = isTipeBelumDitentukan(aktorAwal);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-10">

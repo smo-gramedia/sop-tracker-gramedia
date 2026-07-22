@@ -5,15 +5,28 @@ import Link from "next/link";
 import { Settings, Store, Building2 } from "lucide-react";
 import { formatTanggal } from "@/lib/utils";
 import { SOP_KATEGORI_LABEL } from "@/lib/constants";
+import { allowedKategori } from "@/lib/access";
 
 export default async function ProfilPage() {
   const session = await auth();
   const userId = session!.user.id;
 
+  // Riwayat pembelajaran atas SOP di luar kategori akun disembunyikan
+  // (mis. progres dari masa uji coba sebelum pembatasan diberlakukan).
+  const meTipe = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { tipeUser: true },
+  });
+  const kategoriBoleh = allowedKategori({
+    role: session!.user.role,
+    tipeUser: meTipe?.tipeUser ?? null,
+  });
+  const filterKategori = { kategori: { in: kategoriBoleh as never[] } };
+
   const [user, progressList, activityLogs, notifications] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId } }),
     prisma.learningProgress.findMany({
-      where: { userId },
+      where: { userId, sopDocument: filterKategori },
       orderBy: { lastAccessedAt: "desc" },
       include: {
         sopDocument: {

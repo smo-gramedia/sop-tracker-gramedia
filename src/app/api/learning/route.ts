@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getStepLockInfo } from "@/lib/learning-gates";
+import { canAccessKategori } from "@/lib/access";
 
 // Update step progress with server-side gate enforcement
 export async function PATCH(req: Request) {
@@ -17,6 +18,34 @@ export async function PATCH(req: Request) {
     return NextResponse.json(
       { error: "Invalid step (must be 0-6)" },
       { status: 400 }
+    );
+  }
+
+  // ─── Pembatasan kategori per tipe akun ─────────────────────────────
+  // Tanpa ini, user bisa memulai/melanjutkan pembelajaran SOP di luar
+  // kategori unitnya dengan memanggil endpoint ini secara langsung.
+  const [sopDoc, meUser] = await Promise.all([
+    prisma.sopDocument.findUnique({
+      where: { id: sopDocumentId },
+      select: { kategori: true },
+    }),
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { tipeUser: true },
+    }),
+  ]);
+  if (!sopDoc) {
+    return NextResponse.json({ error: "SOP tidak ditemukan" }, { status: 404 });
+  }
+  if (
+    !canAccessKategori(
+      { role: session.user.role, tipeUser: meUser?.tipeUser ?? null },
+      sopDoc.kategori
+    )
+  ) {
+    return NextResponse.json(
+      { error: "Dokumen ini tidak tersedia untuk tipe akun Anda." },
+      { status: 403 }
     );
   }
 
