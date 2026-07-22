@@ -1,6 +1,8 @@
 // src/app/(user)/cari/page.tsx
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import CariClient from "@/components/user/CariClient";
+import { allowedKategori } from "@/lib/access";
 
 // ─── Next.js 16: searchParams sekarang Promise ──────────────────
 type Props = {
@@ -12,14 +14,41 @@ export default async function CariPage({ searchParams }: Props) {
   const q = (params.q ?? "").trim();
   const kategoriFilter = params.kategori ?? "";
 
-  // Kalau query kosong, return tanpa fetch
-  if (q.length < 2) {
-    return <CariClient query={q} results={[]} total={0} kategoriFilter={kategoriFilter} />;
+  // ─── Batasi hasil sesuai tipe akun ────────────────────────────────
+  // Halaman ini melakukan query sendiri (tidak lewat /api/search), jadi
+  // penyaringannya harus dipasang di sini juga.
+  const session = await auth();
+  const me = await prisma.user.findUnique({
+    where: { id: session!.user.id },
+    select: { tipeUser: true },
+  });
+  const kategoriBoleh = allowedKategori({
+    role: session!.user.role,
+    tipeUser: me?.tipeUser ?? null,
+  });
+
+  // Kalau query kosong atau akun belum bertipe, tidak perlu fetch
+  if (q.length < 2 || kategoriBoleh.length === 0) {
+    return (
+      <CariClient
+        query={q}
+        results={[]}
+        total={0}
+        kategoriFilter={kategoriFilter}
+        allowedKategori={kategoriBoleh}
+      />
+    );
   }
+
+  // Filter kategori dari user tetap harus berada di dalam daftar yang boleh
+  const kategoriEfektif =
+    kategoriFilter && kategoriBoleh.includes(kategoriFilter as never)
+      ? [kategoriFilter]
+      : kategoriBoleh;
 
   const where = {
     status: "aktif" as const,
-    ...(kategoriFilter && { kategori: kategoriFilter as any }),
+    kategori: { in: kategoriEfektif as never[] },
     OR: [
       { kode: { contains: q, mode: "insensitive" as const } },
       { judul: { contains: q, mode: "insensitive" as const } },
@@ -52,6 +81,7 @@ export default async function CariPage({ searchParams }: Props) {
       results={results}
       total={total}
       kategoriFilter={kategoriFilter}
+      allowedKategori={kategoriBoleh}
     />
   );
 }

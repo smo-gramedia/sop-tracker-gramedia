@@ -9,6 +9,7 @@ import {
   Store,
   Building2,
   Shield,
+  ShieldAlert,
   Eye,
   Pencil,
   ChevronLeft,
@@ -22,7 +23,7 @@ import { formatTanggal } from "@/lib/utils";
 type User = {
   id: string;
   kodeUser: string;
-  tipeUser: "store" | "department" | null;
+  tipeUser: string | null;
   nama: string;
   email: string;
   unit: string | null;
@@ -79,8 +80,12 @@ export default function UserManajemenClient({ users }: { users: User[] }) {
       if (statusFilter && u.status !== statusFilter) return false;
       // Tipe — sekarang termasuk filter Admin
       if (tipeFilter) {
-        if (tipeFilter === "store" && u.tipeUser !== "store") return false;
-        if (tipeFilter === "department" && u.tipeUser !== "department")
+        if (
+          ["store", "supporting", "publishing", "audit", "department"].includes(
+            tipeFilter
+          ) &&
+          u.tipeUser !== tipeFilter
+        )
           return false;
         if (
           tipeFilter === "admin" &&
@@ -112,7 +117,15 @@ export default function UserManajemenClient({ users }: { users: User[] }) {
   const aktif = users.filter((u) => u.status === "aktif").length;
   const nonaktif = users.filter((u) => u.status === "nonaktif").length;
   const storeCount = users.filter((u) => u.tipeUser === "store").length;
-  const deptCount = users.filter((u) => u.tipeUser === "department").length;
+  const deptCount = users.filter(
+    (u) => u.tipeUser === "supporting" || u.tipeUser === "publishing"
+  ).length;
+  // Akun yang tipenya belum ditentukan (lama: "department", atau kosong).
+  // Selama belum dipetakan, akun ini TIDAK dapat melihat SOP apa pun.
+  const perluDipetakan = users.filter(
+    (u) =>
+      u.role === "user" && (!u.tipeUser || u.tipeUser === "department")
+  ).length;
   const adminCount = users.filter(
     (u) => u.role === "admin" || u.role === "superadmin"
   ).length;
@@ -136,6 +149,26 @@ export default function UserManajemenClient({ users }: { users: User[] }) {
           </Button>
         </div>
 
+        {/* Peringatan: akun yang tipenya belum ditentukan tidak bisa melihat
+            SOP apa pun sampai dipetakan lewat Edit User. */}
+        {perluDipetakan > 0 && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 mb-5 flex items-start gap-3">
+            <ShieldAlert
+              size={18}
+              className="text-red-600 flex-shrink-0 mt-0.5"
+            />
+            <div className="text-sm text-red-800 leading-relaxed">
+              <span className="font-semibold">
+                {perluDipetakan} akun belum ditentukan tipenya.
+              </span>{" "}
+              Selama belum dipetakan, akun tersebut tidak dapat melihat SOP apa
+              pun. Buka <span className="font-medium">Edit</span> pada akun
+              terkait, lalu pilih tipe akun (Store / Supporting / Publishing /
+              Audit).
+            </div>
+          </div>
+        )}
+
         {/* Stats Summary — sekarang 5 cards (Total, Store, Dept, Admin, Aktif) */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
           <div className="bg-background rounded-xl border p-4 sm:p-5">
@@ -152,7 +185,9 @@ export default function UserManajemenClient({ users }: { users: User[] }) {
             <div className="font-display font-bold text-2xl sm:text-3xl text-purple-600">
               {deptCount}
             </div>
-            <div className="text-xs sm:text-sm text-muted-foreground mt-1">Department</div>
+            <div className="text-xs sm:text-sm text-muted-foreground mt-1">
+              Supporting + Publishing
+            </div>
           </div>
           <div className="bg-background rounded-xl border p-4 sm:p-5">
             <div className="font-display font-bold text-2xl sm:text-3xl text-amber-600">
@@ -189,7 +224,10 @@ export default function UserManajemenClient({ users }: { users: User[] }) {
           >
             <option value="">Semua Tipe</option>
             <option value="store">Store</option>
-            <option value="department">Department</option>
+            <option value="supporting">Supporting</option>
+            <option value="publishing">Publishing</option>
+            <option value="audit">Audit</option>
+            <option value="department">Department (perlu dipetakan)</option>
             <option value="admin">Admin / Superadmin</option>
           </select>
           <select
@@ -403,7 +441,7 @@ function UserAvatar({
   role,
   nama,
 }: {
-  tipeUser: "store" | "department" | null;
+  tipeUser: string | null;
   role: string;
   nama: string;
 }) {
@@ -421,7 +459,18 @@ function UserAvatar({
       </div>
     );
   }
-  if (tipeUser === "department") {
+  if (tipeUser === "audit") {
+    return (
+      <div className="w-8 h-8 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center flex-shrink-0">
+        <Shield size={14} />
+      </div>
+    );
+  }
+  if (
+    tipeUser === "supporting" ||
+    tipeUser === "publishing" ||
+    tipeUser === "department"
+  ) {
     return (
       <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center flex-shrink-0">
         <Building2 size={14} />
@@ -440,7 +489,7 @@ function TipeBadge({
   tipe,
   role,
 }: {
-  tipe: "store" | "department" | null;
+  tipe: string | null;
   role: string;
 }) {
   if (role === "superadmin") {
@@ -464,10 +513,33 @@ function TipeBadge({
       </span>
     );
   }
-  if (tipe === "department") {
+  if (tipe === "supporting") {
     return (
       <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium bg-purple-50 text-purple-700 border-purple-200">
-        <Building2 size={10} /> Department
+        <Building2 size={10} /> Supporting
+      </span>
+    );
+  }
+  if (tipe === "publishing") {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium bg-indigo-50 text-indigo-700 border-indigo-200">
+        <Building2 size={10} /> Publishing
+      </span>
+    );
+  }
+  if (tipe === "audit") {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium bg-teal-50 text-teal-700 border-teal-200">
+        <Shield size={10} /> Audit
+      </span>
+    );
+  }
+  // Tipe lama yang BELUM dipetakan — ditandai mencolok agar admin segera
+  // memindahkannya ke Supporting atau Publishing lewat Edit User.
+  if (tipe === "department") {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium bg-red-50 text-red-700 border-red-200">
+        <Building2 size={10} /> Perlu dipetakan
       </span>
     );
   }

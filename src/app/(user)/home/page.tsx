@@ -2,6 +2,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getRankingsByTipe } from "@/lib/ranking";
+import { allowedKategori, isTipeBelumDitentukan } from "@/lib/access";
 import HomeHero from "@/components/user/HomeHero";
 import KategoriCard from "@/components/user/KategoriCard";
 import ContinueLearning from "@/components/user/ContinueLearning";
@@ -128,8 +129,15 @@ export default async function HomePage() {
     },
   ];
 
+  // ─── Saring kartu kategori sesuai tipe akun ───────────────────────
+  // Tanpa ini, user melihat kartu kategori yang saat diklik justru ditolak.
+  const aktor = { role: session.user.role, tipeUser: meUser?.tipeUser ?? null };
+  const kategoriBoleh = allowedKategori(aktor);
+  const menuTampil = sopMenus.filter((m) => kategoriBoleh.includes(m.kategori as never));
+  const tipeBelumDitentukan = isTipeBelumDitentukan(aktor);
+
   return (
-    <div className="max-w-6xl mx-auto px-6 py-8 space-y-10">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-10">
       {/* Hero with stats */}
       <div className="animate-fade-in">
         <HomeHero
@@ -189,8 +197,14 @@ export default async function HomePage() {
             </p>
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          {sopMenus.map((m) => (
+        {tipeBelumDitentukan && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 mb-4 text-sm text-amber-800 leading-relaxed">
+            Tipe akun Anda belum ditentukan sehingga daftar kategori SOP belum
+            dapat ditampilkan. Silakan hubungi admin untuk pengaturan akun.
+          </div>
+        )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {menuTampil.map((m) => (
             <KategoriCard
               key={m.href}
               href={m.href}

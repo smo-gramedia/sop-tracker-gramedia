@@ -30,6 +30,8 @@ type Props = {
   results: SearchResult[];
   total: number;
   kategoriFilter: string;
+  /** Kategori yang boleh dilihat akun ini (dari src/lib/access.ts). */
+  allowedKategori?: readonly string[];
 };
 
 const KATEGORI_LABEL: Record<string, string> = {
@@ -83,7 +85,12 @@ export default function CariClient({
   results,
   total,
   kategoriFilter,
+  allowedKategori,
 }: Props) {
+  // Sembunyikan chip filter untuk kategori yang tidak dapat diakses.
+  const kategoriTampil = allowedKategori
+    ? KATEGORI_LIST.filter((k) => allowedKategori.includes(k))
+    : KATEGORI_LIST;
   const router = useRouter();
   const [searchInput, setSearchInput] = useState(query);
 
@@ -181,7 +188,7 @@ export default function CariClient({
           >
             Semua ({total})
           </FilterChip>
-          {KATEGORI_LIST.map((k) => {
+          {kategoriTampil.map((k) => {
             const count = results.filter((r) => r.kategori === k).length;
             // Hide chip kalau tidak ada hasil di kategori ini DAN tidak sedang aktif
             if (count === 0 && kategoriFilter !== k) return null;
