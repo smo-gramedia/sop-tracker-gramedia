@@ -21,7 +21,7 @@ export default async function HomePage() {
     select: { tipeUser: true },
   });
   const aktorAwal = {
-    role: session.user.role,
+    role: session!.user.role,
     tipeUser: meUser?.tipeUser ?? null,
   };
   const kategoriBoleh = allowedKategori(aktorAwal);

@@ -17,7 +17,7 @@ type UserData = {
   nama: string;
   email: string;
   kodeUser: string;
-  tipeUser: "store" | "department" | null;
+  tipeUser: string | null;
   unit: string | null;
 };
 

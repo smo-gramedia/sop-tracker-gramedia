@@ -56,7 +56,7 @@ type Result = {
   user: {
     id: string;
     kodeUser: string;
-    tipeUser: "store" | "department" | null;
+    tipeUser: string | null;
     nama: string;
     unit: string | null;
     email: string;
@@ -682,7 +682,7 @@ function ResultDisplay({
 }
 
 // Tipe Icon
-function TipeIcon({ tipe }: { tipe: "store" | "department" | null }) {
+function TipeIcon({ tipe }: { tipe: string | null }) {
   if (tipe === "store") {
     return (
       <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center flex-shrink-0">

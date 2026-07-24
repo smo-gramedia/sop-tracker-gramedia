@@ -26,7 +26,7 @@ type Props = {
 type UserDetail = {
   id: string;
   kodeUser: string;
-  tipeUser: "store" | "department" | null;
+  tipeUser: string | null;
   nama: string;
   email: string;
   unit: string | null;

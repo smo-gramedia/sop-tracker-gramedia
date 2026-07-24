@@ -207,7 +207,7 @@ function RankingRow({
 }
 
 // ─── Tipe Icon mini ───────────────────────────────────────────────────
-function TipeIcon({ tipe }: { tipe: "store" | "department" | null }) {
+function TipeIcon({ tipe }: { tipe: string | null }) {
   if (tipe === "store") {
     return (
       <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center flex-shrink-0">

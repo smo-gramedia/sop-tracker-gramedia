@@ -23,7 +23,7 @@ type ProgressItem = {
     id: string;
     nama: string;
     kodeUser: string;
-    tipeUser: "store" | "department" | null;
+    tipeUser: string | null;
     unit: string | null;
   };
   sopDocument: {
@@ -290,7 +290,7 @@ function StatCard({
   );
 }
 
-function TipeIcon({ tipe }: { tipe: "store" | "department" | null }) {
+function TipeIcon({ tipe }: { tipe: string | null }) {
   if (tipe === "store") {
     return (
       <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center flex-shrink-0">

@@ -220,7 +220,7 @@ function ProfileAvatar({
   tipeUser,
   nama,
 }: {
-  tipeUser: "store" | "department" | null;
+  tipeUser: string | null;
   nama: string;
 }) {
   if (tipeUser === "store") {

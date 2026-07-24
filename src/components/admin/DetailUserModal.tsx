@@ -29,7 +29,7 @@ type Props = {
 type UserDetail = {
   id: string;
   kodeUser: string;
-  tipeUser: "store" | "department" | null;
+  tipeUser: string | null;
   nama: string;
   email: string;
   unit: string | null;
@@ -197,7 +197,7 @@ function UserIcon({
   tipeUser,
   role,
 }: {
-  tipeUser: "store" | "department" | null;
+  tipeUser: string | null;
   role: string;
 }) {
   if (role === "admin" || role === "superadmin") {
@@ -232,7 +232,7 @@ function TipeBadge({
   tipeUser,
   role,
 }: {
-  tipeUser: "store" | "department" | null;
+  tipeUser: string | null;
   role: string;
 }) {
   if (role === "superadmin") {
