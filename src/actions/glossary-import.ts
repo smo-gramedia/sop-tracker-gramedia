@@ -52,7 +52,7 @@ export async function extractGlossaryFromSop(
     path: utama!.filename,
   });
   const res = await extractDefinitionsFromPdf(bytes);
-  if (!res.ok) return { status: res.reason };
+  if ('ok' in res && !res.ok) return { status: res.reason };
 
   // 3) bandingkan dengan glosarium (cocok berdasarkan kata, case-insensitive)
   const existing = await prisma.glossaryEntry.findMany({
