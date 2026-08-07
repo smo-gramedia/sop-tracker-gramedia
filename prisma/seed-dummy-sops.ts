@@ -11,9 +11,13 @@
 // Idempotent: Aman dijalankan berulang kali (pakai upsert by kode).
 // ═══════════════════════════════════════════════════════════════════
 
-import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient();
+import { PrismaClient } from "@/generated/prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+
+
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+const prisma = new PrismaClient({ adapter});
 
 async function main() {
   console.log("🌱 Seeding dummy SOPs...\n");

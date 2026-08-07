@@ -1,14 +1,14 @@
-import type {
-  Role,
-  SopKategori,
-  SopTipe,
-  SopStatus,
-  LearningStatus,
-  AttachmentStatus,
-  TipeUser,
-} from "@prisma/client";
 
 // ── Auth ──────────────────────────────────────
+import {
+  AttachmentStatus,
+  LearningStatus,
+  Role,
+  SopKategori,
+  SopStatus,
+  SopTipe, TipeUser,
+} from "@/generated/prisma/enums";
+
 export type SessionUser = {
   id: string;
   email: string;

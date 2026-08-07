@@ -11,7 +11,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { TIPE_LEADERBOARD, type TipeLeaderboard } from "@/lib/access";
-import type { TipeUser } from "@prisma/client";
+import { TipeUser } from "@/generated/prisma/enums";
 
 export type RankingEntry = {
   rank: number;
@@ -42,7 +42,7 @@ export async function getFullRanking(
       user: {
         role: "user",
         status: "aktif",
-        tipeUser: tipe ? tipe : { in: [...TIPE_LEADERBOARD] },
+        tipeUser: tipe || { in: [...TIPE_LEADERBOARD] },
       },
     },
     _count: { _all: true },
