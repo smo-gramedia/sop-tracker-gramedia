@@ -23,7 +23,7 @@
         "./src/*"
       ]
     },
-    "target": "ES2017",
+    "target": "ES2023",
     "allowJs": true,
     "strict": false,
     "moduleResolution": "bundler"
