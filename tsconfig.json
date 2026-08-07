@@ -24,9 +24,9 @@
       ]
     },
     "target": "ES2023",
-    "allowJs": true,
-    "strict": false,
-    "moduleResolution": "bundler"
+    "strict": true,
+    "moduleResolution": "bundler",
+    "allowJs": true
   },
   "include": [
     "next-env.d.ts",
