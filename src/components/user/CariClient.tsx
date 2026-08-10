@@ -67,13 +67,13 @@ function HighlightedText({ text, query }: { text: string; query: string }) {
       {parts.map((part, i) =>
         regex.test(part) ? (
           <mark
-            key={i}
+            key={part + i}
             className="bg-amber-100 text-amber-900 font-medium px-0.5 rounded-sm"
           >
             {part}
           </mark>
         ) : (
-          <span key={i}>{part}</span>
+          <span key={part + i}>{part}</span>
         )
       )}
     </>
@@ -104,7 +104,7 @@ export default function CariClient({
     return groups;
   }, [results]);
 
-  function handleSearch(e: React.FormEvent) {
+  function handleSearch(e: React.SubmitEvent) {
     e.preventDefault();
     const q = searchInput.trim();
     if (q.length < 2) return;
