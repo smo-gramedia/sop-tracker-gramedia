@@ -180,7 +180,7 @@ export default function GlossaryReviewModal({
                     {ok.baru.map((t) => {
                       const k = t.istilah.toLowerCase();
                       return (
-                        <label
+                        <div
                           key={k}
                           className="flex gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50"
                         >
@@ -198,7 +198,7 @@ export default function GlossaryReviewModal({
                               {t.definisi}
                             </div>
                           </div>
-                        </label>
+                        </div>
                       );
                     })}
                   </div>
@@ -245,6 +245,7 @@ export default function GlossaryReviewModal({
                               checked={checkedBeda.has(k)}
                               onChange={() => toggle(setCheckedBeda, k)}
                             />
+                            {' '}
                             Perbarui definisi di glosarium dengan versi dokumen
                           </label>
                         </div>
