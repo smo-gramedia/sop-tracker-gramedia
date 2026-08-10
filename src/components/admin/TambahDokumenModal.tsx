@@ -1,7 +1,7 @@
 "use client";
 
 // src/components/admin/TambahDokumenModal.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, SubmitEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -155,12 +155,12 @@ export default function TambahDokumenModal({
     }
     if (!res.ok) {
       throw new Error(
-        `Upload "${file.name}" gagal: ${data.error || `HTTP ${res.status}`}`,
+        `Upload "${file.name}" gagal: ${data.error || 'internal server error, please try again.'}`,
       );
     }
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true);
     setErrorMsg(null);
