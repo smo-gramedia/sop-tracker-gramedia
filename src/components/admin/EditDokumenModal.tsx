@@ -1,6 +1,6 @@
 // src/components/admin/EditDokumenModal.tsx
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, SubmitEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -158,13 +158,14 @@ export default function EditDokumenModal({
     };
   }, [open, sopId]);
 
-  if (!open || !sop) return null;
-
   // Format tanggal untuk input type=date (YYYY-MM-DD)
   // Folder Petunjuk Pelaksanaan (hanya untuk kategori "petunjuk")
   const [juklakKategori, setJuklakKategori] = useState(
-    sop.juklakKategori ?? ""
+    (sop && sop.juklakKategori) ?? ""
   );
+
+  if (!open || !sop) return null;
+
 
   const tanggalBerlakuStr = sop.tanggalBerlaku
     ? typeof sop.tanggalBerlaku === "string"
@@ -172,7 +173,7 @@ export default function EditDokumenModal({
       : sop.tanggalBerlaku.toISOString().split("T")[0]
     : "";
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!sop) return;
     setError(null);
