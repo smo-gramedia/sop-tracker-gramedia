@@ -35,7 +35,7 @@ function scanActiveSessions(): ActiveSession[] {
   try {
     for (let i = 0; i < window.localStorage.length; i++) {
       const key = window.localStorage.key(i);
-      if (!key || !key.startsWith(STORAGE_PREFIX)) continue;
+      if (!key?.startsWith(STORAGE_PREFIX)) continue;
       const raw = window.localStorage.getItem(key);
       if (!raw) continue;
       try {
@@ -97,7 +97,7 @@ export default function ActiveQuizBanner() {
     // Listen ke storage event supaya banner update kalau ada perubahan
     // dari tab lain (mis: user submit di tab A → tab B banner-nya hilang)
     const handleStorage = (e: StorageEvent) => {
-      if (e.key && e.key.startsWith(STORAGE_PREFIX)) {
+      if (e.key?.startsWith(STORAGE_PREFIX)) {
         refresh();
       }
     };
