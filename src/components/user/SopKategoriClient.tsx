@@ -1,6 +1,5 @@
 "use client";
 
-// src/components/user/SopKategoriClient.tsx
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import {
@@ -15,7 +14,6 @@ import {
   Clock,
   Circle,
   FileText,
-  Sparkles,
 } from "lucide-react";
 import PdfPreviewModal from "./PdfPreviewModal";
 import DownloadConfirmDialog from "./DownloadConfirmDialog";
@@ -205,8 +203,7 @@ export default function SopKategoriClient({
           if (progress && progress.status !== "belum") return false;
         }
       }
-      if (tipeFilter && doc.tipe !== tipeFilter) return false;
-      return true;
+      return !(tipeFilter && doc.tipe !== tipeFilter);
     });
   }, [
     documents,
@@ -308,11 +305,6 @@ export default function SopKategoriClient({
     return null;
   }, [selectedDeptId, relevantDivisions]);
 
-  const selectedSubcat = useMemo(() => {
-    if (!selectedSubcatId) return null;
-    return relevantSubcats.find((s) => s.id === selectedSubcatId) ?? null;
-  }, [selectedSubcatId, relevantSubcats]);
-
   // Stats
   const selesaiCount = progressList.filter((p) => p.status === "selesai").length;
   const dipelajariCount = progressList.filter(
@@ -330,7 +322,7 @@ export default function SopKategoriClient({
 
         <div className="relative px-8 py-10 md:px-12">
           <div className="flex items-start justify-between gap-6 flex-wrap">
-            <div className="flex-1 min-w-[280px]">
+            <div className="flex-1 min-w-70">
               <h1 className="font-display font-bold text-3xl md:text-4xl text-white leading-tight mb-3">
                 Temukan {pageTitle}
                 <br />
@@ -389,7 +381,7 @@ export default function SopKategoriClient({
               Daftar Division
             </div>
 
-            <div className="max-h-[600px] overflow-y-auto">
+            <div className="max-h-150 overflow-y-auto">
               <button
                 onClick={() => setSelectedDeptId(null)}
                 className={`w-full flex items-center justify-between px-3 py-2.5 text-xs hover:bg-muted/40 transition-colors border-b ${
@@ -576,7 +568,7 @@ export default function SopKategoriClient({
         />
       )}
 
-      {previewDoc && previewDoc.sopAttachments[0] && (
+      {previewDoc?.sopAttachments[0] && (
         <PdfPreviewModal
           open={!!previewDoc}
           onClose={() => setPreviewDoc(null)}
