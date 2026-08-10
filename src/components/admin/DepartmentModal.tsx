@@ -66,7 +66,7 @@ export default function DepartmentModal({
       if (data?.divisionId) {
         // Find parent directorate
         for (const dir of directorates) {
-          const div = dir.divisions.find((d) => d.id === data.divisionId);
+          const div = dir.divisions.some((d) => d.id === data.divisionId);
           if (div) {
             setDirectorateId(dir.id);
             break;
@@ -96,7 +96,7 @@ export default function DepartmentModal({
 
   if (!open) return null;
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true);
     setErrorMsg(null);
