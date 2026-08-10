@@ -1,6 +1,6 @@
 // src/components/user/HomeHero.tsx
 import Link from "next/link";
-import { Sparkles, BookOpen, ArrowRight, TrendingUp } from "lucide-react";
+import { BookOpen, ArrowRight, TrendingUp } from "lucide-react";
 
 type Props = {
   userName: string;
