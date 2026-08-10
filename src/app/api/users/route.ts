@@ -20,7 +20,7 @@ const CreateUserSchema = z
       "admin",
     ]),
     nama: z.string().min(1, "Nama wajib diisi"),
-    email: z.string().email("Format email tidak valid"),
+    email: z.email("Format email tidak valid"),
     password: z.string().min(8, "Password minimal 8 karakter"),
     unit: z.string().optional(),
     joinedAt: z.string().optional(),
@@ -121,7 +121,7 @@ export async function POST(req: Request) {
   const parsed = CreateUserSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: parsed.error.errors[0].message },
+      { error: parsed.error.issues[0].message },
       { status: 400 }
     );
   }

@@ -1,7 +1,7 @@
 "use client";
 
 // src/components/admin/TambahDokumenModal.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, SubmitEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -155,12 +155,12 @@ export default function TambahDokumenModal({
     }
     if (!res.ok) {
       throw new Error(
-        `Upload "${file.name}" gagal: ${data.error || `HTTP ${res.status}`}`,
+        `Upload "${file.name}" gagal: ${data.error || 'internal server error, please try again.'}`,
       );
     }
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true);
     setErrorMsg(null);
@@ -525,7 +525,7 @@ export default function TambahDokumenModal({
               id="deskripsi"
               name="deskripsi"
               placeholder="Deskripsi singkat dokumen..."
-              className="w-full border rounded-lg p-3 text-sm min-h-[80px] resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full border rounded-lg p-3 text-sm min-h-[80px] resize-none focus:outline-hidden focus:ring-2 focus:ring-ring"
             />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -649,17 +649,17 @@ export default function TambahDokumenModal({
                       <div className="flex items-center gap-2 min-w-0 flex-1">
                         <Paperclip
                           size={12}
-                          className="text-muted-foreground flex-shrink-0"
+                          className="text-muted-foreground shrink-0"
                         />
                         <span className="truncate">{f.name}</span>
-                        <span className="text-[11px] text-muted-foreground flex-shrink-0">
+                        <span className="text-[11px] text-muted-foreground shrink-0">
                           ({(f.size / 1024 / 1024).toFixed(2)}MB)
                         </span>
                       </div>
                       <button
                         type="button"
                         onClick={() => removeLampiran(idx)}
-                        className="text-muted-foreground hover:text-destructive transition-colors flex-shrink-0"
+                        className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
                       >
                         <Trash2 size={13} />
                       </button>
@@ -764,7 +764,7 @@ function FileUploadZone({
 
   return (
     <label className="flex items-center gap-3 border-2 border-dashed rounded-xl p-4 cursor-pointer hover:bg-muted/30 transition-colors mb-2">
-      <Icon size={20} className="text-muted-foreground flex-shrink-0" />
+      <Icon size={20} className="text-muted-foreground shrink-0" />
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium flex items-center gap-1.5">
           {label}
@@ -792,7 +792,7 @@ function FileUploadZone({
             e.preventDefault();
             onChange(null);
           }}
-          className="text-muted-foreground hover:text-destructive transition-colors flex-shrink-0"
+          className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
         >
           <Trash2 size={14} />
         </button>

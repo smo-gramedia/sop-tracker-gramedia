@@ -91,7 +91,7 @@ export default function PostTestAdminClient({ postTests, sopOptions }: Props) {
               placeholder="Cari nama SOP atau kode..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="flex-1 text-sm bg-transparent border-none outline-none"
+              className="flex-1 text-sm bg-transparent border-none outline-hidden"
             />
           </div>
           <select
@@ -124,7 +124,7 @@ export default function PostTestAdminClient({ postTests, sopOptions }: Props) {
                   </div>
                   <div className="font-medium">{pt.sopDocument.judul}</div>
                 </div>
-                <div className="flex items-center gap-4 sm:gap-6 text-sm flex-shrink-0 flex-wrap">
+                <div className="flex items-center gap-4 sm:gap-6 text-sm shrink-0 flex-wrap">
                   <div className="text-center">
                     <div className="font-semibold">{pt.jumlahSoal}</div>
                     <div className="text-xs text-muted-foreground">Soal</div>

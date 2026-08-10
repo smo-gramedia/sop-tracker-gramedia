@@ -1,6 +1,156 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-sans: DM Sans, sans-serif;
+  --font-display: Bricolage Grotesque, sans-serif;
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-brand: hsl(var(--primary));
+
+  --color-brand-dark: hsl(var(--brand-dark));
+  --color-brand-dark-foreground: hsl(var(--brand-dark-foreground));
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --animate-slide-in-right: slide-in-right 0.25s ease-out;
+
+  @keyframes slide-in-right {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+@utility bg-brand {
+  /* Vibrant brand gradient */
+  background: linear-gradient(
+    135deg,
+    hsl(var(--brand-from)) 0%,
+    hsl(var(--brand-via)) 50%,
+    hsl(var(--brand-to)) 100%
+  );
+}
+
+@utility bg-brand-soft {
+  background: linear-gradient(
+    135deg,
+    hsl(217 91% 95%) 0%,
+    hsl(250 84% 95%) 50%,
+    hsl(322 75% 95%) 100%
+  );
+}
+
+@utility bg-mesh-hero {
+  /* Mesh background for hero */
+  background-color: hsl(217 91% 50%);
+  background-image:
+    radial-gradient(at 20% 30%, hsla(322, 75%, 70%, 0.4) 0px, transparent 50%),
+    radial-gradient(at 80% 20%, hsla(250, 84%, 70%, 0.5) 0px, transparent 50%),
+    radial-gradient(at 60% 80%, hsla(199, 89%, 60%, 0.4) 0px, transparent 50%);
+}
+
+@utility bg-cat-sr {
+  /* Per-kategori gradient backgrounds (Coursera-style colorful cards) */
+  background: linear-gradient(135deg, #d1fae5 0%, #ecfccb 100%);
+}
+
+@utility bg-cat-ss {
+  background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
+}
+
+@utility bg-cat-sp {
+  background: linear-gradient(135deg, #f3e8ff 0%, #fce7f3 100%);
+}
+
+@utility bg-cat-sg {
+  background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%);
+}
+
+@utility bg-cat-petunjuk {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+}
+
+@utility animate-fade-in {
+  /* Smooth animations */
+  animation: fadeIn 0.5s ease-out;
+}
+
+@utility animate-slide-up {
+  animation: slideUp 0.6s ease-out;
+}
+
+@utility animate-scale-in {
+  animation: scaleIn 0.4s ease-out;
+}
+
+@utility hover-lift {
+  /* Hover lift effect */
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.1);
+  }
+}
+
+@utility hover-glow {
+  /* Subtle glow on hover */
+  transition: box-shadow 0.3s ease;
+  &:hover {
+    box-shadow: 0 0 0 4px hsl(217 91% 50% / 0.1);
+  }
+}
+
+@utility blob-decoration {
+  /* Decorative blob for hero */
+  border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+}
 
 @layer base {
   :root {
@@ -64,64 +214,6 @@
 
 /* ─── Coursera-inspired animations ──────────────────────────── */
 @layer utilities {
-  /* Vibrant brand gradient */
-  .bg-brand {
-    background: linear-gradient(
-      135deg,
-      hsl(var(--brand-from)) 0%,
-      hsl(var(--brand-via)) 50%,
-      hsl(var(--brand-to)) 100%
-    );
-  }
-
-  .bg-brand-soft {
-    background: linear-gradient(
-      135deg,
-      hsl(217 91% 95%) 0%,
-      hsl(250 84% 95%) 50%,
-      hsl(322 75% 95%) 100%
-    );
-  }
-
-  /* Mesh background for hero */
-  .bg-mesh-hero {
-    background-color: hsl(217 91% 50%);
-    background-image:
-      radial-gradient(at 20% 30%, hsla(322, 75%, 70%, 0.4) 0px, transparent 50%),
-      radial-gradient(at 80% 20%, hsla(250, 84%, 70%, 0.5) 0px, transparent 50%),
-      radial-gradient(at 60% 80%, hsla(199, 89%, 60%, 0.4) 0px, transparent 50%);
-  }
-
-  /* Per-kategori gradient backgrounds (Coursera-style colorful cards) */
-  .bg-cat-sr {
-    background: linear-gradient(135deg, #d1fae5 0%, #ecfccb 100%);
-  }
-  .bg-cat-ss {
-    background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
-  }
-  .bg-cat-sp {
-    background: linear-gradient(135deg, #f3e8ff 0%, #fce7f3 100%);
-  }
-  .bg-cat-sg {
-    background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%);
-  }
-  .bg-cat-petunjuk {
-    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-  }
-
-  /* Smooth animations */
-  .animate-fade-in {
-    animation: fadeIn 0.5s ease-out;
-  }
-
-  .animate-slide-up {
-    animation: slideUp 0.6s ease-out;
-  }
-
-  .animate-scale-in {
-    animation: scaleIn 0.4s ease-out;
-  }
-
   @keyframes fadeIn {
     from {
       opacity: 0;
@@ -151,27 +243,5 @@
       opacity: 1;
       transform: scale(1);
     }
-  }
-
-  /* Hover lift effect */
-  .hover-lift {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-  .hover-lift:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.1);
-  }
-
-  /* Subtle glow on hover */
-  .hover-glow {
-    transition: box-shadow 0.3s ease;
-  }
-  .hover-glow:hover {
-    box-shadow: 0 0 0 4px hsl(217 91% 50% / 0.1);
-  }
-
-  /* Decorative blob for hero */
-  .blob-decoration {
-    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
   }
 }

@@ -125,7 +125,7 @@ export default function UserProgressClient({
             placeholder="Cari nama SOP, kode, atau nama unit kerja..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 text-sm bg-transparent border-none outline-none"
+            className="flex-1 text-sm bg-transparent border-none outline-hidden"
           />
         </div>
         <select
@@ -293,20 +293,20 @@ function StatCard({
 function TipeIcon({ tipe }: { tipe: string | null }) {
   if (tipe === "store") {
     return (
-      <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center flex-shrink-0">
+      <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
         <Store size={12} />
       </div>
     );
   }
   if (tipe === "department") {
     return (
-      <div className="w-7 h-7 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center flex-shrink-0">
+      <div className="w-7 h-7 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
         <Building2 size={12} />
       </div>
     );
   }
   return (
-    <div className="w-7 h-7 rounded-full bg-muted text-muted-foreground flex items-center justify-center flex-shrink-0">
+    <div className="w-7 h-7 rounded-full bg-muted text-muted-foreground flex items-center justify-center shrink-0">
       —
     </div>
   );

@@ -71,7 +71,7 @@ export default function DetailUserModal({ open, userId, onClose }: Props) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-start justify-center p-4 overflow-y-auto">
       <div className="bg-background rounded-2xl border shadow-2xl w-full max-w-2xl my-4 sm:my-8 max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-4rem)] overflow-y-auto animate-slide-up">
         {/* Header */}
         <div className="flex items-start justify-between p-6 border-b">
@@ -107,7 +107,7 @@ export default function DetailUserModal({ open, userId, onClose }: Props) {
             <>
               {/* Hero — avatar, nama, kode */}
               <div className="flex items-center gap-4 pb-6 border-b">
-                <div className="flex-shrink-0">
+                <div className="shrink-0">
                   <UserIcon tipeUser={user.tipeUser} role={user.role} />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -202,27 +202,27 @@ function UserIcon({
 }) {
   if (role === "admin" || role === "superadmin") {
     return (
-      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center shadow-lg">
+      <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center shadow-lg">
         <Shield size={28} />
       </div>
     );
   }
   if (tipeUser === "store") {
     return (
-      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 text-white flex items-center justify-center shadow-lg">
+      <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-blue-500 to-blue-700 text-white flex items-center justify-center shadow-lg">
         <Store size={28} />
       </div>
     );
   }
   if (tipeUser === "department") {
     return (
-      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-700 text-white flex items-center justify-center shadow-lg">
+      <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-purple-500 to-purple-700 text-white flex items-center justify-center shadow-lg">
         <Building2 size={28} />
       </div>
     );
   }
   return (
-    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-gray-400 to-gray-600 text-white flex items-center justify-center shadow-lg text-xl font-bold">
+    <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-gray-400 to-gray-600 text-white flex items-center justify-center shadow-lg text-xl font-bold">
       ?
     </div>
   );
@@ -295,7 +295,7 @@ function InfoCard({
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
         {icon} {label}
       </div>
-      <p className="text-sm font-medium break-words">{value}</p>
+      <p className="text-sm font-medium wrap-break-word">{value}</p>
     </div>
   );
 }

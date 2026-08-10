@@ -84,7 +84,7 @@ export default function GlosariumClient({ entries }: { entries: Entry[] }) {
         <div className="bg-background border rounded-xl px-4 py-3 flex items-center gap-3 mb-4">
           <span className="text-muted-foreground">🔍</span>
           <input
-            className="flex-1 text-sm bg-transparent outline-none placeholder:text-muted-foreground"
+            className="flex-1 text-sm bg-transparent outline-hidden placeholder:text-muted-foreground"
             placeholder="Cari kata atau istilah..."
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -139,7 +139,7 @@ export default function GlosariumClient({ entries }: { entries: Entry[] }) {
               <div className="space-y-1.5">
                 <Label>Deskripsi</Label>
                 <textarea
-                  className="w-full border rounded-lg p-3 text-sm min-h-[100px] resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full border rounded-lg p-3 text-sm min-h-[100px] resize-none focus:outline-hidden focus:ring-2 focus:ring-ring"
                   placeholder="Penjelasan singkat..."
                   value={desk}
                   onChange={e => setDesk(e.target.value)}

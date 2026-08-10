@@ -66,7 +66,7 @@ export default function DepartmentModal({
       if (data?.divisionId) {
         // Find parent directorate
         for (const dir of directorates) {
-          const div = dir.divisions.find((d) => d.id === data.divisionId);
+          const div = dir.divisions.some((d) => d.id === data.divisionId);
           if (div) {
             setDirectorateId(dir.id);
             break;
@@ -96,7 +96,7 @@ export default function DepartmentModal({
 
   if (!open) return null;
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true);
     setErrorMsg(null);
@@ -250,7 +250,7 @@ export default function DepartmentModal({
               onChange={(e) => setDeskripsi(e.target.value)}
               placeholder="Deskripsi singkat department..."
               disabled={saving}
-              className="w-full border rounded-lg p-3 text-sm min-h-[70px] resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full border rounded-lg p-3 text-sm min-h-[70px] resize-none focus:outline-hidden focus:ring-2 focus:ring-ring"
             />
           </div>
 

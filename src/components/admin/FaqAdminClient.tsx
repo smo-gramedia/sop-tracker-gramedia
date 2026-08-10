@@ -89,7 +89,7 @@ export default function FaqAdminClient({ faqs }: Props) {
             key={f.id}
             className="bg-background rounded-xl border p-5 flex gap-4"
           >
-            <div className="flex-shrink-0 w-8 h-8 rounded-md bg-muted text-muted-foreground flex items-center justify-center text-xs font-mono">
+            <div className="shrink-0 w-8 h-8 rounded-md bg-muted text-muted-foreground flex items-center justify-center text-xs font-mono">
               {f.urutan}
             </div>
             <div className="flex-1 min-w-0">
@@ -98,7 +98,7 @@ export default function FaqAdminClient({ faqs }: Props) {
                 {f.jawaban}
               </div>
             </div>
-            <div className="flex gap-1.5 flex-shrink-0">
+            <div className="flex gap-1.5 shrink-0">
               <Button
                 variant="outline"
                 size="sm"
@@ -222,7 +222,7 @@ function FaqModal({
               placeholder="Tulis jawaban yang jelas dan lengkap…"
               required
               rows={6}
-              className="w-full border rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full border rounded-lg p-3 text-sm resize-none focus:outline-hidden focus:ring-2 focus:ring-ring"
             />
             <p className="text-xs text-muted-foreground">
               Anda bisa pakai newline untuk membuat paragraf.

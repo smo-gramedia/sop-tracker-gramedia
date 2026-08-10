@@ -36,7 +36,7 @@ export default async function BantuanPage() {
       {/* Contact admin card */}
       <div className="bg-background rounded-xl border p-6 mt-6">
         <div className="flex items-start gap-4">
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
             <Mail size={18} className="text-primary" />
           </div>
           <div>

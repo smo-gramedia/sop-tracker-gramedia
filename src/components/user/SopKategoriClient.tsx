@@ -1,6 +1,5 @@
 "use client";
 
-// src/components/user/SopKategoriClient.tsx
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import {
@@ -15,7 +14,6 @@ import {
   Clock,
   Circle,
   FileText,
-  Sparkles,
 } from "lucide-react";
 import PdfPreviewModal from "./PdfPreviewModal";
 import DownloadConfirmDialog from "./DownloadConfirmDialog";
@@ -205,8 +203,7 @@ export default function SopKategoriClient({
           if (progress && progress.status !== "belum") return false;
         }
       }
-      if (tipeFilter && doc.tipe !== tipeFilter) return false;
-      return true;
+      return !(tipeFilter && doc.tipe !== tipeFilter);
     });
   }, [
     documents,
@@ -308,11 +305,6 @@ export default function SopKategoriClient({
     return null;
   }, [selectedDeptId, relevantDivisions]);
 
-  const selectedSubcat = useMemo(() => {
-    if (!selectedSubcatId) return null;
-    return relevantSubcats.find((s) => s.id === selectedSubcatId) ?? null;
-  }, [selectedSubcatId, relevantSubcats]);
-
   // Stats
   const selesaiCount = progressList.filter((p) => p.status === "selesai").length;
   const dipelajariCount = progressList.filter(
@@ -323,14 +315,14 @@ export default function SopKategoriClient({
     <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
       {/* Hero per kategori — gradient berwarna */}
       <div
-        className={`relative bg-gradient-to-br ${theme.gradient} rounded-3xl overflow-hidden animate-fade-in`}
+        className={`relative bg-linear-to-br ${theme.gradient} rounded-3xl overflow-hidden animate-fade-in`}
       >
         <div className="absolute -top-12 -right-12 w-64 h-64 bg-white/10 blob-decoration" />
         <div className="absolute -bottom-20 -left-12 w-72 h-72 bg-white/5 blob-decoration" />
 
         <div className="relative px-8 py-10 md:px-12">
           <div className="flex items-start justify-between gap-6 flex-wrap">
-            <div className="flex-1 min-w-[280px]">
+            <div className="flex-1 min-w-70">
               <h1 className="font-display font-bold text-3xl md:text-4xl text-white leading-tight mb-3">
                 Temukan {pageTitle}
                 <br />
@@ -348,19 +340,19 @@ export default function SopKategoriClient({
 
           {/* Stats inline */}
           <div className="grid grid-cols-3 gap-3 mt-6">
-            <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+            <div className="bg-white/15 backdrop-blur-xs rounded-xl p-3 border border-white/20">
               <div className="text-white text-2xl font-display font-bold">
                 {totalDocs}
               </div>
               <div className="text-white/70 text-xs">Total Dokumen</div>
             </div>
-            <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+            <div className="bg-white/15 backdrop-blur-xs rounded-xl p-3 border border-white/20">
               <div className="text-white text-2xl font-display font-bold">
                 {dipelajariCount}
               </div>
               <div className="text-white/70 text-xs">Sedang Dipelajari</div>
             </div>
-            <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+            <div className="bg-white/15 backdrop-blur-xs rounded-xl p-3 border border-white/20">
               <div className="text-white text-2xl font-display font-bold">
                 {selesaiCount}
               </div>
@@ -382,19 +374,19 @@ export default function SopKategoriClient({
                 placeholder="Cari divisi / departemen..."
                 value={sidebarSearch}
                 onChange={(e) => setSidebarSearch(e.target.value)}
-                className="flex-1 text-xs bg-transparent border-none outline-none placeholder:text-muted-foreground"
+                className="flex-1 text-xs bg-transparent border-none outline-hidden placeholder:text-muted-foreground"
               />
             </div>
             <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-3 py-2.5 border-b bg-muted/40">
               Daftar Division
             </div>
 
-            <div className="max-h-[600px] overflow-y-auto">
+            <div className="max-h-150 overflow-y-auto">
               <button
                 onClick={() => setSelectedDeptId(null)}
                 className={`w-full flex items-center justify-between px-3 py-2.5 text-xs hover:bg-muted/40 transition-colors border-b ${
                   !selectedDeptId
-                    ? `bg-gradient-to-r ${theme.bgSoft} font-semibold`
+                    ? `bg-linear-to-r ${theme.bgSoft} font-semibold`
                     : ""
                 }`}
               >
@@ -432,7 +424,7 @@ export default function SopKategoriClient({
                       <span className="text-xs font-semibold flex-1 truncate pr-2">
                         {div.nama}
                       </span>
-                      <span className="flex items-center gap-1.5 flex-shrink-0">
+                      <span className="flex items-center gap-1.5 shrink-0">
                         <span className="text-[10px] bg-muted text-muted-foreground rounded-full px-2 py-0.5">
                           {docCount}
                         </span>
@@ -461,12 +453,12 @@ export default function SopKategoriClient({
                               onClick={() => setSelectedDeptId(dept.id)}
                               className={`w-full flex items-center justify-between text-left text-xs px-5 py-1.5 transition-colors ${
                                 isActive
-                                  ? `bg-gradient-to-r ${theme.bgSoft} font-semibold border-l-2 ${theme.accent} border-current`
+                                  ? `bg-linear-to-r ${theme.bgSoft} font-semibold border-l-2 ${theme.accent} border-current`
                                   : "text-muted-foreground hover:bg-muted/50"
                               }`}
                             >
                               <span className="truncate pr-2">{dept.nama}</span>
-                              <span className="text-[10px] flex-shrink-0 font-mono">
+                              <span className="text-[10px] shrink-0 font-mono">
                                 {deptDocCount}
                               </span>
                             </button>
@@ -576,7 +568,7 @@ export default function SopKategoriClient({
         />
       )}
 
-      {previewDoc && previewDoc.sopAttachments[0] && (
+      {previewDoc?.sopAttachments[0] && (
         <PdfPreviewModal
           open={!!previewDoc}
           onClose={() => setPreviewDoc(null)}
@@ -622,7 +614,7 @@ function FilterBar({
           placeholder="Cari SOP berdasarkan judul atau kode"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="flex-1 text-sm bg-transparent border-none outline-none"
+          className="flex-1 text-sm bg-transparent border-none outline-hidden"
         />
       </div>
       {extraFilter}
@@ -707,7 +699,7 @@ function SopCard({
             </div>
             <div className="h-1.5 bg-muted rounded-full overflow-hidden">
               <div
-                className={`h-full bg-gradient-to-r ${theme.gradient} rounded-full transition-all`}
+                className={`h-full bg-linear-to-r ${theme.gradient} rounded-full transition-all`}
                 style={{
                   width: `${Math.round((progress.stepCurrent / 6) * 100)}%`,
                 }}
@@ -743,7 +735,7 @@ function SopCard({
           </button>
           <Link
             href={`/belajar/${doc.id}`}
-            className={`ml-auto text-xs font-bold text-white rounded-lg px-4 py-1.5 hover:opacity-90 transition-opacity flex items-center gap-1.5 bg-gradient-to-r ${theme.gradient} shadow-sm relative z-10`}
+            className={`ml-auto text-xs font-bold text-white rounded-lg px-4 py-1.5 hover:opacity-90 transition-opacity flex items-center gap-1.5 bg-linear-to-r ${theme.gradient} shadow-xs relative z-10`}
           >
             <BookOpen size={12} /> Pelajari
           </Link>
@@ -826,7 +818,7 @@ function InfoPopup({
       <div className="bg-background rounded-2xl border w-full max-w-md overflow-hidden shadow-xl animate-scale-in">
         <div className="p-6">
           <div className="flex items-start gap-3 mb-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 rounded-full bg-linear-to-br from-amber-100 to-orange-100 flex items-center justify-center shrink-0">
               <AlertCircle size={20} className="text-amber-600" />
             </div>
             <div className="flex-1 pt-1">
@@ -834,7 +826,7 @@ function InfoPopup({
             </div>
             <button
               onClick={onClose}
-              className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+              className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
               aria-label="Tutup"
             >
               <X size={18} />

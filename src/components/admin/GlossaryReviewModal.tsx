@@ -153,7 +153,7 @@ export default function GlossaryReviewModal({
 
           {!loading && result && result.status !== "ok" && (
             <div className="rounded-lg bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800 flex items-start gap-2.5">
-              <AlertTriangle size={18} className="flex-shrink-0 mt-0.5" />
+              <AlertTriangle size={18} className="shrink-0 mt-0.5" />
               <span>{WARN[result.status]}</span>
             </div>
           )}
@@ -180,7 +180,7 @@ export default function GlossaryReviewModal({
                     {ok.baru.map((t) => {
                       const k = t.istilah.toLowerCase();
                       return (
-                        <label
+                        <div
                           key={k}
                           className="flex gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50"
                         >
@@ -198,7 +198,7 @@ export default function GlossaryReviewModal({
                               {t.definisi}
                             </div>
                           </div>
-                        </label>
+                        </div>
                       );
                     })}
                   </div>
@@ -245,6 +245,7 @@ export default function GlossaryReviewModal({
                               checked={checkedBeda.has(k)}
                               onChange={() => toggle(setCheckedBeda, k)}
                             />
+                            {' '}
                             Perbarui definisi di glosarium dengan versi dokumen
                           </label>
                         </div>

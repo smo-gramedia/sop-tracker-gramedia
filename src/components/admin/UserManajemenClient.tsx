@@ -155,7 +155,7 @@ export default function UserManajemenClient({ users }: { users: User[] }) {
           <div className="rounded-xl border border-red-200 bg-red-50 p-4 mb-5 flex items-start gap-3">
             <ShieldAlert
               size={18}
-              className="text-red-600 flex-shrink-0 mt-0.5"
+              className="text-red-600 shrink-0 mt-0.5"
             />
             <div className="text-sm text-red-800 leading-relaxed">
               <span className="font-semibold">
@@ -214,7 +214,7 @@ export default function UserManajemenClient({ users }: { users: User[] }) {
               placeholder="Cari nama, kode user, unit, atau email..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="flex-1 text-sm bg-transparent border-none outline-none"
+              className="flex-1 text-sm bg-transparent border-none outline-hidden"
             />
           </div>
           <select
@@ -447,21 +447,21 @@ function UserAvatar({
 }) {
   if (role === "admin" || role === "superadmin") {
     return (
-      <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0">
+      <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
         <Shield size={14} />
       </div>
     );
   }
   if (tipeUser === "store") {
     return (
-      <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center flex-shrink-0">
+      <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
         <Store size={14} />
       </div>
     );
   }
   if (tipeUser === "audit") {
     return (
-      <div className="w-8 h-8 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center flex-shrink-0">
+      <div className="w-8 h-8 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center shrink-0">
         <Shield size={14} />
       </div>
     );
@@ -472,13 +472,13 @@ function UserAvatar({
     tipeUser === "department"
   ) {
     return (
-      <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center flex-shrink-0">
+      <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
         <Building2 size={14} />
       </div>
     );
   }
   return (
-    <div className="w-8 h-8 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-bold flex-shrink-0">
+    <div className="w-8 h-8 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-bold shrink-0">
       {nama.charAt(0).toUpperCase()}
     </div>
   );

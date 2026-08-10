@@ -5,10 +5,12 @@
 // - 5 Store users (STR-XXXXX-001)
 // - 7 Department users (DEPT-XXX-001)
 // ════════════════════════════════════════════════════════════════════
-import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "@/generated/prisma/client";
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+const prisma = new PrismaClient({ adapter});
 
 async function main() {
   console.log("🌱 Seeding database...");

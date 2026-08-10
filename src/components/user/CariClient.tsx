@@ -67,13 +67,13 @@ function HighlightedText({ text, query }: { text: string; query: string }) {
       {parts.map((part, i) =>
         regex.test(part) ? (
           <mark
-            key={i}
+            key={part + i}
             className="bg-amber-100 text-amber-900 font-medium px-0.5 rounded-sm"
           >
             {part}
           </mark>
         ) : (
-          <span key={i}>{part}</span>
+          <span key={part + i}>{part}</span>
         )
       )}
     </>
@@ -104,7 +104,7 @@ export default function CariClient({
     return groups;
   }, [results]);
 
-  function handleSearch(e: React.FormEvent) {
+  function handleSearch(e: React.SubmitEvent) {
     e.preventDefault();
     const q = searchInput.trim();
     if (q.length < 2) return;
@@ -146,21 +146,21 @@ export default function CariClient({
 
       {/* Search bar */}
       <form onSubmit={handleSearch} className="mb-6">
-        <div className="flex items-center gap-2 bg-background border rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-shadow shadow-sm">
-          <Search size={18} className="text-muted-foreground flex-shrink-0" />
+        <div className="flex items-center gap-2 bg-background border rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-shadow shadow-xs">
+          <Search size={18} className="text-muted-foreground shrink-0" />
           <input
             type="text"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Masukkan kata kunci..."
-            className="flex-1 bg-transparent border-none outline-none text-sm min-w-0"
+            className="flex-1 bg-transparent border-none outline-hidden text-sm min-w-0"
             autoFocus
           />
           {searchInput && (
             <button
               type="button"
               onClick={() => setSearchInput("")}
-              className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+              className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
               aria-label="Clear"
             >
               <X size={16} />
@@ -169,7 +169,7 @@ export default function CariClient({
           <button
             type="submit"
             disabled={searchInput.trim().length < 2}
-            className="text-xs font-semibold bg-primary text-primary-foreground rounded-lg px-3 py-1.5 hover:bg-primary/90 transition-colors disabled:opacity-40 flex-shrink-0"
+            className="text-xs font-semibold bg-primary text-primary-foreground rounded-lg px-3 py-1.5 hover:bg-primary/90 transition-colors disabled:opacity-40 shrink-0"
           >
             Cari
           </button>
@@ -278,7 +278,7 @@ export default function CariClient({
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <Hash
                             size={11}
-                            className="text-muted-foreground flex-shrink-0"
+                            className="text-muted-foreground shrink-0"
                           />
                           <span className="text-xs font-mono text-muted-foreground">
                             <HighlightedText text={r.kode} query={query} />
@@ -311,7 +311,7 @@ export default function CariClient({
                       </div>
                       <ArrowRight
                         size={16}
-                        className="text-muted-foreground flex-shrink-0 mt-1 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all"
+                        className="text-muted-foreground shrink-0 mt-1 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all"
                       />
                     </div>
                   </Link>

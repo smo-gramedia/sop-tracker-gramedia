@@ -113,7 +113,7 @@ export default function KategoriClient({ subcategories }: { subcategories: Sub[]
               <div className="space-y-1.5">
                 <Label>Deskripsi</Label>
                 <textarea
-                  className="w-full border rounded-lg p-3 text-sm min-h-[80px] resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full border rounded-lg p-3 text-sm min-h-[80px] resize-none focus:outline-hidden focus:ring-2 focus:ring-ring"
                   placeholder="Penjelasan singkat..."
                   value={desk}
                   onChange={e => setDesk(e.target.value)}

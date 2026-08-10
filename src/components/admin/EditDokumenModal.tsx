@@ -1,6 +1,6 @@
 // src/components/admin/EditDokumenModal.tsx
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, SubmitEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,7 +93,7 @@ function FileReplaceRow({
           <p className="text-muted-foreground italic">Belum ada file</p>
         )}
       </div>
-      <label className="flex-shrink-0">
+      <label className="shrink-0">
         <span
           className={`inline-flex items-center h-7 px-2.5 text-xs rounded-md border transition-colors ${
             disabled || busy
@@ -158,13 +158,14 @@ export default function EditDokumenModal({
     };
   }, [open, sopId]);
 
-  if (!open || !sop) return null;
-
   // Format tanggal untuk input type=date (YYYY-MM-DD)
   // Folder Petunjuk Pelaksanaan (hanya untuk kategori "petunjuk")
   const [juklakKategori, setJuklakKategori] = useState(
-    sop.juklakKategori ?? ""
+    (sop && sop.juklakKategori) ?? ""
   );
+
+  if (!open || !sop) return null;
+
 
   const tanggalBerlakuStr = sop.tanggalBerlaku
     ? typeof sop.tanggalBerlaku === "string"
@@ -172,7 +173,7 @@ export default function EditDokumenModal({
       : sop.tanggalBerlaku.toISOString().split("T")[0]
     : "";
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!sop) return;
     setError(null);
@@ -347,7 +348,7 @@ export default function EditDokumenModal({
               id="deskripsi"
               name="deskripsi"
               defaultValue={sop.deskripsi ?? ""}
-              className="w-full border rounded-lg p-3 text-sm min-h-[80px] resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full border rounded-lg p-3 text-sm min-h-[80px] resize-none focus:outline-hidden focus:ring-2 focus:ring-ring"
             />
           </div>
 

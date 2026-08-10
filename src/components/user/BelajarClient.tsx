@@ -244,7 +244,7 @@ export default function BelajarClient({
               Progress
             </div>
             <div
-              className={`text-3xl font-display font-bold bg-gradient-to-r ${theme.gradient} bg-clip-text text-transparent`}
+              className={`text-3xl font-display font-bold bg-linear-to-r ${theme.gradient} bg-clip-text text-transparent`}
             >
               {persenProgress}%
             </div>
@@ -261,7 +261,7 @@ export default function BelajarClient({
                 <div
                   className={`h-2 flex-1 rounded-full transition-all ${
                     isCompleted
-                      ? `bg-gradient-to-r ${theme.gradient}`
+                      ? `bg-linear-to-r ${theme.gradient}`
                       : isCurrent
                       ? "bg-primary/30"
                       : "bg-muted"
@@ -311,7 +311,7 @@ export default function BelajarClient({
               {/* Step indicator badge */}
               <div className="flex items-center gap-2 mb-5">
                 <div
-                  className={`w-9 h-9 rounded-xl bg-gradient-to-br ${theme.gradient} flex items-center justify-center text-white font-bold text-sm shadow-md`}
+                  className={`w-9 h-9 rounded-xl bg-linear-to-br ${theme.gradient} flex items-center justify-center text-white font-bold text-sm shadow-md`}
                 >
                   {currentStep + 1}
                 </div>
@@ -352,10 +352,10 @@ export default function BelajarClient({
               {currentStep === 6 && <Step6 doc={doc} theme={theme} />}
 
               {currentStep < 6 && nextLockInfo.locked && (
-                <div className="mt-6 p-4 bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-xl flex items-start gap-3">
+                <div className="mt-6 p-4 bg-linear-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-xl flex items-start gap-3">
                   <Lock
                     size={16}
-                    className="text-amber-600 flex-shrink-0 mt-0.5"
+                    className="text-amber-600 shrink-0 mt-0.5"
                   />
                   <div className="flex-1 text-sm">
                     <div className="font-semibold text-amber-800 mb-0.5">
@@ -414,7 +414,7 @@ function NavFooter({
       <div className="flex justify-end mt-6">
         <Link href="/home">
           <Button
-            className={`bg-gradient-to-r ${theme.gradient} text-white border-0 hover:opacity-90`}
+            className={`bg-linear-to-r ${theme.gradient} text-white border-0 hover:opacity-90`}
           >
             <Sparkles size={14} className="mr-1.5" />
             Selesai & Kembali
@@ -443,7 +443,7 @@ function NavFooter({
         disabled={disabled}
         className={`gap-1.5 ${
           !disabled
-            ? `bg-gradient-to-r ${theme.gradient} text-white border-0 hover:opacity-90`
+            ? `bg-linear-to-r ${theme.gradient} text-white border-0 hover:opacity-90`
             : ""
         }`}
       >
@@ -472,7 +472,7 @@ function Step0({ theme }: { theme: { gradient: string } }) {
         setiap materi dengan seksama sebelum melanjutkan ke tahap berikutnya.
       </p>
       <div
-        className={`bg-gradient-to-br from-primary/5 to-purple-100/50 rounded-xl border p-5`}
+        className={`bg-linear-to-br from-primary/5 to-purple-100/50 rounded-xl border p-5`}
       >
         <div className="font-display font-bold text-sm mb-3">
           Yang akan Anda kerjakan:
@@ -481,7 +481,7 @@ function Step0({ theme }: { theme: { gradient: string } }) {
           {tips.map((tip, i) => (
             <li key={i} className="flex items-start gap-2.5 text-sm">
               <div
-                className={`w-5 h-5 rounded-full bg-gradient-to-br ${theme.gradient} flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0 mt-0.5`}
+                className={`w-5 h-5 rounded-full bg-linear-to-br ${theme.gradient} flex items-center justify-center text-white text-[10px] font-bold shrink-0 mt-0.5`}
               >
                 {i + 1}
               </div>
@@ -574,7 +574,7 @@ function Step2({
       {viewerUrl && pdfUtama ? (
         <div className="border rounded-xl overflow-hidden bg-background">
           <div
-            className={`flex items-center gap-3 px-4 py-2.5 bg-gradient-to-r ${theme.gradient} text-white`}
+            className={`flex items-center gap-3 px-4 py-2.5 bg-linear-to-r ${theme.gradient} text-white`}
           >
             <FileText size={16} />
             <div className="flex-1 min-w-0">
@@ -677,7 +677,7 @@ function Step3({
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div
-                    className={`w-10 h-10 rounded-lg bg-gradient-to-br ${theme.gradient} flex items-center justify-center flex-shrink-0`}
+                    className={`w-10 h-10 rounded-lg bg-linear-to-br ${theme.gradient} flex items-center justify-center shrink-0`}
                   >
                     <Archive size={18} className="text-white" />
                   </div>
@@ -705,7 +705,7 @@ function Step3({
                         )}&wm=1&sop=${sopId}`
                       );
                     }}
-                    className="flex-shrink-0"
+                    className="shrink-0"
                   >
                     <Button size="sm" className="gap-1.5">
                       <Download size={12} /> Download
@@ -716,7 +716,7 @@ function Step3({
                     size="sm"
                     variant="outline"
                     disabled
-                    className="gap-1.5 flex-shrink-0 cursor-not-allowed"
+                    className="gap-1.5 shrink-0 cursor-not-allowed"
                     title="Selesaikan dan lulus post test untuk dapat mengunduh"
                   >
                     <Lock size={12} /> Terkunci
@@ -787,7 +787,7 @@ function Step4({
         title: "Menunggu Verifikasi Admin",
         sub: "Bukti Anda sedang diperiksa. Anda akan menerima notifikasi saat status berubah.",
         color: "text-amber-700",
-        bg: "bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200",
+        bg: "bg-linear-to-br from-amber-50 to-orange-50 border-amber-200",
         badge: { text: "Menunggu", color: "bg-amber-100 text-amber-700" },
       },
       disetujui: {
@@ -795,7 +795,7 @@ function Step4({
         title: "Bukti Disetujui",
         sub: "Anda dapat melanjutkan ke Post Test.",
         color: "text-green-700",
-        bg: "bg-gradient-to-br from-green-50 to-emerald-50 border-green-200",
+        bg: "bg-linear-to-br from-green-50 to-emerald-50 border-green-200",
         badge: { text: "Disetujui", color: "bg-green-100 text-green-700" },
       },
       ditolak: {
@@ -805,7 +805,7 @@ function Step4({
           latestAttachment.alasanTolak ||
           "Silakan upload ulang dengan bukti yang sesuai.",
         color: "text-destructive",
-        bg: "bg-gradient-to-br from-red-50 to-pink-50 border-red-200",
+        bg: "bg-linear-to-br from-red-50 to-pink-50 border-red-200",
         badge: { text: "Ditolak", color: "bg-red-100 text-destructive" },
       },
       pending: {
@@ -833,7 +833,7 @@ function Step4({
       {/* Ketentuan bukti sosialisasi */}
       <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 mb-5">
         <div className="flex items-center gap-2 mb-2">
-          <FileText size={15} className="text-amber-700 flex-shrink-0" />
+          <FileText size={15} className="text-amber-700 shrink-0" />
           <span className="text-sm font-semibold text-amber-900">
             Ketentuan Bukti Sosialisasi
           </span>
@@ -856,7 +856,7 @@ function Step4({
       <div
         className={`rounded-xl border p-4 mb-5 flex items-center gap-3 ${statusBox.bg}`}
       >
-        <div className="text-xl flex-shrink-0">{statusBox.icon}</div>
+        <div className="text-xl shrink-0">{statusBox.icon}</div>
         <div className="flex-1 min-w-0">
           <div className={`text-sm font-semibold ${statusBox.color}`}>
             {statusBox.title}
@@ -867,7 +867,7 @@ function Step4({
         </div>
         {statusBox.badge && (
           <span
-            className={`text-xs px-2.5 py-0.5 rounded-full font-medium flex-shrink-0 ${statusBox.badge.color}`}
+            className={`text-xs px-2.5 py-0.5 rounded-full font-medium shrink-0 ${statusBox.badge.color}`}
           >
             {statusBox.badge.text}
           </span>
@@ -933,7 +933,7 @@ function Step4({
                   </div>
                 </div>
               </div>
-              <div className="flex gap-2 flex-shrink-0">
+              <div className="flex gap-2 shrink-0">
                 <Button
                   variant="outline"
                   size="sm"
@@ -951,7 +951,7 @@ function Step4({
 
           {errorMsg && (
             <div className="mt-3 bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-sm text-destructive flex items-center gap-2">
-              <AlertCircle size={14} className="flex-shrink-0" />
+              <AlertCircle size={14} className="shrink-0" />
               {errorMsg}
             </div>
           )}
@@ -988,14 +988,14 @@ function Step6({
 
       {/* Celebration card */}
       <div
-        className={`relative bg-gradient-to-br ${theme.gradient} rounded-2xl p-7 overflow-hidden`}
+        className={`relative bg-linear-to-br ${theme.gradient} rounded-2xl p-7 overflow-hidden`}
       >
         {/* Decorative blobs */}
         <div className="absolute -top-12 -right-12 w-40 h-40 bg-white/15 blob-decoration" />
         <div className="absolute -bottom-16 -left-12 w-48 h-48 bg-white/10 blob-decoration" />
 
         <div className="relative flex items-center gap-5">
-          <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 border border-white/30">
+          <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center shrink-0 border border-white/30">
             <Trophy size={32} className="text-white" />
           </div>
           <div>

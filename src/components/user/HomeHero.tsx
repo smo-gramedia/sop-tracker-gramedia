@@ -1,6 +1,6 @@
 // src/components/user/HomeHero.tsx
 import Link from "next/link";
-import { Sparkles, BookOpen, ArrowRight, TrendingUp } from "lucide-react";
+import { BookOpen, ArrowRight, TrendingUp } from "lucide-react";
 
 type Props = {
   userName: string;
@@ -44,7 +44,7 @@ export default function HomeHero({
             <h1 className="font-display font-bold text-3xl sm:text-4xl md:text-5xl text-white leading-tight mb-4">
               Halo, Gramedians!
               <br />
-              <span className="bg-gradient-to-r from-pink-200 to-amber-200 bg-clip-text text-transparent">
+              <span className="bg-linear-to-r from-pink-200 to-amber-200 bg-clip-text text-transparent">
                 Siap upgrade skill hari ini?
               </span>
             </h1>
@@ -77,7 +77,7 @@ export default function HomeHero({
               )}
               <Link
                 href="/profil"
-                className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/30 text-white rounded-xl px-6 py-3 font-semibold text-sm hover:bg-white/25 transition-colors"
+                className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-xs border border-white/30 text-white rounded-xl px-6 py-3 font-semibold text-sm hover:bg-white/25 transition-colors"
               >
                 <TrendingUp size={16} />
                 Lihat Progress Saya
@@ -143,7 +143,7 @@ function CircularProgress({ percentage }: { percentage: number }) {
   const offset = circumference - (percentage / 100) * circumference;
 
   return (
-    <div className="relative w-20 h-20 flex-shrink-0">
+    <div className="relative w-20 h-20 shrink-0">
       <svg className="w-20 h-20 -rotate-90" viewBox="0 0 80 80">
         <circle
           cx="40"

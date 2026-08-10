@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import { SOP_KATEGORI_LABEL } from "@/lib/constants";
-import type { SopKategori } from "@prisma/client";
+import type { SopKategori } from "@/generated/prisma/client";
 import SopKategoriClient from "@/components/user/SopKategoriClient";
 import AksesDitolak from "@/components/user/AksesDitolak";
 import {

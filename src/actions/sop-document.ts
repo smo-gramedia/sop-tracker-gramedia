@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import type { SopKategori, SopTipe, SopStatus } from "@prisma/client";
+import type { SopKategori, SopStatus } from "@/generated/prisma/client";
 
 const SopDocumentSchema = z.object({
   kode:           z.string().min(1),
@@ -20,7 +20,7 @@ const SopDocumentSchema = z.object({
       z.literal(""),
     ])
     .optional()
-    .transform((v) => (v ? v : null)),
+    .transform((v) => (v || null)),
   subcategoryId:  z.string().optional().nullable(),
   departmentId:   z.string().optional().nullable(),
   versi:          z.string().default("Original"),
@@ -110,7 +110,7 @@ export async function updateSopDocument(id: string, formData: FormData) {
 
 export async function deleteSopDocument(id: string) {
   const session = await auth();
-  if (!session || session.user.role !== "superadmin") throw new Error("Unauthorized");
+  if (session?.user.role !== "superadmin") throw new Error("Unauthorized");
 
   await prisma.sopDocument.delete({ where: { id } });
   revalidatePath("/upload-dokumen");

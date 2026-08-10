@@ -8,7 +8,7 @@ import { z } from "zod";
 // ─── Validation: Update user (nama, email, unit, status, optional password) ──
 const UpdateUserSchema = z.object({
   nama: z.string().min(1, "Nama wajib diisi").optional(),
-  email: z.string().email("Format email tidak valid").optional(),
+  email: z.email("Format email tidak valid").optional(),
   unit: z.string().nullable().optional(),
   status: z.enum(["aktif", "nonaktif"]).optional(),
   // Memindahkan tipe akun (mis. "department" lama → "supporting"/"publishing").
@@ -89,7 +89,7 @@ export async function PUT(
   const parsed = UpdateUserSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: parsed.error.errors[0].message },
+      { error: parsed.error.issues[0].message },
       { status: 400 }
     );
   }

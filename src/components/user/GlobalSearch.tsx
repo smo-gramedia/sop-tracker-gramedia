@@ -165,7 +165,7 @@ function SearchInner({
   return (
     <div className="relative w-full">
       <div className="flex items-center gap-2 bg-background border rounded-lg px-3 py-2 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-shadow">
-        <Search size={15} className="text-muted-foreground flex-shrink-0" />
+        <Search size={15} className="text-muted-foreground shrink-0" />
         <input
           ref={inputRef}
           type="text"
@@ -173,15 +173,15 @@ function SearchInner({
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Cari SOP berdasarkan kode atau judul"
-          className="flex-1 bg-transparent border-none outline-none text-sm min-w-0"
+          className="flex-1 bg-transparent border-none outline-hidden text-sm min-w-0"
         />
         {loading && (
-          <Loader2 size={14} className="text-muted-foreground animate-spin flex-shrink-0" />
+          <Loader2 size={14} className="text-muted-foreground animate-spin shrink-0" />
         )}
         {q && !loading && (
           <button
             onClick={() => setQ("")}
-            className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+            className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
             aria-label="Clear"
           >
             <X size={14} />
@@ -239,7 +239,7 @@ function SearchInner({
                       <div className="flex items-center gap-2 min-w-0 flex-1">
                         <Hash
                           size={11}
-                          className="text-muted-foreground flex-shrink-0"
+                          className="text-muted-foreground shrink-0"
                         />
                         <span className="text-xs font-mono text-muted-foreground truncate">
                           {r.kode}
@@ -250,7 +250,7 @@ function SearchInner({
                       </div>
                       <span
                         className={cn(
-                          "text-[10px] px-1.5 py-0.5 rounded-full border font-medium flex-shrink-0",
+                          "text-[10px] px-1.5 py-0.5 rounded-full border font-medium shrink-0",
                           KATEGORI_COLOR[r.kategori] ??
                             "bg-muted text-muted-foreground border-border"
                         )}
@@ -394,10 +394,10 @@ export default function GlobalSearch() {
           aria-modal="true"
         >
           {/* Header dengan tombol close */}
-          <div className="flex items-center gap-2 px-3 py-2.5 border-b flex-shrink-0">
+          <div className="flex items-center gap-2 px-3 py-2.5 border-b shrink-0">
             <button
               onClick={() => setMobileModalOpen(false)}
-              className="p-1.5 rounded-lg hover:bg-muted transition-colors flex-shrink-0"
+              className="p-1.5 rounded-lg hover:bg-muted transition-colors shrink-0"
               aria-label="Tutup pencarian"
             >
               <X size={18} />

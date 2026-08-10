@@ -162,7 +162,7 @@ export default function LearningSidebar({
                           >
                             <div
                               className={cn(
-                                "w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 text-[10px] font-bold",
+                                "w-5 h-5 rounded-full border flex items-center justify-center shrink-0 text-[10px] font-bold",
                                 isLocked
                                   ? "bg-muted/50 border-border text-muted-foreground"
                                   : isDone

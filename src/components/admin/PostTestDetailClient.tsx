@@ -237,7 +237,7 @@ export default function PostTestDetailClient({
           <button
             onClick={handleExport}
             disabled={exporting || results.length === 0}
-            className="bg-foreground text-background rounded-xl px-4 py-2 text-sm font-medium hover:bg-foreground/90 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+            className="bg-foreground text-background rounded-xl px-4 py-2 text-sm font-medium hover:bg-foreground/90 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
             title={
               results.length === 0
                 ? "Belum ada pengerjaan untuk di-export"
@@ -311,7 +311,7 @@ export default function PostTestDetailClient({
               questions.map((q, i) => (
                 <div key={q.id} className="text-sm">
                   <div className="font-medium mb-2 flex gap-2">
-                    <span className="text-muted-foreground font-mono flex-shrink-0">
+                    <span className="text-muted-foreground font-mono shrink-0">
                       {i + 1}.
                     </span>
                     <span>{q.pertanyaan}</span>
@@ -329,14 +329,14 @@ export default function PostTestDetailClient({
                               : "text-muted-foreground bg-muted/30"
                           }`}
                         >
-                          <span className="font-mono w-4 flex-shrink-0">
+                          <span className="font-mono w-4 shrink-0">
                             {opt}.
                           </span>
                           <span className="flex-1">{value}</span>
                           {isCorrect && (
                             <CheckCircle2
                               size={12}
-                              className="flex-shrink-0 mt-0.5"
+                              className="shrink-0 mt-0.5"
                             />
                           )}
                         </div>
@@ -382,7 +382,7 @@ export default function PostTestDetailClient({
                 }
                 value={searchResult}
                 onChange={(e) => setSearchResult(e.target.value)}
-                className="flex-1 text-xs bg-transparent border-none outline-none"
+                className="flex-1 text-xs bg-transparent border-none outline-hidden"
               />
             </div>
           </div>
@@ -685,20 +685,20 @@ function ResultDisplay({
 function TipeIcon({ tipe }: { tipe: string | null }) {
   if (tipe === "store") {
     return (
-      <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center flex-shrink-0">
+      <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
         <Store size={10} />
       </div>
     );
   }
   if (tipe === "department") {
     return (
-      <div className="w-6 h-6 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center flex-shrink-0">
+      <div className="w-6 h-6 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
         <Building2 size={10} />
       </div>
     );
   }
   return (
-    <div className="w-6 h-6 rounded-full bg-muted text-muted-foreground flex items-center justify-center flex-shrink-0 text-[10px]">
+    <div className="w-6 h-6 rounded-full bg-muted text-muted-foreground flex items-center justify-center shrink-0 text-[10px]">
       —
     </div>
   );

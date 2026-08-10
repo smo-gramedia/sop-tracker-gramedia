@@ -109,7 +109,7 @@ export default function AttachmentActions({ attachment }: Props) {
           <div className="bg-background rounded-2xl border w-full max-w-md overflow-hidden">
             <div className="p-6 space-y-4">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
                   <Check size={18} className="text-green-600" />
                 </div>
                 <div>
@@ -164,7 +164,7 @@ export default function AttachmentActions({ attachment }: Props) {
           <div className="bg-background rounded-2xl border w-full max-w-md overflow-hidden">
             <div className="p-6 space-y-4">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
                   <AlertCircle size={18} className="text-destructive" />
                 </div>
                 <div>
@@ -184,7 +184,7 @@ export default function AttachmentActions({ attachment }: Props) {
                   <span className="text-destructive">*</span>
                 </label>
                 <textarea
-                  className="w-full border rounded-lg p-3 text-sm min-h-[100px] resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full border rounded-lg p-3 text-sm min-h-[100px] resize-none focus:outline-hidden focus:ring-2 focus:ring-ring"
                   placeholder="Contoh: Foto tidak terbaca jelas, file korup, bukti kegiatan tidak relevan dengan SOP..."
                   value={alasan}
                   onChange={(e) => setAlasan(e.target.value)}
