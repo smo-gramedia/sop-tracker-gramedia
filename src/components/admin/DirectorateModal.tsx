@@ -55,7 +55,7 @@ export default function DirectorateModal({ open, onClose, data }: Props) {
 
   if (!open) return null;
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true);
     setErrorMsg(null);
