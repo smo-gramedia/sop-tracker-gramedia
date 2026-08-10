@@ -140,7 +140,7 @@ export default function RawDokumenClient({ rawDocs }: { rawDocs: RawDoc[] }) {
             placeholder="Cari nama SOP atau kode..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 text-sm bg-transparent border-none outline-none"
+            className="flex-1 text-sm bg-transparent border-none outline-hidden"
           />
         </div>
         <select

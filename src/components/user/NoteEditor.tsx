@@ -168,7 +168,7 @@ export default function NoteEditor({ sopDocumentId, initialContent }: Props) {
         onInput={handleInput}
         onKeyDown={handleKeyDown}
         className={cn(
-          "px-3 py-3 text-sm min-h-[180px] max-h-[280px] overflow-y-auto outline-none",
+          "px-3 py-3 text-sm min-h-[180px] max-h-[280px] overflow-y-auto outline-hidden",
           "[&_b]:font-bold [&_strong]:font-bold",
           "[&_i]:italic [&_em]:italic",
           "[&_h3]:text-base [&_h3]:font-bold [&_h3]:mt-3 [&_h3]:mb-1",

@@ -154,7 +154,7 @@ export default function EditUserModal({ open, userId, onClose }: Props) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-start justify-center p-4 overflow-y-auto">
       <div className="bg-background rounded-2xl border shadow-2xl w-full max-w-2xl my-4 sm:my-8 max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-4rem)] overflow-y-auto animate-slide-up">
         {/* Header */}
         <div className="flex items-start justify-between p-6 border-b">
@@ -185,14 +185,14 @@ export default function EditUserModal({ open, userId, onClose }: Props) {
 
           {error && (
             <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-xl border border-destructive/20 flex items-start gap-2">
-              <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+              <AlertCircle size={16} className="shrink-0 mt-0.5" />
               <p>{error}</p>
             </div>
           )}
 
           {success && (
             <div className="bg-green-50 text-green-700 text-sm p-3 rounded-xl border border-green-200 flex items-start gap-2">
-              <CheckCircle2 size={16} className="flex-shrink-0 mt-0.5" />
+              <CheckCircle2 size={16} className="shrink-0 mt-0.5" />
               <p>Perubahan berhasil disimpan.</p>
             </div>
           )}
@@ -344,7 +344,7 @@ export default function EditUserModal({ open, userId, onClose }: Props) {
                 {resetPasswordMode && (
                   <div className="space-y-3 bg-amber-50 rounded-xl p-4 border border-amber-200">
                     <div className="flex items-start gap-2 text-xs text-amber-800">
-                      <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
+                      <AlertCircle size={14} className="shrink-0 mt-0.5" />
                       <p>
                         User akan diminta login ulang dengan password baru. Pastikan
                         Bapak komunikasikan password baru ke user.

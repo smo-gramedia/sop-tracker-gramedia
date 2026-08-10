@@ -103,10 +103,10 @@ export default function UserNavbar({
       <nav className="bg-background border-b sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-2">
           {/* ─── Left: Logo + Desktop Nav ─────────────────────────── */}
-          <div className="flex items-center gap-6 min-w-0 flex-shrink">
+          <div className="flex items-center gap-6 min-w-0 shrink">
             {/* Logo sudah punya <Link href="/home"> internal — jangan dibungkus Link lagi */}
             {/* Mobile: hanya icon (hide text), tablet+ : icon + text */}
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <Logo
                 size={38}
                 textClassName="text-base hidden sm:inline-block"
@@ -145,7 +145,7 @@ export default function UserNavbar({
                     )}
                   />
                   {isSopActive && (
-                    <span className="absolute -bottom-[19px] left-0 right-0 h-0.5 bg-primary rounded-full" />
+                    <span className="absolute bottom-[-19px] left-0 right-0 h-0.5 bg-primary rounded-full" />
                   )}
                 </button>
 
@@ -171,7 +171,7 @@ export default function UserNavbar({
           </div>
 
           {/* ─── Right: Search + Notif + Profile + Hamburger ───── */}
-          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {/* Global Search: desktop inline, mobile icon-modal */}
             <GlobalSearch />
 
@@ -257,7 +257,7 @@ export default function UserNavbar({
         >
           {/* Backdrop */}
           <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/40 backdrop-blur-xs"
             onClick={() => setMobileOpen(false)}
           />
 
@@ -407,7 +407,7 @@ function NavLink({
     >
       {children}
       {active && (
-        <span className="absolute -bottom-[19px] left-0 right-0 h-0.5 bg-primary rounded-full" />
+        <span className="absolute bottom-[-19px] left-0 right-0 h-0.5 bg-primary rounded-full" />
       )}
     </Link>
   );

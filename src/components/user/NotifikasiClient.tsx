@@ -109,7 +109,7 @@ export default function NotifikasiClient({ notifications }: Props) {
             >
               <div className="flex gap-4">
                 <div
-                  className={`flex-shrink-0 w-10 h-10 rounded-lg border flex items-center justify-center ${
+                  className={`shrink-0 w-10 h-10 rounded-lg border flex items-center justify-center ${
                     TIPE_COLOR[n.tipe] ?? TIPE_COLOR.info
                   }`}
                 >
@@ -124,7 +124,7 @@ export default function NotifikasiClient({ notifications }: Props) {
                           {n.judul}
                         </span>
                         {!n.isRead && (
-                          <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
+                          <span className="w-2 h-2 bg-blue-500 rounded-full shrink-0" />
                         )}
                       </div>
                       <span className="text-xs text-muted-foreground">

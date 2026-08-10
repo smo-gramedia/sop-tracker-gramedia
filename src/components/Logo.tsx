@@ -31,7 +31,7 @@ export default function Logo({
   const content = (
     <div className={`flex items-center gap-2 ${className}`}>
       <div
-        className="flex items-center justify-center overflow-hidden flex-shrink-0"
+        className="flex items-center justify-center overflow-hidden shrink-0"
         style={{ width: size, height: size }}
       >
         <Image

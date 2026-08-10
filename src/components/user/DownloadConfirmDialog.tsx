@@ -54,7 +54,7 @@ export default function DownloadConfirmDialog({
       <div className="bg-background rounded-2xl border w-full max-w-md overflow-hidden">
         <div className="p-6 space-y-4">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
               <ShieldAlert size={18} className="text-amber-600" />
             </div>
             <div>

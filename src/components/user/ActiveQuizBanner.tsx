@@ -126,9 +126,9 @@ export default function ActiveQuizBanner() {
         {visible.map((s) => (
           <div
             key={s.postTestId}
-            className="bg-amber-50 border border-amber-200 rounded-xl shadow-sm flex items-start sm:items-center gap-3 px-4 py-3"
+            className="bg-amber-50 border border-amber-200 rounded-xl shadow-xs flex items-start sm:items-center gap-3 px-4 py-3"
           >
-            <div className="flex-shrink-0 w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center">
+            <div className="shrink-0 w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center">
               <Clock size={16} className="text-amber-700" />
             </div>
             <div className="flex-1 min-w-0">
@@ -146,7 +146,7 @@ export default function ActiveQuizBanner() {
                 </span>
               </div>
             </div>
-            <div className="flex-shrink-0 flex items-center gap-1.5">
+            <div className="shrink-0 flex items-center gap-1.5">
               <Link
                 href={`/belajar/${s.sopDocumentId}`}
                 className="text-xs font-semibold bg-amber-700 text-white rounded-lg px-3 py-1.5 hover:bg-amber-800 transition-colors flex items-center gap-1"

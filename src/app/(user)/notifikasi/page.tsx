@@ -54,7 +54,7 @@ export default async function NotifikasiPage() {
               <Link
                 key={n.id}
                 href={linkHref}
-                className={`block bg-background rounded-xl border p-4 hover:shadow-sm transition-all ${
+                className={`block bg-background rounded-xl border p-4 hover:shadow-xs transition-all ${
                   !n.isRead
                     ? "border-primary/30 bg-primary/5"
                     : ""
@@ -66,7 +66,7 @@ export default async function NotifikasiPage() {
                     <div className="flex items-center gap-2 mb-0.5">
                       <h3 className="font-semibold text-sm">{n.judul}</h3>
                       {!n.isRead && (
-                        <span className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
+                        <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground leading-relaxed">
@@ -108,7 +108,7 @@ function NotifIcon({ tipe }: { tipe: string }) {
   const Icon = cfg.icon;
   return (
     <div
-      className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${cfg.bg}`}
+      className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${cfg.bg}`}
     >
       <Icon size={16} className={cfg.color} />
     </div>

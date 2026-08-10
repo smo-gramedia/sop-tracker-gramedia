@@ -48,7 +48,7 @@ export default function SignInPage() {
         </div>
 
         {/* Form card */}
-        <div className="bg-background rounded-2xl shadow-sm border p-7 space-y-5">
+        <div className="bg-background rounded-2xl shadow-xs border p-7 space-y-5">
           <div>
             <h2 className="font-display font-bold text-lg">Sign In</h2>
             <p className="text-muted-foreground text-xs mt-1">

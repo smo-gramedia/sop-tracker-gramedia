@@ -187,7 +187,7 @@ export default function DivisionModal({
               onChange={(e) => setDeskripsi(e.target.value)}
               placeholder="Deskripsi singkat division..."
               disabled={saving}
-              className="w-full border rounded-lg p-3 text-sm min-h-[70px] resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full border rounded-lg p-3 text-sm min-h-[70px] resize-none focus:outline-hidden focus:ring-2 focus:ring-ring"
             />
           </div>
 

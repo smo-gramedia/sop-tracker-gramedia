@@ -70,7 +70,7 @@ export default function BantuanClient({ faqs }: Props) {
                 </span>
                 <ChevronDown
                   size={18}
-                  className={`text-muted-foreground flex-shrink-0 mt-0.5 transition-transform ${
+                  className={`text-muted-foreground shrink-0 mt-0.5 transition-transform ${
                     isOpen ? "rotate-180" : ""
                   }`}
                 />

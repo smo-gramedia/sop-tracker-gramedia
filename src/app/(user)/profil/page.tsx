@@ -123,7 +123,7 @@ export default async function ProfilPage() {
         </div>
         <Link
           href="/notifikasi"
-          className="bg-background rounded-xl border p-3 sm:p-5 relative hover:shadow-sm transition-shadow"
+          className="bg-background rounded-xl border p-3 sm:p-5 relative hover:shadow-xs transition-shadow"
         >
           {unreadNotif > 0 && (
             <span className="absolute top-4 right-4 bg-destructive text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
@@ -160,7 +160,7 @@ export default async function ProfilPage() {
                   </div>
                 </div>
                 <span
-                  className={`text-xs px-2 py-0.5 rounded-full border flex-shrink-0 font-medium ${
+                  className={`text-xs px-2 py-0.5 rounded-full border shrink-0 font-medium ${
                     p.status === "selesai"
                       ? "bg-green-50 text-green-700 border-green-200"
                       : p.status === "dipelajari"
@@ -225,20 +225,20 @@ function ProfileAvatar({
 }) {
   if (tipeUser === "store") {
     return (
-      <div className="w-16 h-16 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center flex-shrink-0">
+      <div className="w-16 h-16 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
         <Store size={28} />
       </div>
     );
   }
   if (tipeUser === "department") {
     return (
-      <div className="w-16 h-16 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center flex-shrink-0">
+      <div className="w-16 h-16 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
         <Building2 size={28} />
       </div>
     );
   }
   return (
-    <div className="w-16 h-16 rounded-full bg-foreground text-background flex items-center justify-center font-display font-bold text-2xl flex-shrink-0">
+    <div className="w-16 h-16 rounded-full bg-foreground text-background flex items-center justify-center font-display font-bold text-2xl shrink-0">
       {nama.charAt(0).toUpperCase()}
     </div>
   );

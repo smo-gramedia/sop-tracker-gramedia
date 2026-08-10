@@ -87,7 +87,7 @@ export default function ContinueLearning({ items }: { items: Item[] }) {
               </div>
 
               {/* Title */}
-              <h3 className="font-display font-bold text-base leading-snug mb-3 line-clamp-2 min-h-[3rem]">
+              <h3 className="font-display font-bold text-base leading-snug mb-3 line-clamp-2 min-h-12">
                 {item.sopDocument.judul}
               </h3>
 
@@ -102,7 +102,7 @@ export default function ContinueLearning({ items }: { items: Item[] }) {
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-primary to-purple-500 rounded-full transition-all"
+                    className="h-full bg-linear-to-r from-primary to-purple-500 rounded-full transition-all"
                     style={{ width: `${persen}%` }}
                   />
                 </div>

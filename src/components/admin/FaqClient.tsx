@@ -74,7 +74,7 @@ export default function FaqClient({ faqs }: { faqs: Faq[] }) {
               >
                 <GripVertical
                   size={18}
-                  className="text-muted-foreground/40 mt-0.5 flex-shrink-0"
+                  className="text-muted-foreground/40 mt-0.5 shrink-0"
                 />
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold mb-1">{f.pertanyaan}</div>
@@ -82,7 +82,7 @@ export default function FaqClient({ faqs }: { faqs: Faq[] }) {
                     {f.jawaban}
                   </div>
                 </div>
-                <div className="flex gap-1.5 flex-shrink-0">
+                <div className="flex gap-1.5 shrink-0">
                   <Button
                     variant="outline"
                     size="sm"

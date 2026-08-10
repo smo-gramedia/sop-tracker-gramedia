@@ -495,7 +495,7 @@ function KodePreview({
   }
   return (
     <div className="flex items-center gap-1.5 text-xs">
-      <CheckCircle2 size={12} className="text-green-600 flex-shrink-0" />
+      <CheckCircle2 size={12} className="text-green-600 shrink-0" />
       <span className="text-muted-foreground">Preview kode user:</span>
       <code className="bg-background border rounded px-1.5 py-0.5 font-mono font-bold">
         {kode}

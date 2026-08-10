@@ -97,7 +97,7 @@ export default function TambahPostTestModal({ open, onClose, sopOptions }: Props
             {questions.map((q, i) => (
               <div key={i} className="border rounded-xl p-5 space-y-3">
                 <div className="flex items-center gap-2">
-                  <span className="w-7 h-7 rounded-full bg-foreground text-background text-xs flex items-center justify-center font-bold flex-shrink-0">{i+1}</span>
+                  <span className="w-7 h-7 rounded-full bg-foreground text-background text-xs flex items-center justify-center font-bold shrink-0">{i+1}</span>
                   <Input
                     placeholder={`Pertanyaan ${i+1}...`}
                     value={q.pertanyaan}

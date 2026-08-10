@@ -177,7 +177,7 @@ export default async function HomePage() {
       ) : (
         // Kalau belum ada progress, ranking standalone
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-slide-up">
-          <div className="lg:col-span-2 bg-gradient-to-br from-primary/5 via-purple-100/50 to-pink-100/50 rounded-2xl border p-8 flex items-center">
+          <div className="lg:col-span-2 bg-linear-to-br from-primary/5 via-purple-100/50 to-pink-100/50 rounded-2xl border p-8 flex items-center">
             <div>
               <h2 className="font-display font-bold text-2xl mb-2">
                 Belum Mulai Belajar?

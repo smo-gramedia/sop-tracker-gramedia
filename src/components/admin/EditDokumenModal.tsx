@@ -93,7 +93,7 @@ function FileReplaceRow({
           <p className="text-muted-foreground italic">Belum ada file</p>
         )}
       </div>
-      <label className="flex-shrink-0">
+      <label className="shrink-0">
         <span
           className={`inline-flex items-center h-7 px-2.5 text-xs rounded-md border transition-colors ${
             disabled || busy
@@ -347,7 +347,7 @@ export default function EditDokumenModal({
               id="deskripsi"
               name="deskripsi"
               defaultValue={sop.deskripsi ?? ""}
-              className="w-full border rounded-lg p-3 text-sm min-h-[80px] resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full border rounded-lg p-3 text-sm min-h-[80px] resize-none focus:outline-hidden focus:ring-2 focus:ring-ring"
             />
           </div>
 

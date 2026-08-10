@@ -31,7 +31,7 @@ export default function BantuanAccordion({ faqs }: { faqs: Faq[] }) {
               </span>
               <ChevronDown
                 size={16}
-                className={`text-muted-foreground transition-transform flex-shrink-0 ${
+                className={`text-muted-foreground transition-transform shrink-0 ${
                   isOpen ? "rotate-180" : ""
                 }`}
               />

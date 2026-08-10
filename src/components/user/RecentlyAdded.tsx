@@ -66,21 +66,21 @@ export default function RecentlyAdded({ items }: { items: RecentSop[] }) {
                     {sop.kode}
                   </div>
                 </div>
-                <div className="absolute bottom-3 right-3 w-9 h-9 rounded-xl bg-white shadow-sm flex items-center justify-center">
+                <div className="absolute bottom-3 right-3 w-9 h-9 rounded-xl bg-white shadow-xs flex items-center justify-center">
                   <FileText size={16} className="text-foreground/70" />
                 </div>
               </div>
 
               {/* Content */}
               <div className="p-4">
-                <h3 className="font-display font-bold text-sm leading-snug line-clamp-2 mb-2 min-h-[2.5rem]">
+                <h3 className="font-display font-bold text-sm leading-snug line-clamp-2 mb-2 min-h-10">
                   {sop.judul}
                 </h3>
                 <div className="flex items-center justify-between mt-3 text-[11px] text-muted-foreground">
                   <span className="truncate">
                     {sop.department?.nama ?? "—"}
                   </span>
-                  <span className="text-primary font-semibold flex items-center gap-0.5 group-hover:gap-1 transition-all flex-shrink-0">
+                  <span className="text-primary font-semibold flex items-center gap-0.5 group-hover:gap-1 transition-all shrink-0">
                     Buka <ArrowRight size={11} />
                   </span>
                 </div>

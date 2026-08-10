@@ -197,7 +197,7 @@ export default function JuklakClient({
     <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
       {/* Hero — gradient slate */}
       <div
-        className={`relative bg-gradient-to-br ${THEME.gradient} rounded-3xl overflow-hidden animate-fade-in`}
+        className={`relative bg-linear-to-br ${THEME.gradient} rounded-3xl overflow-hidden animate-fade-in`}
       >
         <div className="absolute -top-12 -right-12 w-64 h-64 bg-white/10 blob-decoration" />
         <div className="absolute -bottom-20 -left-12 w-72 h-72 bg-white/5 blob-decoration" />
@@ -222,19 +222,19 @@ export default function JuklakClient({
 
           {/* Stats inline */}
           <div className="grid grid-cols-3 gap-3 mt-6">
-            <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+            <div className="bg-white/15 backdrop-blur-xs rounded-xl p-3 border border-white/20">
               <div className="text-white text-2xl font-display font-bold">
                 {documents.length}
               </div>
               <div className="text-white/70 text-xs">Total Dokumen</div>
             </div>
-            <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+            <div className="bg-white/15 backdrop-blur-xs rounded-xl p-3 border border-white/20">
               <div className="text-white text-2xl font-display font-bold">
                 {dipelajariCount}
               </div>
               <div className="text-white/70 text-xs">Sedang Dipelajari</div>
             </div>
-            <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+            <div className="bg-white/15 backdrop-blur-xs rounded-xl p-3 border border-white/20">
               <div className="text-white text-2xl font-display font-bold">
                 {selesaiCount}
               </div>
@@ -253,7 +253,7 @@ export default function JuklakClient({
             placeholder="Cari juklak berdasarkan judul, kode, atau deskripsi..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 text-sm bg-transparent border-none outline-none"
+            className="flex-1 text-sm bg-transparent border-none outline-hidden"
           />
         </div>
 
@@ -443,7 +443,7 @@ function JuklakCard({
             </div>
             <div className="h-1.5 bg-muted rounded-full overflow-hidden">
               <div
-                className={`h-full bg-gradient-to-r ${THEME.gradient} rounded-full transition-all`}
+                className={`h-full bg-linear-to-r ${THEME.gradient} rounded-full transition-all`}
                 style={{
                   width: `${Math.round((progress.stepCurrent / 6) * 100)}%`,
                 }}
@@ -480,7 +480,7 @@ function JuklakCard({
           </button>
           <Link
             href={`/belajar/${doc.id}`}
-            className={`ml-auto text-xs font-bold text-white rounded-lg px-4 py-1.5 hover:opacity-90 transition-opacity flex items-center gap-1.5 bg-gradient-to-r ${THEME.gradient} shadow-sm relative z-10`}
+            className={`ml-auto text-xs font-bold text-white rounded-lg px-4 py-1.5 hover:opacity-90 transition-opacity flex items-center gap-1.5 bg-linear-to-r ${THEME.gradient} shadow-xs relative z-10`}
           >
             <BookOpen size={12} /> Pelajari
           </Link>
@@ -566,7 +566,7 @@ function InfoPopup({
       <div className="bg-background rounded-2xl border w-full max-w-md overflow-hidden shadow-xl animate-scale-in">
         <div className="p-6">
           <div className="flex items-start gap-3 mb-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 rounded-full bg-linear-to-br from-amber-100 to-orange-100 flex items-center justify-center shrink-0">
               <AlertCircle size={20} className="text-amber-600" />
             </div>
             <div className="flex-1 pt-1">
@@ -574,7 +574,7 @@ function InfoPopup({
             </div>
             <button
               onClick={onClose}
-              className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+              className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
               aria-label="Tutup"
             >
               <X size={18} />

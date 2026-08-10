@@ -32,7 +32,7 @@ export default function KategoriCard({
 
       <div className="relative">
         {/* Icon */}
-        <div className="w-14 h-14 rounded-xl bg-white shadow-sm flex items-center justify-center mb-4">
+        <div className="w-14 h-14 rounded-xl bg-white shadow-xs flex items-center justify-center mb-4">
           <Image
             src={icon}
             alt={label}
@@ -55,7 +55,7 @@ export default function KategoriCard({
           <span className={`text-xs font-bold ${iconAccent}`}>
             {count} dokumen
           </span>
-          <span className="w-7 h-7 rounded-full bg-white shadow-sm flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
+          <span className="w-7 h-7 rounded-full bg-white shadow-xs flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
             <ArrowRight size={12} className="text-foreground" />
           </span>
         </div>

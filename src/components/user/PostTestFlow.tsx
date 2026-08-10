@@ -312,7 +312,7 @@ function EntryScreen({
             <strong>Catatan:</strong> 1 NIK hanya boleh 1x attempt per SOP.
           </p>
         </div>
-        <Button onClick={onStart} className="flex-shrink-0">
+        <Button onClick={onStart} className="shrink-0">
           {myResults.length > 0
             ? "Mulai Test (Karyawan Baru)"
             : "Mulai Test"}
@@ -416,7 +416,7 @@ function EntryScreen({
       {/* Reminder kalau belum lulus */}
       {!hasPassedPostTest && myResults.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
-          <Lock size={16} className="text-amber-600 flex-shrink-0 mt-0.5" />
+          <Lock size={16} className="text-amber-600 shrink-0 mt-0.5" />
           <div className="text-sm">
             <div className="font-semibold text-amber-800 mb-0.5">
               Belum lulus Post Test
@@ -604,7 +604,7 @@ function QuizScreen({
 
   return (
     <div className="fixed inset-0 bg-background z-50 flex flex-col">
-      <div className="flex items-center justify-between px-4 sm:px-6 h-14 border-b flex-shrink-0">
+      <div className="flex items-center justify-between px-4 sm:px-6 h-14 border-b shrink-0">
         <div className="text-sm font-medium text-muted-foreground">
           Soal {current + 1} dari {total}
         </div>
@@ -619,7 +619,7 @@ function QuizScreen({
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        <aside className="hidden md:block w-[200px] flex-shrink-0 bg-muted/30 border-r p-4 overflow-y-auto">
+        <aside className="hidden md:block w-[200px] shrink-0 bg-muted/30 border-r p-4 overflow-y-auto">
           <div className="font-bold text-sm mb-3 leading-snug">{sopJudul}</div>
           <div className="grid grid-cols-5 gap-1.5 mb-4">
             {postTest.questions.map((qq, i) => {
@@ -697,7 +697,7 @@ function QuizScreen({
                   >
                     <div
                       className={cn(
-                        "w-7 h-7 rounded flex items-center justify-center font-bold text-xs flex-shrink-0",
+                        "w-7 h-7 rounded flex items-center justify-center font-bold text-xs shrink-0",
                         isSelected
                           ? "bg-background/20 text-background"
                           : "bg-muted text-foreground"
@@ -762,7 +762,7 @@ function ResultScreen({
 
   return (
     <div className="fixed inset-0 bg-background z-50 flex flex-col">
-      <div className="flex items-center justify-between px-4 sm:px-6 h-14 border-b flex-shrink-0">
+      <div className="flex items-center justify-between px-4 sm:px-6 h-14 border-b shrink-0">
         <h2 className="font-display font-bold text-lg">Hasil Post Test</h2>
         <button
           onClick={onClose}
@@ -774,7 +774,7 @@ function ResultScreen({
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        <aside className="w-[260px] flex-shrink-0 bg-muted/30 border-r p-6 overflow-y-auto">
+        <aside className="w-[260px] shrink-0 bg-muted/30 border-r p-6 overflow-y-auto">
           <div className="text-xs font-semibold mb-1">Tanggal Post Test :</div>
           <div className="text-sm">{tanggalStr}</div>
           <div className="text-xs text-muted-foreground mb-6">
@@ -906,7 +906,7 @@ function ResultScreen({
                         >
                           <div
                             className={cn(
-                              "w-6 h-6 rounded flex items-center justify-center text-xs font-bold flex-shrink-0",
+                              "w-6 h-6 rounded flex items-center justify-center text-xs font-bold shrink-0",
                               highlight === "correct" &&
                                 "bg-green-500/20 text-green-700",
                               highlight === "wrong" &&
@@ -919,7 +919,7 @@ function ResultScreen({
                           </div>
                           <span className="flex-1">{text}</span>
                           {isUserPick && (
-                            <span className="text-[11px] font-semibold flex-shrink-0">
+                            <span className="text-[11px] font-semibold shrink-0">
                               (Jawaban Anda)
                             </span>
                           )}
@@ -1025,7 +1025,7 @@ function NikModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-start justify-center p-4 overflow-y-auto">
       <div className="bg-background rounded-2xl border shadow-2xl w-full max-w-md my-8 max-h-[calc(100vh-4rem)] overflow-y-auto animate-slide-up">
         <form onSubmit={handleSubmit}>
           {/* Header */}
@@ -1059,7 +1059,7 @@ function NikModal({
                   setNik(v);
                 }}
                 placeholder="6 digit angka"
-                className="w-full px-3.5 py-2.5 rounded-lg border bg-background text-sm font-mono tracking-wider focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full px-3.5 py-2.5 rounded-lg border bg-background text-sm font-mono tracking-wider focus:outline-hidden focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 autoFocus
                 required
               />
@@ -1082,7 +1082,7 @@ function NikModal({
                 onChange={(e) => setNama(e.target.value)}
                 placeholder="Contoh: Budi Santoso"
                 maxLength={100}
-                className="w-full px-3.5 py-2.5 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full px-3.5 py-2.5 rounded-lg border bg-background text-sm focus:outline-hidden focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 required
               />
             </div>
