@@ -9,3 +9,4 @@ out/
 .idea/
 
 /src/generated
+next-env.d.ts
