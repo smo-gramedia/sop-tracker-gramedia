@@ -1,6 +1,7 @@
 import js from "@eslint/js";
 import globals from "globals";
 import tseslint from "typescript-eslint";
+import tsParser from "@typescript-eslint/parser";
 import { defineConfig, globalIgnores } from "eslint/config";
 import eslintConfigPrettier from "eslint-config-prettier";
 import nextVitals from "eslint-config-next/core-web-vitals";
@@ -9,11 +10,18 @@ export default defineConfig([
   ...nextVitals,
   tseslint.configs.recommended,
   eslintConfigPrettier,
+  importX.flatConfigs.recommended,
+  importX.flatConfigs.typescript,
   {
     files: ["**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
     plugins: { js, "import-x": importX },
     extends: ["js/recommended", "import-x/flat/recommended"],
-    languageOptions: { globals: globals.browser },
+    languageOptions: {
+      globals: globals.browser,
+      parser: tsParser,
+      ecmaVersion: "latest",
+      sourceType: "module",
+    },
     settings: {
       react: {
         version: "19",
