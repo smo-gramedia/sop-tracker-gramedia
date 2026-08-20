@@ -4,14 +4,15 @@ import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import type { SopKategori, SopStatus } from "@/generated/prisma/client";
+import { deleteFile } from "@/lib/storage";
 
 const SopDocumentSchema = z.object({
-  kode:           z.string().min(1),
-  judul:          z.string().min(1),
-  deskripsi:      z.string().optional(),
-  kategori:       z.enum(["sr","ss","sp","sg","petunjuk"]),
-  tipe:           z.enum(["MP","PS","IK","petunjuk"]),
-  permittedAccess:z.string().optional(),
+  kode: z.string().min(1),
+  judul: z.string().min(1),
+  deskripsi: z.string().optional(),
+  kategori: z.enum(["sr", "ss", "sp", "sg", "petunjuk"]),
+  tipe: z.enum(["MP", "PS", "IK", "petunjuk"]),
+  permittedAccess: z.string().optional(),
   // Folder Petunjuk Pelaksanaan — hanya relevan untuk kategori "petunjuk".
   // Nilai kosong ("") dari form diperlakukan sebagai null (belum dikelompokkan).
   juklakKategori: z
@@ -20,12 +21,12 @@ const SopDocumentSchema = z.object({
       z.literal(""),
     ])
     .optional()
-    .transform((v) => (v || null)),
-  subcategoryId:  z.string().optional().nullable(),
-  departmentId:   z.string().optional().nullable(),
-  versi:          z.string().default("Original"),
+    .transform((v) => v || null),
+  subcategoryId: z.string().optional().nullable(),
+  departmentId: z.string().optional().nullable(),
+  versi: z.string().default("Original"),
   tanggalBerlaku: z.string().optional(),
-  status:         z.enum(["aktif","draft","obsolete"]).default("draft"),
+  status: z.enum(["aktif", "draft", "obsolete"]).default("draft"),
 });
 
 export async function createSopDocument(formData: FormData) {
@@ -47,7 +48,7 @@ export async function createSopDocument(formData: FormData) {
   if (existing) {
     if (existing.status === "aktif") {
       throw new Error(
-        `SOP sudah dibuat dengan versi ${existing.versi}. Cek di tabel Upload Dokumen, hapus atau ubah status dokumen terlebih dahulu menjadi obsolete dan silahkan coba lagi.`
+        `SOP sudah dibuat dengan versi ${existing.versi}. Cek di tabel Upload Dokumen, hapus atau ubah status dokumen terlebih dahulu menjadi obsolete dan silahkan coba lagi.`,
       );
     }
     // Kalau status 'obsolete' atau 'draft' → boleh lanjut submit versi baru
@@ -57,7 +58,9 @@ export async function createSopDocument(formData: FormData) {
     const doc = await prisma.sopDocument.create({
       data: {
         ...parsed,
-        tanggalBerlaku: parsed.tanggalBerlaku ? new Date(parsed.tanggalBerlaku) : null,
+        tanggalBerlaku: parsed.tanggalBerlaku
+          ? new Date(parsed.tanggalBerlaku)
+          : null,
         uploadedById: session.user.id,
       },
     });
@@ -65,12 +68,12 @@ export async function createSopDocument(formData: FormData) {
     revalidatePath("/upload-dokumen");
     revalidatePath("/raw-dokumen");
     return { success: true, id: doc.id };
-  } catch (err: any) {
+  } catch (err: unknown) {
     // ─── Backup error handler: kalau Prisma still throw P2002 (unique constraint) ──
     // (Misal race condition di mana 2 admin submit bersamaan dengan kode sama)
-    if (err?.code === "P2002") {
+    if ((err as { code: string })?.code === "P2002") {
       throw new Error(
-        `SOP dengan kode ${parsed.kode} sudah terdaftar. Periksa di tabel Upload Dokumen, hapus atau ubah status dokumen lama menjadi obsolete terlebih dahulu.`
+        `SOP dengan kode ${parsed.kode} sudah terdaftar. Periksa di tabel Upload Dokumen, hapus atau ubah status dokumen lama menjadi obsolete terlebih dahulu.`,
       );
     }
     throw err;
@@ -89,7 +92,9 @@ export async function updateSopDocument(id: string, formData: FormData) {
       where: { id },
       data: {
         ...parsed,
-        tanggalBerlaku: parsed.tanggalBerlaku ? new Date(parsed.tanggalBerlaku) : undefined,
+        tanggalBerlaku: parsed.tanggalBerlaku
+          ? new Date(parsed.tanggalBerlaku)
+          : undefined,
         updatedById: session.user.id,
       },
     });
@@ -97,11 +102,11 @@ export async function updateSopDocument(id: string, formData: FormData) {
     revalidatePath("/upload-dokumen");
     revalidatePath("/raw-dokumen");
     return { success: true };
-  } catch (err: any) {
+  } catch (err: unknown) {
     // ─── Handle composite unique constraint kode+versi ──
-    if (err?.code === "P2002") {
+    if ((err as { code: string })?.code === "P2002") {
       throw new Error(
-        `Sudah ada SOP lain dengan kombinasi kode "${parsed.kode}" + versi "${parsed.versi}". Silahkan gunakan versi yang berbeda.`
+        `Sudah ada SOP lain dengan kombinasi kode "${parsed.kode}" + versi "${parsed.versi}". Silahkan gunakan versi yang berbeda.`,
       );
     }
     throw err;
@@ -112,7 +117,11 @@ export async function deleteSopDocument(id: string) {
   const session = await auth();
   if (session?.user.role !== "superadmin") throw new Error("Unauthorized");
 
+  const documentIds = await prisma.sopAttachment.findMany({
+    where: { sopDocumentId: id },
+  });
   await prisma.sopDocument.delete({ where: { id } });
+  await Promise.all(documentIds.map((d) => deleteFile({ id: d.remoteId })));
   revalidatePath("/upload-dokumen");
   return { success: true };
 }
@@ -125,36 +134,44 @@ export async function getSopDocuments(opts?: {
   page?: number;
   pageSize?: number;
 }) {
-  const page     = opts?.page     ?? 1;
+  const page = opts?.page ?? 1;
   const pageSize = opts?.pageSize ?? 20;
-  const skip     = (page - 1) * pageSize;
+  const skip = (page - 1) * pageSize;
 
   const where = {
-    ...(opts?.kategori     && { kategori:     opts.kategori }),
-    ...(opts?.status       && { status:       opts.status }),
+    ...(opts?.kategori && { kategori: opts.kategori }),
+    ...(opts?.status && { status: opts.status }),
     ...(opts?.departmentId && { departmentId: opts.departmentId }),
-    ...(opts?.search       && {
+    ...(opts?.search && {
       OR: [
         { judul: { contains: opts.search, mode: "insensitive" as const } },
-        { kode:  { contains: opts.search, mode: "insensitive" as const } },
+        { kode: { contains: opts.search, mode: "insensitive" as const } },
       ],
     }),
   };
 
   const [data, total] = await Promise.all([
     prisma.sopDocument.findMany({
-      where, skip, take: pageSize,
+      where,
+      skip,
+      take: pageSize,
       orderBy: { createdAt: "desc" },
       include: {
-        department:  { select: { id: true, nama: true, kode: true } },
+        department: { select: { id: true, nama: true, kode: true } },
         subcategory: { select: { id: true, nama: true, kode: true } },
-        uploadedBy:  { select: { id: true, nama: true } },
+        uploadedBy: { select: { id: true, nama: true } },
       },
     }),
     prisma.sopDocument.count({ where }),
   ]);
 
-  return { data, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
+  return {
+    data,
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize),
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -170,6 +187,7 @@ export async function getSopFiles(sopId: string) {
       select: {
         id: true,
         filename: true,
+        remoteId: true,
         mimeType: true,
         ukuranKb: true,
         tipe: true,
@@ -178,7 +196,13 @@ export async function getSopFiles(sopId: string) {
     }),
     prisma.rawDocument.findFirst({
       where: { sopDocumentId: sopId },
-      select: { id: true, filename: true, mimeType: true, ukuranKb: true },
+      select: {
+        id: true,
+        filename: true,
+        remoteId: true,
+        mimeType: true,
+        ukuranKb: true,
+      },
       orderBy: { uploadedAt: "desc" },
     }),
   ]);
