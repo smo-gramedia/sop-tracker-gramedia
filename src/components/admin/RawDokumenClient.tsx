@@ -4,6 +4,7 @@
 import { useState, useMemo } from "react";
 import { Eye, Download, Search } from "lucide-react";
 import { formatTanggal, formatFileSize } from "@/lib/utils";
+import DocxPreviewModal from "@/components/admin/DocxPreviewModal";
 
 type RawDoc = {
   id: string;
@@ -21,8 +22,52 @@ type RawDoc = {
   uploadedBy: { nama: string };
 };
 
+function rawDocumentUrl(filename: string, query = "") {
+  const path = filename.split("/").map(encodeURIComponent).join("/");
+  return `/api/files/raw-documents/${path}${query}`;
+}
+
+function canUseOfficeViewer(value: string) {
+  try {
+    const url = new URL(value);
+    const hostname = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+    if (url.protocol !== "https:") return false;
+    if (
+      hostname === "localhost" ||
+      hostname.endsWith(".localhost") ||
+      hostname.endsWith(".local") ||
+      hostname === "::1" ||
+      (hostname.includes(":") &&
+        (hostname.startsWith("fc") ||
+          hostname.startsWith("fd") ||
+          hostname.startsWith("fe80:")))
+    ) {
+      return false;
+    }
+
+    const octets = hostname.split(".").map(Number);
+    if (octets.length === 4 && octets.every(Number.isInteger)) {
+      const [first, second] = octets;
+      if (
+        first === 10 ||
+        first === 127 ||
+        (first === 169 && second === 254) ||
+        (first === 172 && second >= 16 && second <= 31) ||
+        (first === 192 && second === 168)
+      ) {
+        return false;
+      }
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export default function RawDokumenClient({ rawDocs }: { rawDocs: RawDoc[] }) {
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<RawDoc | null>(null);
 
   // ─── Filter state ───────────────────────────────────────────────────
   const [search, setSearch] = useState("");
@@ -34,7 +79,8 @@ export default function RawDokumenClient({ rawDocs }: { rawDocs: RawDoc[] }) {
   const departmentOptions = useMemo(() => {
     const set = new Set<string>();
     rawDocs.forEach((d) => {
-      if (d.sopDocument.department?.nama) set.add(d.sopDocument.department.nama);
+      if (d.sopDocument.department?.nama)
+        set.add(d.sopDocument.department.nama);
     });
     return Array.from(set).sort();
   }, [rawDocs]);
@@ -62,11 +108,7 @@ export default function RawDokumenClient({ rawDocs }: { rawDocs: RawDoc[] }) {
   async function handleView(r: RawDoc) {
     // PDF bisa dipratinjau native di browser → buka inline di tab baru.
     if (r.filename.toLowerCase().endsWith(".pdf")) {
-      window.open(
-        `/api/files/raw-documents/${r.filename}`,
-        "_blank",
-        "noopener,noreferrer"
-      );
+      window.open(rawDocumentUrl(r.filename), "_blank", "noopener,noreferrer");
       return;
     }
 
@@ -74,17 +116,29 @@ export default function RawDokumenClient({ rawDocs }: { rawDocs: RawDoc[] }) {
     // terunduh). Buka lewat Microsoft Office Online viewer — ambil dulu
     // signed URL (yang dapat diakses publik), lalu serahkan ke viewer.
     try {
-      const res = await fetch(`/api/files/raw-documents/${r.filename}?url=1`);
+      const res = await fetch(rawDocumentUrl(r.filename, "?url=1"));
       const raw = await res.text();
-      let data: any = {};
+      let data: { url?: string; error?: string } = {};
       try {
-        data = raw ? JSON.parse(raw) : {};
+        data = raw ? (JSON.parse(raw) as typeof data) : {};
       } catch {
         data = {};
       }
       if (!res.ok || !data.url) {
         throw new Error(data.error || "Gagal membuka dokumen");
       }
+
+      if (!canUseOfficeViewer(data.url)) {
+        if (r.filename.toLowerCase().endsWith(".docx")) {
+          setPreviewDoc(r);
+          return;
+        }
+        alert(
+          "Preview file .doc membutuhkan URL storage HTTPS publik. Silakan download file untuk membukanya.",
+        );
+        return;
+      }
+
       const viewerUrl =
         "https://view.officeapps.live.com/op/view.aspx?src=" +
         encodeURIComponent(data.url);
@@ -99,7 +153,7 @@ export default function RawDokumenClient({ rawDocs }: { rawDocs: RawDoc[] }) {
     try {
       // Trigger download via temporary anchor
       const link = document.createElement("a");
-      link.href = `/api/files/raw-documents/${r.filename}`;
+      link.href = rawDocumentUrl(r.filename);
       const downloadName =
         r.filename.split("/").pop() ||
         `${r.sopDocument.kode.replace(/\//g, "-")}.docx`;
@@ -118,15 +172,16 @@ export default function RawDokumenClient({ rawDocs }: { rawDocs: RawDoc[] }) {
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
       <div className="mb-6">
         <p className="text-sm text-muted-foreground">Manajemen Dokumen</p>
-        <h1 className="font-display font-bold text-2xl sm:text-3xl mt-1">Raw Dokumen</h1>
+        <h1 className="font-display font-bold text-2xl sm:text-3xl mt-1">
+          Raw Dokumen
+        </h1>
       </div>
 
       <div className="bg-muted/30 rounded-xl border p-4 mb-6 text-sm text-muted-foreground flex gap-2">
         <span>ℹ</span>
         <span>
-          Raw dokumen berupa file Word (.docx) yang diunggah bersama SOP.
-          Hanya tersedia untuk{" "}
-          <strong className="text-foreground">view</strong> dan{" "}
+          Raw dokumen berupa file Word (.docx) yang diunggah bersama SOP. Hanya
+          tersedia untuk <strong className="text-foreground">view</strong> dan{" "}
           <strong className="text-foreground">download</strong>.
         </span>
       </div>
@@ -284,6 +339,15 @@ export default function RawDokumenClient({ rawDocs }: { rawDocs: RawDoc[] }) {
           </div>
         )}
       </div>
+
+      {previewDoc && (
+        <DocxPreviewModal
+          open
+          onClose={() => setPreviewDoc(null)}
+          title={previewDoc.sopDocument.judul}
+          fileUrl={rawDocumentUrl(previewDoc.filename, "?content=1")}
+        />
+      )}
     </div>
   );
 }
@@ -320,16 +384,27 @@ function StatusBadge({ status }: { status?: string }) {
     return <span className="text-xs text-muted-foreground">—</span>;
   }
   const config: Record<string, { color: string; label: string }> = {
-    aktif: { color: "bg-green-50 text-green-700 border-green-200", label: "Aktif" },
-    draft: { color: "bg-amber-50 text-amber-700 border-amber-200", label: "Draft" },
-    obsolete: { color: "bg-red-50 text-red-700 border-red-200", label: "Obsolete" },
+    aktif: {
+      color: "bg-green-50 text-green-700 border-green-200",
+      label: "Aktif",
+    },
+    draft: {
+      color: "bg-amber-50 text-amber-700 border-amber-200",
+      label: "Draft",
+    },
+    obsolete: {
+      color: "bg-red-50 text-red-700 border-red-200",
+      label: "Obsolete",
+    },
   };
   const c = config[status] ?? {
     color: "bg-muted text-muted-foreground border-border",
     label: status,
   };
   return (
-    <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${c.color}`}>
+    <span
+      className={`text-xs px-2 py-0.5 rounded-full border font-medium ${c.color}`}
+    >
       {c.label}
     </span>
   );
