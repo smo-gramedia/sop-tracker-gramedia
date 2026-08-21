@@ -1,65 +1,146 @@
-// src/lib/storage.ts
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import "dotenv/config";
+import { generateFileSignature, sign } from "@/actions/upload-utils";
+import { prisma } from "@/lib/prisma";
+type MANIFEST = {
+  filename: string;
+  directory: string;
+  size: number;
+  sha256: string;
+};
+const API_KEY = process.env.FTP_API_KEY;
+const SECRET = process.env.FTP_SECRET_KEY;
 
-/**
- * Lazy-init Supabase admin client.
- *
- * Kenapa lazy?
- * Saat Vercel build (collect page data phase), env vars seperti
- * SUPABASE_SERVICE_ROLE_KEY belum tentu tersedia. Kalau kita init
- * client di top-level (saat import), build akan crash dengan:
- *   "Failed to collect page data for /api/files/..."
- *
- * Solusi: init client hanya saat fungsi dipanggil (runtime), bukan saat import.
- * Pakai singleton pattern supaya tidak bikin client berulang kali.
- */
-let _supabaseAdmin: SupabaseClient | null = null;
-
-function getSupabaseAdmin(): SupabaseClient {
-  if (_supabaseAdmin) return _supabaseAdmin;
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseServiceKey) {
+async function getFileUploadToken(opts: {
+  manifest: MANIFEST;
+  timestamp: number;
+}) {
+  if (!API_KEY) throw new Error("FTP_API_KEY tidak diset di env");
+  if (!SECRET) throw new Error("FTP_SECRET_KEY tidak diset di env");
+  const signature = sign(
+    "POST",
+    "/api/v1/ftp/upload",
+    SECRET,
+    opts.timestamp,
+    opts.manifest,
+  );
+  const response = await fetch(`${process.env.FTP_HOST}/api/v1/ftp/upload`, {
+    method: "POST",
+    headers: {
+      "X-API-KEY": API_KEY,
+      "X-TIMESTAMP": String(opts.timestamp),
+      "X-SIGNATURE": signature,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(opts.manifest),
+  });
+  if (!response.ok) {
+    const text = await response.text();
     throw new Error(
-      "Supabase env variables missing. Set NEXT_PUBLIC_SUPABASE_URL & SUPABASE_SERVICE_ROLE_KEY di Vercel Environment Variables (Settings → Environment Variables)."
+      `Gagal request token upload: ${response.status} ${response.statusText} - ${text}`,
     );
   }
+  const result = (await response.json()) as {
+    success: boolean;
+    data?: { uploadToken: string; expiresAt: number };
+  };
+  if (!result.success || !result.data) {
+    throw new Error(`Gagal request token upload: ${JSON.stringify(result)}`);
+  }
 
-  _supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-
-  return _supabaseAdmin;
+  return result.data;
 }
-
 export const BUCKETS = {
   RAW_DOCUMENTS: "raw-documents",
   ATTACHMENTS: "sop-attachments",
   SOSIALISASI: "sosialisasi",
 } as const;
 
+export const getFileRemoteId = async ({
+  path,
+  bucket,
+}: {
+  path: string;
+  bucket: BucketName;
+}) => {
+  switch (bucket) {
+    case "raw-documents":
+      return await prisma.rawDocument.findFirst({
+        where: { filename: path },
+        select: { remoteId: true },
+      });
+    case "sop-attachments":
+      return await prisma.sopAttachment.findFirst({
+        where: { filename: path },
+        select: { remoteId: true },
+      });
+    case "sosialisasi":
+      return await prisma.sosialisasiAttachment.findFirst({
+        where: { filename: path },
+        select: { remoteId: true },
+      });
+    default:
+      throw new Error(`Bucket ${bucket} tidak dikenali`);
+  }
+};
 export type BucketName = (typeof BUCKETS)[keyof typeof BUCKETS];
 
 /** Upload file ke bucket. Return path relatif di bucket. */
 export async function uploadFile(opts: {
   bucket: BucketName;
-  path: string;
-  file: Buffer | Blob | File | ArrayBuffer;
+  file: File;
   contentType: string;
-}): Promise<{ path: string }> {
-  const supabase = getSupabaseAdmin();
-  const { data, error } = await supabase.storage
-    .from(opts.bucket)
-    .upload(opts.path, opts.file as Blob, {
-      contentType: opts.contentType,
-      upsert: false,
-      cacheControl: "3600",
-    });
-
-  if (error) throw new Error(`Upload gagal: ${error.message}`);
-  return { path: data.path };
+}) {
+  if (!API_KEY) throw new Error("FTP_API_KEY tidak diset di env");
+  if (!SECRET) throw new Error("FTP_SECRET_KEY tidak diset di env");
+  const { size, hash } = await generateFileSignature(opts.file);
+  const manifest: MANIFEST = {
+    filename: opts.file.name,
+    directory: opts.bucket,
+    size,
+    sha256: hash,
+  };
+  const timestamp = Math.floor(Date.now() / 1000);
+  const tokenData = await getFileUploadToken({ manifest, timestamp });
+  const signature = sign("PUT", `/api/v1/ftp/blob/:token`, SECRET, timestamp);
+  const form = new FormData();
+  form.append("file", opts.file, opts.file.name);
+  const response = await fetch(
+    `${process.env.FTP_HOST}/api/v1/ftp/blob/${tokenData.uploadToken}`,
+    {
+      method: "PUT",
+      headers: {
+        "X-API-KEY": API_KEY,
+        "X-TIMESTAMP": String(timestamp),
+        "X-SIGNATURE": signature,
+      },
+      body: form,
+    },
+  );
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(
+      `Gagal upload file: ${response.status} ${response.statusText} - ${text}`,
+    );
+  }
+  const data: {
+    success: boolean;
+    message: string;
+    data: {
+      fileId: string;
+      filename: string;
+      directory: BucketName;
+      remotePath: string;
+      size: number;
+      sha256: string;
+    };
+    meta: { timestamp: string };
+  } = await response.json();
+  if (data.success) {
+    return {
+      ...data.data,
+    };
+  }
+  throw new Error(`Gagal upload file: ${data.message}`);
 }
 
 /**
@@ -69,7 +150,7 @@ export async function uploadFile(opts: {
  *  - undefined / false → URL inline (browser preview, mis. PDF & gambar).
  *  - true              → paksa unduh dengan nama file asli.
  *  - string            → paksa unduh dengan nama file kustom.
- * Saat bertanda download, Supabase menambahkan Content-Disposition:
+ * Saat bertanda download, MINIO menambahkan Content-Disposition:
  * attachment pada URL, sehingga browser MENGUNDUH (bukan menampilkan) —
  * meski URL-nya cross-origin (di mana atribut HTML `download` diabaikan).
  */
@@ -79,29 +160,106 @@ export async function getSignedUrl(opts: {
   expiresIn?: number;
   download?: boolean | string;
 }): Promise<string> {
-  const supabase = getSupabaseAdmin();
-  const { data, error } = await supabase.storage
-    .from(opts.bucket)
-    .createSignedUrl(
-      opts.path,
-      opts.expiresIn ?? 3600,
-      opts.download !== undefined ? { download: opts.download } : undefined
+  if (!API_KEY) throw new Error("FTP_API_KEY tidak diset di env");
+  if (!SECRET) throw new Error("FTP_SECRET_KEY tidak diset di env");
+  const { bucket, path, expiresIn } = opts;
+  const result = await getFileRemoteId({ path, bucket }).catch((err) => {
+    throw err;
+  });
+  if (!result?.remoteId) {
+    throw new Error(`File ${path} di bucket ${bucket} tidak ditemukan`);
+  }
+  const timestamp = Math.floor(Date.now() / 1000);
+  const signature = sign(
+    "GET",
+    `/api/v1/ftp/signed-url/:fileId`,
+    SECRET,
+    timestamp,
+    {
+      fileId: result.remoteId,
+      ...(expiresIn && { expiresIn }),
+    },
+  );
+  const response = await fetch(
+    `${process.env.FTP_HOST}/api/v1/ftp/signed-url/${result.remoteId}${expiresIn ? `?expiresIn=${expiresIn}` : ""}`,
+    {
+      method: "GET",
+      headers: {
+        "X-API-KEY": API_KEY,
+        "X-TIMESTAMP": String(timestamp),
+        "X-SIGNATURE": signature,
+      },
+    },
+  );
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(
+      `Gagal Signed URL: ${response.status} ${response.statusText} - ${text}`,
     );
-
-  if (error) throw new Error(`Gagal generate URL: ${error.message}`);
-  return data.signedUrl;
+  }
+  const data: {
+    success: boolean;
+    message: string;
+    data: {
+      fileId: string;
+      filename: string;
+      url: string;
+      expiresAt: number;
+    };
+    meta: { timestamp: string };
+  } = await response.json();
+  if (data.success) {
+    return data.data.url;
+  }
+  throw new Error(`Gagal Signed URL: ${data.message}`);
 }
 
 /** Hapus file dari bucket. */
 export async function deleteFile(opts: {
-  bucket: BucketName;
-  path: string;
-}): Promise<void> {
-  const supabase = getSupabaseAdmin();
-  const { error } = await supabase.storage
-    .from(opts.bucket)
-    .remove([opts.path]);
-  if (error) throw new Error(`Hapus file gagal: ${error.message}`);
+  id: string;
+}): Promise<{ fileId: string }> {
+  if (!API_KEY) throw new Error("FTP_API_KEY tidak diset di env");
+  if (!SECRET) throw new Error("FTP_SECRET_KEY tidak diset di env");
+  const { id } = opts;
+  const timestamp = Math.floor(Date.now() / 1000);
+  const signature = sign(
+    "DELETE",
+    `/api/v1/ftp/file/:fileId`,
+    SECRET,
+    timestamp,
+    { fileId: id },
+  );
+  const response = await fetch(
+    `${process.env.FTP_HOST}/api/v1/ftp/file/${id}`,
+    {
+      method: "DELETE",
+      headers: {
+        "X-API-KEY": API_KEY,
+        "X-TIMESTAMP": String(timestamp),
+        "X-SIGNATURE": signature,
+      },
+    },
+  );
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(
+      `Gagal Hapus file: ${response.status} ${response.statusText} - ${text}`,
+    );
+  }
+  const data: {
+    success: boolean;
+    message: string;
+    data: {
+      fileId: string;
+    };
+    meta: { timestamp: string };
+  } = await response.json();
+  if (data.success) {
+    return {
+      ...data.data,
+    };
+  }
+  throw new Error(`Gagal menghapus file: ${data.message}`);
 }
 
 /** Unduh isi file (bytes) dari storage — dipakai untuk watermark PDF sisi server. */
@@ -109,51 +267,18 @@ export async function downloadFileBytes(opts: {
   bucket: BucketName;
   path: string;
 }): Promise<Uint8Array> {
-  const supabase = getSupabaseAdmin();
-  const { data, error } = await supabase.storage
-    .from(opts.bucket)
-    .download(opts.path);
-  if (error || !data) {
-    throw new Error(`Gagal mengunduh file: ${error?.message ?? "kosong"}`);
+  const signedUrl = await getSignedUrl({
+    bucket: opts.bucket,
+    path: opts.path,
+    expiresIn: 300,
+    download: true,
+  });
+  const response = await fetch(signedUrl, { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error(
+      `Gagal unduh file dari storage (${response.status} ${response.statusText})`,
+    );
   }
-  const buf = await data.arrayBuffer();
+  const buf = await response.arrayBuffer();
   return new Uint8Array(buf);
 }
-
-/** Build path konsisten: {prefix}/{timestamp}_{safe-filename} */
-export function buildStoragePath(opts: {
-  prefix: string;
-  filename: string;
-}): string {
-  const timestamp = Date.now();
-  const safe = opts.filename.replace(/[^a-zA-Z0-9._-]/g, "_");
-  return `${opts.prefix}/${timestamp}_${safe}`;
-}
-
-/** Validasi mime type & ukuran sebelum upload. */
-export function validateFile(
-  file: File,
-  opts: { maxSizeMb: number; allowedMime: string[] }
-): { ok: true } | { ok: false; reason: string } {
-  if (file.size > opts.maxSizeMb * 1024 * 1024) {
-    return { ok: false, reason: `Ukuran file melebihi ${opts.maxSizeMb}MB` };
-  }
-  if (!opts.allowedMime.includes(file.type)) {
-    return { ok: false, reason: `Tipe file tidak diizinkan: ${file.type}` };
-  }
-  return { ok: true };
-}
-
-/**
- * Export legacy `supabaseAdmin` untuk backward compat.
- * Tapi pakai Proxy untuk lazy init — supaya tidak crash di build time.
- *
- * Note: lebih baik pakai fungsi exported di atas (uploadFile, getSignedUrl, etc).
- * Tapi kalau ada code lain yang import supabaseAdmin langsung, ini biar tetap jalan.
- */
-export const supabaseAdmin: SupabaseClient = new Proxy({} as SupabaseClient, {
-  get(_target, prop) {
-    const client = getSupabaseAdmin();
-    return Reflect.get(client, prop, client);
-  },
-});

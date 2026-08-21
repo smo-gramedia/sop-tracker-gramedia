@@ -129,7 +129,7 @@ export default function SopKategoriClient({
   // Modal state
   const [previewDoc, setPreviewDoc] = useState<Doc | null>(null);
   const [popup, setPopup] = useState<{ title: string; message: string } | null>(
-    null
+    null,
   );
 
   // Filter & sidebar state
@@ -140,13 +140,13 @@ export default function SopKategoriClient({
   const [selectedSubcatId, setSelectedSubcatId] = useState<string | null>(null);
   const [sidebarSearch, setSidebarSearch] = useState("");
   const [expandedDivisions, setExpandedDivisions] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
 
   const relevantDivisions = useMemo(() => {
     if (kategori === "sg" || kategori === "petunjuk") return [];
     const deptIdsWithSops = new Set(
-      documents.map((d) => d.department?.id).filter(Boolean)
+      documents.map((d) => d.department?.id).filter(Boolean),
     );
     return divisions
       .map((div) => ({
@@ -163,19 +163,19 @@ export default function SopKategoriClient({
       .map((div) => ({
         ...div,
         departments: div.departments.filter((d) =>
-          d.nama.toLowerCase().includes(q)
+          d.nama.toLowerCase().includes(q),
         ),
       }))
       .filter(
         (div) =>
-          div.nama.toLowerCase().includes(q) || div.departments.length > 0
+          div.nama.toLowerCase().includes(q) || div.departments.length > 0,
       );
   }, [relevantDivisions, sidebarSearch]);
 
   const relevantSubcats = useMemo(() => {
     if (kategori !== "sg") return [];
     const subcatIdsWithSops = new Set(
-      documents.map((d) => d.subcategory?.id).filter(Boolean)
+      documents.map((d) => d.subcategory?.id).filter(Boolean),
     );
     return subcategories.filter((s) => subcatIdsWithSops.has(s.id));
   }, [subcategories, documents, kategori]);
@@ -247,24 +247,12 @@ export default function SopKategoriClient({
   }
 
   function handleView(doc: Doc) {
-    // DEBUG LOGGING — bisa dihapus setelah bug ketemu
-    console.log("[SOP View Click]", {
-      kategori,
-      docId: doc.id,
-      docKode: doc.kode,
-      isAdmin,
-      progress: progressMap[doc.id],
-      attachments: doc.sopAttachments?.length ?? 0,
-    });
-
     const lock = getActionLock(doc);
     if (lock) {
-      console.log("[SOP View] Lock detected, showing popup:", lock.title);
       setPopup(lock);
       return;
     }
     if (!doc.sopAttachments || doc.sopAttachments.length === 0) {
-      console.log("[SOP View] No PDF, showing fallback popup");
       setPopup({
         title: "Dokumen Belum Tersedia",
         message:
@@ -272,7 +260,6 @@ export default function SopKategoriClient({
       });
       return;
     }
-    console.log("[SOP View] Opening preview modal");
     setPreviewDoc(doc);
   }
 
@@ -306,9 +293,11 @@ export default function SopKategoriClient({
   }, [selectedDeptId, relevantDivisions]);
 
   // Stats
-  const selesaiCount = progressList.filter((p) => p.status === "selesai").length;
+  const selesaiCount = progressList.filter(
+    (p) => p.status === "selesai",
+  ).length;
   const dipelajariCount = progressList.filter(
-    (p) => p.status === "dipelajari"
+    (p) => p.status === "dipelajari",
   ).length;
 
   return (
@@ -413,7 +402,7 @@ export default function SopKategoriClient({
                 const docCount = documents.filter(
                   (d) =>
                     d.department?.id &&
-                    div.departments.some((dp) => dp.id === d.department!.id)
+                    div.departments.some((dp) => dp.id === d.department!.id),
                 ).length;
                 return (
                   <div key={div.id} className="border-b last:border-0">
@@ -444,7 +433,7 @@ export default function SopKategoriClient({
                         </div>
                         {div.departments.map((dept) => {
                           const deptDocCount = documents.filter(
-                            (d) => d.department?.id === dept.id
+                            (d) => d.department?.id === dept.id,
                           ).length;
                           const isActive = selectedDeptId === dept.id;
                           return (

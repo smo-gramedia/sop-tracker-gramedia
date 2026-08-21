@@ -1,6 +1,6 @@
 // src/lib/download.ts
 /**
- * Helper untuk download/akses file yang tersimpan di Supabase Storage.
+ * Helper untuk download/akses file yang tersimpan di MINIO Storage.
  * Routing via /api/files endpoint (yang akan generate signed URL).
  */
 
@@ -26,10 +26,10 @@ export function getFileUrl(
 /**
  * Trigger unduhan file ke komputer lokal.
  *
- * Catatan (Fix B4): /api/files me-redirect ke signed URL Supabase yang
+ * Catatan (Fix B4): /api/files me-redirect ke signed URL MINIO yang
  * cross-origin, sehingga atribut HTML `download` pada anchor DIABAIKAN
  * browser. Pemaksaan unduh kini dilakukan di sisi server lewat parameter
- * ?dl= (Supabase mengirim Content-Disposition: attachment).
+ * ?dl= (MINIO mengirim Content-Disposition: attachment).
  */
 export function downloadFile(
   bucket: string,

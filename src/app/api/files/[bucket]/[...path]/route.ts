@@ -24,7 +24,7 @@ export const runtime = "nodejs";
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ bucket: string; path: string[] }> }
+  { params }: { params: Promise<{ bucket: string; path: string[] }> },
 ) {
   const session = await auth();
   if (!session?.user) {
@@ -52,7 +52,7 @@ export async function GET(
     if (!att) {
       return NextResponse.json(
         { error: "File metadata not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
     const isOwner = att.userId === session.user.id;
@@ -83,7 +83,7 @@ export async function GET(
       if (!owner) {
         return NextResponse.json(
           { error: "File metadata not found" },
-          { status: 404 }
+          { status: 404 },
         );
       }
 
@@ -93,12 +93,12 @@ export async function GET(
       });
       const boleh = canAccessKategori(
         { role: session.user.role, tipeUser: me?.tipeUser ?? null },
-        owner.sopDocument.kategori
+        owner.sopDocument.kategori,
       );
       if (!boleh) {
         return NextResponse.json(
           { error: "Dokumen ini tidak tersedia untuk tipe akun Anda." },
-          { status: 403 }
+          { status: 403 },
         );
       }
     }
@@ -106,6 +106,33 @@ export async function GET(
 
   try {
     const sp = req.nextUrl.searchParams;
+    // Proxy terautentikasi untuk renderer dokumen di dalam aplikasi. Berkas
+    // tetap privat dan browser tidak perlu mengakses storage lintas origin.
+    if (sp.get("content") === "1") {
+      const url = await getSignedUrl({
+        bucket,
+        path,
+        expiresIn: 300,
+      });
+      const upstream = await fetch(url, { cache: "no-store" });
+      if (!upstream.ok || !upstream.body) {
+        throw new Error(
+          `Gagal mengambil file dari storage (${upstream.status})`,
+        );
+      }
+
+      const headers = new Headers({
+        "Cache-Control": "private, no-store",
+        "Content-Disposition": "inline",
+        "Content-Type":
+          upstream.headers.get("content-type") || "application/octet-stream",
+        "X-Content-Type-Options": "nosniff",
+      });
+      const contentLength = upstream.headers.get("content-length");
+      if (contentLength) headers.set("Content-Length", contentLength);
+
+      return new NextResponse(upstream.body, { status: 200, headers });
+    }
 
     // ─── Fix B2: mode "ambil URL" untuk Office Online viewer ────────────
     //   ?url=1 → balas JSON { url } (signed URL langsung), TIDAK redirect.
@@ -137,13 +164,13 @@ export async function GET(
 
         // Waktu akses dalam WIB (Asia/Jakarta)
         const wib = new Date(
-          new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" })
+          new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" }),
         );
         const pad = (n: number) => String(n).padStart(2, "0");
         const tanggal = `${pad(wib.getDate())}/${pad(
-          wib.getMonth() + 1
+          wib.getMonth() + 1,
         )}/${wib.getFullYear()} ${pad(wib.getHours())}:${pad(
-          wib.getMinutes()
+          wib.getMinutes(),
         )}`;
 
         const stamped = await watermarkPdf(original, { kodeUser, tanggal });
@@ -161,7 +188,7 @@ export async function GET(
               },
             })
             .catch((err) =>
-              console.error("[files] Gagal audit download:", err)
+              console.error("[files] Gagal audit download:", err),
             );
         }
 
@@ -177,7 +204,7 @@ export async function GET(
             "Content-Type": "application/pdf",
             "Content-Disposition": `attachment; filename="${filename.replace(
               /"/g,
-              ""
+              "",
             )}"`,
             "Cache-Control": "no-store",
           },
@@ -208,7 +235,7 @@ export async function GET(
     console.error("Signed URL error:", e);
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

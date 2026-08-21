@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
 }
 
 model User {
@@ -129,6 +129,7 @@ model RawDocument {
   id            String      @id @default(uuid())
   sopDocumentId String      @map("sop_document_id")
   filename      String
+  remoteId      String      @map("remote_id")
   mimeType      String      @map("mime_type")
   ukuranKb      Int         @map("ukuran_kb")
   uploadedById  String      @map("uploaded_by")
@@ -144,6 +145,7 @@ model SopAttachment {
   id            String      @id @default(uuid())
   sopDocumentId String      @map("sop_document_id")
   filename      String
+  remoteId      String      @map("remote_id")
   mimeType      String      @map("mime_type")
   ukuranKb      Int         @map("ukuran_kb")
   uploadedById  String      @map("uploaded_by")
@@ -259,6 +261,7 @@ model SosialisasiAttachment {
   userId        String           @map("user_id")
   sopDocumentId String           @map("sop_document_id")
   filename      String
+  remoteId      String           @map("remote_id")
   mimeType      String           @map("mime_type")
   ukuranKb      Int              @map("ukuran_kb")
   uploadKe      Int              @default(1) @map("upload_ke")

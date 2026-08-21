@@ -6,12 +6,11 @@
 
 *PT Gramedia Asri Media — Kompas Gramedia Group*
 
-[![Next.js](https://img.shields.io/badge/Next.js-16.2.9-black?logo=next.js&logoColor=white)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js&logoColor=white)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Prisma](https://img.shields.io/badge/Prisma-6.6-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supabase-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-7-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Prisma](https://img.shields.io/badge/Prisma-MySQL-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![License](https://img.shields.io/badge/License-Proprietary-red)](#-license)
 
 [Tentang](#-tentang-aplikasi) •
@@ -99,9 +98,9 @@
 <td valign="top" width="50%">
 
 ### Frontend
-- **Framework:** [Next.js 16.2.9](https://nextjs.org/) (App Router)
+- **Framework:** [Next.js 16](https://nextjs.org/) (App Router)
 - **UI Library:** [React 19](https://react.dev/)
-- **Styling:** [Tailwind CSS 3.x](https://tailwindcss.com/)
+- **Styling:** [Tailwind CSS 4.x](https://tailwindcss.com/)
 - **Components:** [shadcn/ui](https://ui.shadcn.com/)
 - **Icons:** [Lucide React](https://lucide.dev/)
 - **Forms:** React Hook Form + Zod
@@ -112,10 +111,10 @@
 <td valign="top" width="50%">
 
 ### Backend
-- **Runtime:** Node.js 18+
+- **Runtime:** Node.js 24+
 - **API:** Next.js Route Handlers
-- **ORM:** [Prisma 6.6](https://www.prisma.io/)
-- **Database:** PostgreSQL (Supabase)
+- **ORM:** [Prisma 7](https://www.prisma.io/)
+- **Database:** MySQL
 - **Auth:** [NextAuth v5](https://authjs.dev/) (Credentials)
 - **Storage:** [Supabase Storage](https://supabase.com/)
 - **Excel:** ExcelJS
@@ -126,7 +125,7 @@
 </table>
 
 ### Development Tools
-- **Language:** TypeScript 5
+- **Language:** TypeScript 7
 - **Linter:** ESLint
 - **Formatter:** Prettier
 - **Build:** Next.js Turbopack
@@ -139,10 +138,10 @@
 ### Prerequisites
 
 ```
-Node.js  ≥ 18.x
-npm      ≥ 9.x
+Node.js  ≥ 24.x
+npm      ≥ 11.x
 Git
-PostgreSQL access (Supabase atau lokal)
+MySQL access
 ```
 
 ### Installation
@@ -310,7 +309,6 @@ Aplikasi ini dibangun di atas dasar open source :
 - [Next.js](https://nextjs.org/) by Vercel
 - [React](https://react.dev/) by Meta
 - [Prisma](https://www.prisma.io/) by Prisma
-- [Supabase](https://supabase.com/) by Supabase
 - [Tailwind CSS](https://tailwindcss.com/) by Tailwind Labs
 - [shadcn/ui](https://ui.shadcn.com/) by shadcn
 - [Lucide Icons](https://lucide.dev/) by Lucide contributors

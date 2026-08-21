@@ -111,7 +111,7 @@ export async function GET(
       wib.getMonth() + 1
     )}/${wib.getFullYear()} ${pad(wib.getHours())}:${pad(wib.getMinutes())}`;
 
-    // Helper: download file dari Supabase signed URL → arraybuffer
+    // Helper: download file dari MINIO signed URL → arraybuffer
     const fetchFile = async (path: string): Promise<ArrayBuffer> => {
       const url = await getSignedUrl({
         bucket: BUCKETS.ATTACHMENTS,
