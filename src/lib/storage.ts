@@ -150,7 +150,7 @@ export async function uploadFile(opts: {
  *  - undefined / false → URL inline (browser preview, mis. PDF & gambar).
  *  - true              → paksa unduh dengan nama file asli.
  *  - string            → paksa unduh dengan nama file kustom.
- * Saat bertanda download, Supabase menambahkan Content-Disposition:
+ * Saat bertanda download, MINIO menambahkan Content-Disposition:
  * attachment pada URL, sehingga browser MENGUNDUH (bukan menampilkan) —
  * meski URL-nya cross-origin (di mana atribut HTML `download` diabaikan).
  */
@@ -267,13 +267,18 @@ export async function downloadFileBytes(opts: {
   bucket: BucketName;
   path: string;
 }): Promise<Uint8Array> {
-  // const supabase = getSupabaseAdmin();
-  // const { data, error } = await supabase.storage
-  //   .from(opts.bucket)
-  //   .download(opts.path);
-  // if (error || !data) {
-  //   throw new Error(`Gagal mengunduh file: ${error?.message ?? "kosong"}`);
-  // }
-  // const buf = await data.arrayBuffer();
-  return new Uint8Array();
+  const signedUrl = await getSignedUrl({
+    bucket: opts.bucket,
+    path: opts.path,
+    expiresIn: 300,
+    download: true,
+  });
+  const response = await fetch(signedUrl, { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error(
+      `Gagal unduh file dari storage (${response.status} ${response.statusText})`,
+    );
+  }
+  const buf = await response.arrayBuffer();
+  return new Uint8Array(buf);
 }
