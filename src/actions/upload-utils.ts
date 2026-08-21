@@ -18,7 +18,7 @@ export const DOC_MIME = "application/msword";
 /**
  * Browser/OS mengirim MIME .zip berbeda-beda (bahkan kadang kosong atau
  * application/octet-stream). Normalisasi berdasarkan ekstensi agar validasi
- * konsisten DAN contentType yang dikirim ke Supabase selalu benar
+ * konsisten DAN contentType yang dikirim ke MINIO selalu benar
  * (bucket punya daftar MIME yang diizinkan).
  */
 export function effectiveMime(file: File): string {
